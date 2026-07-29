@@ -1,0 +1,13 @@
+{
+  "name": "brunnerschaft-dashboard-build",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scrapt Kicktipp (öffentlich) und baut das Brunnerschaft-Dashboard.",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "jsdom": "^24.1.0"
+  }
+}

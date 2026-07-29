@@ -1,0 +1,6 @@
+node_modules/
+dist/
+finance.config.js
+_*.js
+explore.mjs
+.DS_Store

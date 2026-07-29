@@ -1,0 +1,18 @@
+import { buildData } from './scrape.js';
+import { config } from './config.js';
+const t0=Date.now();
+const d=await buildData(config);
+console.log('⏱  '+((Date.now()-t0)/1000).toFixed(1)+'s');
+const ch7=d.DATA.players.find(p=>p.name==='CH7');
+console.log('CH7 total/champ:', ch7.totalPts, ch7.champ, '(erwartet 2571 / 4)');
+console.log('BONUS CH7/Manu:', d.BONUS['CH7'], d.BONUS['Manurinho'], '(245 / 247)');
+console.log('gesamt mdWins/avgMd CH7:', d.METRICS.gesamt['CH7'].mdWins, d.METRICS.gesamt['CH7'].avgMd, '(47 / 11.29)');
+console.log('wonDay CH7 / bayern Tobias:', d.ADV.wonDay['CH7'], d.ADV.bayern['Tobias'], '(667 / 277)');
+console.log('twins[0]:', JSON.stringify(d.STATS18.twins[0]), '(CH7&Maxjun 34.08)');
+console.log('recTop[0]:', JSON.stringify(d.STATS18.recTop[0]), '(Maxjun 40 WM2026 md11)');
+console.log('groupFav[0]:', JSON.stringify(d.STATS18.groupFav[0]), '(2:1 2525)');
+console.log('loser Matthew / zero BigBen:', d.LZ.loser['Matthew'], d.LZ.zero['BigBen'], '(50 / 4)');
+console.log('prophet CH7:', d.STATS18.prophetChamp['CH7'], '(5)');
+console.log('pers CH7:', JSON.stringify(d.STATS18.pers['CH7']));
+console.log('bonusCat Manurinho:', JSON.stringify(d.ADV.bonusCat['Manurinho']));
+console.log('seasons:', d.DATA.seasons.map(s=>s.short+(s.running?' (läuft)':'')).join(', '));

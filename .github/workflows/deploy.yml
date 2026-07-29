@@ -1,0 +1,41 @@
+name: Build & Deploy Brunnerschaft-Dashboard
+
+on:
+  schedule:
+    - cron: '0 5 * * *'      # täglich 05:00 UTC (nach Spieltagen aktuell)
+  workflow_dispatch:          # manuell auslösbar
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Build (scrape + render)
+        env:
+          BRUN_FIN_PASSWORD: ${{ secrets.BRUN_FIN_PASSWORD }}
+          BRUN_FINANCE_JSON: ${{ secrets.BRUN_FINANCE_JSON }}
+        run: node build.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deploy
+        uses: actions/deploy-pages@v4
