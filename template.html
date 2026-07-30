@@ -51,8 +51,10 @@
   --shadow:0 1px 2px rgba(28,20,22,.05), 0 8px 24px -12px rgba(28,20,22,.14);
 }
 *{box-sizing:border-box}
-/* Feste Seitenbreite: kein horizontales Pannen/Rubber-Banding (iOS Safari braucht html UND body) */
-html,body{overflow-x:hidden;max-width:100%;overscroll-behavior-x:none}
+/* Feste Seitenbreite: kein horizontales Pannen/Rubber-Banding (iOS Safari braucht html UND body).
+   WICHTIG: "clip" statt "hidden" — hidden macht body zum Scroll-Container und bricht position:sticky (Tabs/Filter). */
+html{overflow-x:hidden;overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
+body{overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ff);
   line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
