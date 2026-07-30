@@ -58,18 +58,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ff);
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
 .mono{font-family:var(--num);font-variant-numeric:tabular-nums}
 
-header.top{position:sticky;top:0;z-index:50;background:var(--brand);box-shadow:0 2px 12px -4px rgba(0,0,0,.3);
-  padding-top:env(safe-area-inset-top)} /* PWA/Standalone: nicht unter die iPhone-Notch rutschen */
+header.top{background:var(--brand);box-shadow:0 2px 12px -4px rgba(0,0,0,.3);
+  padding-top:env(safe-area-inset-top)} /* scrollt mit; nur Tabs+Filter kleben. Safe-Area: nicht unter die Notch */
 .top-inner{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .brandmark{display:flex;align-items:center;gap:10px;color:#fff}
 .logo-k{background:#fff;color:var(--brand);font-weight:800;font-size:20px;letter-spacing:-.5px;
-  padding:4px 9px;border-radius:8px;line-height:1;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+  padding:4px 9px;border-radius:8px;line-height:1;box-shadow:0 2px 0 rgba(0,0,0,.12);cursor:pointer;user-select:none}
 .brandtext{font-weight:800;font-size:20px;letter-spacing:-.4px;color:#fff}
 .brandemoji{font-size:19px}
 .sub-badge{margin-left:2px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#fff;opacity:.82}
 .spacer{flex:1}
-.theme-btn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:20px;
-  padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-width:98px}
+.theme-btn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:50%;
+  width:34px;height:34px;padding:0;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .theme-btn:hover{background:rgba(255,255,255,.26)}
 .lang-switch{display:flex;gap:2px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:20px;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .lang-switch button{background:transparent;border:0;cursor:pointer;font-size:15px;line-height:1;padding:4px 9px;border-radius:15px;opacity:.45;filter:saturate(.85);transition:opacity .15s,background .15s,filter .15s}
@@ -82,7 +82,7 @@ header.top{position:sticky;top:0;z-index:50;background:var(--brand);box-shadow:0
 :root[lang="en"] .tab-lbl .t-de{visibility:hidden}
 :root:not([lang="en"]) .tab-lbl .t-en{visibility:hidden}
 
-nav.tabs{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:var(--hdrH,57px);z-index:40}
+nav.tabs{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
 .tabs-inner{max-width:var(--maxw);margin:0 auto;padding:0 14px;display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs-inner::-webkit-scrollbar{display:none}
 .tab{flex:0 0 auto}
@@ -120,6 +120,13 @@ section.block{margin:38px 0}
 .grid{display:grid;gap:14px}
 .grid>*,.two-col>*{min-width:0}
 .rscroll{overflow-x:auto;max-width:100%}
+.bcc-sel{display:none} /* Kategorie-Dropdown nur mobil */
+.bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
+/* Horizontale Scrollbalken überall ausblenden (Scrollen per Wisch/Trackpad bleibt möglich) */
+.rscroll,.tbl-wrap,.heat-wrap{scrollbar-width:none}
+.rscroll::-webkit-scrollbar,.tbl-wrap::-webkit-scrollbar,.heat-wrap::-webkit-scrollbar{display:none}
+/* Namens-Spalte in Heat-/Team-Matrix immer fixiert */
+table.heat th.pname{position:sticky;left:0;background:var(--surface);z-index:2}
 .rank-tbl{min-width:380px}
 .rank-tbl.rwrap{min-width:0;width:100%}
 .rank-tbl.rwrap thead th{white-space:normal}
@@ -323,8 +330,37 @@ input.chk{width:20px;height:20px;accent-color:var(--good);cursor:pointer;flex:0 
 footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--ink-3);font-size:12px;border-top:1px solid var(--line);text-align:center}
 .hidden{display:none !important}
 @media(max-width:820px){.tiles,.stat-tiles{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:720px){.tabs-inner{padding:0 6px}.payout .amt{font-size:18px}
-  header.top{position:static} /* mobil scrollt der hohe Header mit; nur Tabs+Filter kleben */}
+@media(max-width:720px){.tabs-inner{padding:0 6px}.payout .amt{font-size:18px}}
+/* ===== Mobile-Tabellen: fixierte Pos+Name-Spalten, schlanke Breiten, keine Balken ===== */
+@media(max-width:720px){
+  .bar-only{display:none}                       /* reine Balken-Spalten mobil weglassen */
+  .rank-tbl{min-width:0;width:100%}             /* kleine Karten-Tabellen: kein Mini-Scroll mehr */
+  thead th{white-space:normal}                  /* lange Kopfzeilen dürfen zweizeilig werden */
+  .mhide{display:none}                          /* mobil ausgeblendete Kopf-Texte (Medaillen bleiben) */
+  /* Sticky: erste Spalte (msticky) bzw. Pos+Name (msticky2) bleiben beim Scrollen stehen */
+  table.msticky thead th:first-child,table.msticky tbody td:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
+  table.msticky thead th:first-child{background:var(--surface-2);z-index:3}
+  table.msticky tbody td:first-child{max-width:170px}
+  table.msticky2 thead th:nth-child(2),table.msticky2 tbody td:nth-child(2){position:sticky;left:44px;z-index:2;background:var(--surface);max-width:150px}
+  table.msticky2 thead th:nth-child(2){background:var(--surface-2);z-index:3}
+  table.msticky2 thead th:first-child,table.msticky2 tbody td:first-child{width:44px;min-width:44px;max-width:44px;padding-left:6px;padding-right:6px}
+  /* Namen bei Platzmangel auspunkten */
+  table.msticky .nm-cell{max-width:140px}
+  table.msticky .nm-cell .player-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Titel-/Laternen-Historie: nur Medaillen im Kopf, nur Avatare in den Zeilen */
+  #historyTable .nm-cell .player-name,#lanternTable .nm-cell .player-name{display:none}
+  #historyTable,#lanternTable{table-layout:auto!important}
+  /* Head-to-Head: Auswahl untereinander, „vs" mittig dazwischen */
+  .h2h-bar{flex-direction:column;align-items:stretch}
+  .h2h-bar select{width:100%}
+  .h2h-vs{align-self:center;padding:2px 0}
+  .h2h-row{grid-template-columns:1fr 110px 1fr;gap:8px;padding:11px 10px}
+  /* Bonuspunkte nach Kategorie: nur die per Dropdown gewählte Spalte zeigen */
+  .bcc-sel{display:block;margin-bottom:10px}
+  #bonusCatTable .bcc{display:none}
+  #bonusCatTable[data-bcc="0"] .bcc-0,#bonusCatTable[data-bcc="1"] .bcc-1,#bonusCatTable[data-bcc="2"] .bcc-2,
+  #bonusCatTable[data-bcc="3"] .bcc-3,#bonusCatTable[data-bcc="4"] .bcc-4{display:table-cell}
+}
 @media(max-width:560px){.payouts{grid-template-columns:1fr!important} /* Auszahlungs-Boxen stapeln statt quetschen */}
 @media(max-width:500px){.tiles,.stat-tiles{grid-template-columns:1fr}}
 @media(max-width:640px){.rankgrid{grid-template-columns:1fr}}
@@ -363,7 +399,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <button type="button" data-lang="en" aria-pressed="false" title="English">🇬🇧</button>
     </div>
     <button class="theme-btn" id="themeBtn" type="button" aria-label="Design wechseln">
-      <span id="themeIcon">🌙</span><span id="themeTxt">Dunkel</span>
+      <span id="themeIcon">🌙</span>
     </button>
   </div>
 </header>
@@ -442,7 +478,8 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="Bonus in detail">Bonus im Detail</div>
       <h2 class="sec-title" data-en="Bonus points by category">Bonuspunkte nach Kategorie</h2>
       <div class="sec-note" data-en="Where the bonus points come from — German champion, autumn champion, top scorer, tournament winner (World Cup/Euro) and other (relegated teams, semi-finalists, group winners …).">Woher die Bonuspunkte kommen — Deutscher Meister, Herbstmeister, Torschützenkönig, Turniersieger (WM/EM) und Sonstiges (Absteiger, Halbfinalisten, Gruppensieger …).</div>
-      <div class="tbl-wrap"><table id="bonusCatTable"></table></div>
+      <div class="bcc-sel"><label class="filter-label" for="bccSel" data-en="Category">Kategorie</label><br><select id="bccSel"></select></div>
+      <div class="tbl-wrap"><table id="bonusCatTable" data-bcc="0"></table></div>
     </section>
 
     <section class="block gesamt-only">
@@ -679,7 +716,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
   </div>
 </main>
 
-<footer data-en="⚽🍺 <b>Brunnerschaft</b> · Data read live from Kicktipp · Updated <span id=&quot;genDate&quot;></span> · Built for the guys' night">⚽🍺 <b>Brunnerschaft</b> · Daten live aus Kicktipp ausgelesen · Stand <span id="genDate"></span> · Gebaut für die Männerrunde</footer>
+<footer data-en="⚽🍺 <b>Brunnerschaft</b> · Data read live from Kicktipp · Updated <span id=&quot;genDate&quot;></span> · Built for the guys' night with lots of ❤️ by Manu 🍺">⚽🍺 <b>Brunnerschaft</b> · Daten live aus Kicktipp ausgelesen · Stand <span id="genDate"></span> · Gebaut für die Männerrunde mit viel ❤️ von Manu 🍺</footer>
 
 <script>
 const DATA = {"generated":"2026-07-25","seasons":[{"id":"700552","name":"Bundesliga 2021/22","short":"BL 21/22","type":"BL","numMd":34,"standings":[{"pos":1,"name":"CH7","total":420,"active":true},{"pos":2,"name":"Maxsen","total":395,"active":true},{"pos":3,"name":"Manurinho","total":383,"active":true},{"pos":4,"name":"Tobias","total":383,"active":true},{"pos":5,"name":"Billy","total":379,"active":true},{"pos":6,"name":"Matthew","total":366,"active":true}]},{"id":"1195969","name":"Weltmeisterschaft 2022","short":"WM 2022","type":"WM","numMd":10,"standings":[{"pos":1,"name":"CH7","total":140,"active":true},{"pos":2,"name":"Lutz_Brunner7b","total":133,"active":true},{"pos":3,"name":"Tobias","total":123,"active":true},{"pos":4,"name":"Manurinho","total":119,"active":true},{"pos":5,"name":"Maxsen","total":110,"active":true},{"pos":6,"name":"Matthew","total":101,"active":true},{"pos":7,"name":"Billy","total":98,"active":true}]},{"id":"1009489","name":"Bundesliga 2022/23","short":"BL 22/23","type":"BL","numMd":34,"standings":[{"pos":1,"name":"Lutz_Brunner7b","total":392,"active":true},{"pos":2,"name":"Maxsen","total":389,"active":true},{"pos":3,"name":"CH7","total":385,"active":true},{"pos":4,"name":"Manurinho","total":383,"active":true},{"pos":5,"name":"Tobias","total":381,"active":true},{"pos":6,"name":"Matthew","total":381,"active":true},{"pos":7,"name":"Billy","total":353,"active":true}]},{"id":"1843545","name":"Bundesliga 2023/24","short":"BL 23/24","type":"BL","numMd":34,"standings":[{"pos":1,"name":"Billy","total":442,"active":true},{"pos":2,"name":"Tobias","total":431,"active":true},{"pos":3,"name":"BigBen","total":429,"active":true},{"pos":4,"name":"Lutz_Brunner7b","total":420,"active":true},{"pos":5,"name":"CH7","total":419,"active":true},{"pos":6,"name":"Matthew","total":415,"active":true},{"pos":7,"name":"Manurinho","total":407,"active":true},{"pos":8,"name":"Maxsen","total":386,"active":true},{"pos":9,"name":"Maxjun.","total":0,"active":false}]},{"id":"3218962","name":"Bundesliga 2024/25","short":"BL 24/25","type":"BL","numMd":34,"standings":[{"pos":1,"name":"CH7","total":405,"active":true},{"pos":2,"name":"Billy","total":402,"active":true},{"pos":3,"name":"Maxsen","total":400,"active":true},{"pos":4,"name":"Tobias","total":396,"active":true},{"pos":5,"name":"Maxjun.","total":389,"active":true},{"pos":6,"name":"Manurinho","total":389,"active":true},{"pos":7,"name":"Lutz_Brunner7b","total":384,"active":true},{"pos":8,"name":"Matthew","total":384,"active":true},{"pos":9,"name":"BigBen","total":374,"active":true}]},{"id":"3837133","name":"Bundesliga 2025/26","short":"BL 25/26","type":"BL","numMd":34,"standings":[{"pos":1,"name":"Lutz_Brunner7b","total":452,"active":true},{"pos":2,"name":"CH7","total":447,"active":true},{"pos":3,"name":"Matthew","total":432,"active":true},{"pos":4,"name":"Tobias","total":428,"active":true},{"pos":5,"name":"Maxjun.","total":426,"active":true},{"pos":6,"name":"Billy","total":420,"active":true},{"pos":7,"name":"BigBen","total":414,"active":true},{"pos":8,"name":"Manurinho","total":404,"active":true},{"pos":9,"name":"Maxsen","total":400,"active":true}]},{"id":"em2024","name":"Europameisterschaft 2024","short":"EM 2024","type":"EM","numMd":11,"standings":[{"pos":1,"name":"Billy","total":110,"active":true},{"pos":2,"name":"Manurinho","total":104,"active":true},{"pos":3,"name":"Tobias","total":104,"active":true},{"pos":4,"name":"BigBen","total":104,"active":true},{"pos":5,"name":"CH7","total":101,"active":true},{"pos":6,"name":"Lutz_Brunner7b","total":99,"active":true},{"pos":7,"name":"Maxsen","total":98,"active":true},{"pos":8,"name":"Matthew","total":83,"active":true}]},{"id":"wm2026","name":"Weltmeisterschaft 2026","short":"WM 2026","type":"WM","numMd":15,"standings":[{"pos":1,"name":"CH7","total":254,"active":true},{"pos":2,"name":"BigBen","total":252,"active":true},{"pos":3,"name":"Manurinho","total":247,"active":true},{"pos":4,"name":"Maxjun.","total":240,"active":true},{"pos":5,"name":"Tobias","total":238,"active":true},{"pos":6,"name":"Lutz_Brunner7b","total":234,"active":true},{"pos":7,"name":"Matthew","total":222,"active":true},{"pos":8,"name":"Maxsen","total":213,"active":true},{"pos":9,"name":"Billy","total":209,"active":true}]},{"id":"5422358","name":"Bundesliga 2026/27","short":"BL 26/27","type":"BL","numMd":34,"running":true,"standings":[{"pos":1,"name":"Maxsen","total":0,"active":false},{"pos":2,"name":"Billy","total":0,"active":false},{"pos":3,"name":"Manurinho","total":0,"active":false},{"pos":4,"name":"Tobias","total":0,"active":false},{"pos":5,"name":"CH7","total":0,"active":false},{"pos":6,"name":"Matthew","total":0,"active":false},{"pos":7,"name":"Lutz_Brunner7b","total":0,"active":false},{"pos":8,"name":"BigBen","total":0,"active":false},{"pos":9,"name":"Maxjun.","total":0,"active":false}]}],"players":[{"name":"CH7","played":8,"totalPts":2571,"champ":4,"champBL":2,"lastCnt":0,"podium":6,"positions":{"700552":1,"1009489":3,"1195969":1,"1843545":5,"3218962":1,"3837133":2,"em2024":5,"wm2026":1},"bestFinish":1,"avgPts":321},{"name":"Maxsen","played":8,"totalPts":2391,"champ":0,"champBL":0,"lastCnt":2,"podium":3,"positions":{"700552":2,"1009489":2,"1195969":5,"1843545":8,"3218962":3,"3837133":9,"em2024":7,"wm2026":8},"bestFinish":2,"avgPts":299},{"name":"Manurinho","played":8,"totalPts":2436,"champ":0,"champBL":0,"lastCnt":0,"podium":3,"positions":{"700552":3,"1009489":4,"1195969":4,"1843545":7,"3218962":6,"3837133":8,"em2024":2,"wm2026":3},"bestFinish":2,"avgPts":305},{"name":"Tobias","played":8,"totalPts":2484,"champ":0,"champBL":0,"lastCnt":0,"podium":3,"positions":{"700552":4,"1009489":5,"1195969":3,"1843545":2,"3218962":4,"3837133":4,"em2024":3,"wm2026":5},"bestFinish":2,"avgPts":311},{"name":"Billy","played":8,"totalPts":2413,"champ":2,"champBL":1,"lastCnt":3,"podium":3,"positions":{"700552":5,"1009489":7,"1195969":7,"1843545":1,"3218962":2,"3837133":6,"em2024":1,"wm2026":9},"bestFinish":1,"avgPts":302},{"name":"Matthew","played":8,"totalPts":2384,"champ":0,"champBL":0,"lastCnt":2,"podium":1,"positions":{"700552":6,"1009489":6,"1195969":6,"1843545":6,"3218962":8,"3837133":3,"em2024":8,"wm2026":7},"bestFinish":3,"avgPts":298},{"name":"Lutz_Brunner7b","played":7,"totalPts":2114,"champ":2,"champBL":2,"lastCnt":0,"podium":3,"positions":{"700552":null,"1009489":1,"1195969":2,"1843545":4,"3218962":7,"3837133":1,"em2024":6,"wm2026":6},"bestFinish":1,"avgPts":302},{"name":"BigBen","played":5,"totalPts":1573,"champ":0,"champBL":0,"lastCnt":1,"podium":2,"positions":{"700552":null,"1009489":null,"1195969":null,"1843545":3,"3218962":9,"3837133":7,"em2024":4,"wm2026":2},"bestFinish":2,"avgPts":315},{"name":"Maxjun.","played":3,"totalPts":1055,"champ":0,"champBL":0,"lastCnt":0,"podium":0,"positions":{"700552":null,"1009489":null,"1195969":null,"1843545":null,"3218962":5,"3837133":5,"em2024":null,"wm2026":4},"bestFinish":4,"avgPts":352}]};
@@ -926,12 +963,12 @@ function rankCardHTML(scope,cfg){
   const body = rows.length? `<div class="rscroll"><table class="rank-tbl${cfg.wrap?' rwrap':''}"><thead><tr>
       <th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th>
       ${cols.map(c=>`<th class="${c.left?'':'r'}">${tr(c.h)}</th>`).join('')}
-      ${cfg.noBar?'':'<th data-nosort class="bar-cell" style="width:26%"></th>'}
+      ${cfg.noBar?'':'<th data-nosort class="bar-cell bar-only" style="width:26%"></th>'}
     </tr></thead><tbody>${rows.map((p,i)=>`<tr class="p${i+1}">
       <td><span class="rank-badge">${i+1}</span></td>
       <td><div class="nm-cell">${av(p.name,24)}<span class="player-name">${esc(p.name)}</span></div></td>
       ${cols.map((c,ci)=>`<td class="${c.left?'lst ':'r mono '}${ci===0?'':'dim'}">${ci===0?'<b>'+c.f(p)+'</b>':c.f(p)}</td>`).join('')}
-      ${cfg.noBar?'':`<td class="bar-cell"><div class="bar ${cfg.color}" style="width:${Math.round((p[cfg.key]||0)/max*100)}%"></div></td>`}
+      ${cfg.noBar?'':`<td class="bar-cell bar-only"><div class="bar ${cfg.color}" style="width:${Math.round((p[cfg.key]||0)/max*100)}%"></div></td>`}
     </tr>`).join('')}</tbody></table></div>`
     : `<div class="emptystate">${tr(cfg.zeroMsg)||L('Keine Daten.','No data.')}</div>`;
   return `<div class="card rcard${cfg.full?' rfull':''}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
@@ -965,9 +1002,15 @@ function renderRankGrid(scope){
 function renderBonusCat(){
   const cats=[['Meister',L('Meister','Champion')],['Herbstmeister',L('Herbstmeister','Autumn champ')],['Torschützenkönig',L('Torschützenkönig','Top scorer')],['Turniersieger',L('Turniersieger','Tourn. winner')],['Sonstige',L('Sonstige','Other')]];
   const rows=PLAYERS.map(p=>({name:p.name,c:ADV.bonusCat[p.name]||{},tot:BONUS[p.name]||0})).sort((a,b)=>b.tot-a.tot);
-  document.getElementById('bonusCatTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${cats.map(c=>`<th class="r">${c[1]}</th>`).join('')}<th class="r">${L('Gesamt','Total')}</th></tr></thead>
+  const tbl=document.getElementById('bonusCatTable');
+  tbl.innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${cats.map((c,i)=>`<th class="r bcc bcc-${i}">${c[1]}</th>`).join('')}<th class="r">${L('Gesamt','Total')}</th></tr></thead>
     <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><div class="nm-cell"><span class="rank-badge">${i+1}</span>${av(r.name,26)}<span class="player-name">${esc(r.name)}</span></div></td>
-      ${cats.map(c=>`<td class="r mono">${r.c[c[0]]||'–'}</td>`).join('')}<td class="r mono"><b>${r.tot}</b></td></tr>`).join('')}</tbody>`;
+      ${cats.map((c,ci)=>`<td class="r mono bcc bcc-${ci}">${r.c[c[0]]||'–'}</td>`).join('')}<td class="r mono"><b>${r.tot}</b></td></tr>`).join('')}</tbody>`;
+  // Mobil: Dropdown wählt, welche Kategorie-Spalte neben Tipper+Gesamt sichtbar ist
+  const sel=document.getElementById('bccSel');
+  if(sel){ const cur=tbl.dataset.bcc||'0';
+    sel.innerHTML=cats.map((c,i)=>`<option value="${i}"${String(i)===cur?' selected':''}>${c[1]}</option>`).join('');
+    sel.onchange=()=>{ tbl.dataset.bcc=sel.value; }; }
 }
 function renderBestTeam(){
   function draw(type){
@@ -979,7 +1022,7 @@ function renderBestTeam(){
     const lbl=isBL?L('Team','Team'):L('Land','Country');
     const el=document.getElementById('bestTeamTable');
     el.style.tableLayout='fixed';
-    el.innerHTML=`<thead><tr><th style="width:40px" data-nosort></th><th style="width:26%" data-nosort>${L('Tipper','Player')}</th><th data-nosort>🥇 ${L('Stärkstes '+lbl,'Top '+lbl)}</th><th data-nosort>🥈 ${L('Nr. 2','No. 2')}</th><th data-nosort>🥉 ${L('Nr. 3','No. 3')}</th></tr></thead>
+    el.innerHTML=`<thead><tr><th style="width:40px" data-nosort></th><th style="width:26%" data-nosort>${L('Tipper','Player')}</th><th data-nosort>🥇 <span class="mhide">${L('Stärkstes '+lbl,'Top '+lbl)}</span></th><th data-nosort>🥈 <span class="mhide">${L('Nr. 2','No. 2')}</span></th><th data-nosort>🥉 <span class="mhide">${L('Nr. 3','No. 3')}</span></th></tr></thead>
       <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,26)}</td>
         <td>${cell(r.t[0])}</td><td>${cell(r.t[1])}</td><td>${cell(r.t[2])}</td></tr>`).join('')}</tbody>`;
   }
@@ -993,7 +1036,7 @@ function nmCell(name,size){return `<div class="nm-cell">${av(name,size||24)}<spa
 function renderHistory(){
   const rows=DISPLAY_ORDER.map(id=>SMAP[id]).filter(s=>!s.running&&s.standings.some(p=>p.active));
   document.getElementById('historyTable').style.tableLayout='fixed';
-  document.getElementById('historyTable').innerHTML=`<thead><tr><th style="width:14%">${L('Wettbewerb','Competition')}</th><th style="width:21.5%">🥇 Gold</th><th style="width:21.5%">🥈 ${L('Silber','Silver')}</th><th style="width:21.5%">🥉 ${L('Bronze','Bronze')}</th><th style="width:21.5%">🥫 ${L('Blech (4.)','Tin (4th)')}</th></tr></thead><tbody>${
+  document.getElementById('historyTable').innerHTML=`<thead><tr><th style="width:14%">${L('Wettbewerb','Competition')}</th><th style="width:21.5%">🥇 <span class="mhide">Gold</span></th><th style="width:21.5%">🥈 <span class="mhide">${L('Silber','Silver')}</span></th><th style="width:21.5%">🥉 <span class="mhide">${L('Bronze','Bronze')}</span></th><th style="width:21.5%">🥫 <span class="mhide">${L('Blech (4.)','Tin (4th)')}</span></th></tr></thead><tbody>${
    rows.map(s=>{const a=s.standings.filter(p=>p.active);
      return `<tr><td class="player-name" style="white-space:nowrap">${esc(s.short)}</td>${[0,1,2,3].map(i=>`<td>${a[i]?nmCell(a[i].name,24):'–'}</td>`).join('')}</tr>`;}).join('')}</tbody>`;
 }
@@ -1001,9 +1044,18 @@ function renderLanterns(){
   const dot=c=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:5px;vertical-align:baseline"></span>`;
   const rows=DISPLAY_ORDER.map(id=>SMAP[id]).filter(s=>!s.running&&s.standings.some(p=>p.active));
   document.getElementById('lanternTable').style.tableLayout='fixed';
-  document.getElementById('lanternTable').innerHTML=`<thead><tr><th style="width:14%">${L('Wettbewerb','Competition')}</th><th style="width:28.6%">${dot('#7a0010')}${L('Dunkelrot (Letzter)','Dark red (last)')}</th><th style="width:28.6%">${dot('#e2001a')}${L('Rot (Vorletzter)','Red (2nd-last)')}</th><th style="width:28.6%">${dot('#ff8a95')}${L('Hellrot (Drittletzter)','Light red (3rd-last)')}</th></tr></thead><tbody>${
+  document.getElementById('lanternTable').innerHTML=`<thead><tr><th style="width:14%">${L('Wettbewerb','Competition')}</th><th style="width:28.6%">${dot('#7a0010')}<span class="mhide">${L('Dunkelrot (Letzter)','Dark red (last)')}</span></th><th style="width:28.6%">${dot('#e2001a')}<span class="mhide">${L('Rot (Vorletzter)','Red (2nd-last)')}</span></th><th style="width:28.6%">${dot('#ff8a95')}<span class="mhide">${L('Hellrot (Drittletzter)','Light red (3rd-last)')}</span></th></tr></thead><tbody>${
    rows.map(s=>{const a=s.standings.filter(p=>p.active);const n=a.length;
      return `<tr><td class="player-name" style="white-space:nowrap">${esc(s.short)}</td>${[1,2,3].map(k=>`<td>${a[n-k]?nmCell(a[n-k].name,24):'–'}</td>`).join('')}</tr>`;}).join('')}</tbody>`;
+}
+/* Mobile: erste Spalte(n) fixieren — msticky = Name/1. Spalte, msticky2 = Pos + Name */
+function applyMobileSticky(){
+  document.querySelectorAll('.tbl-wrap>table,.rscroll>table').forEach(t=>{
+    if(t.classList.contains('heat'))return; // Heatmaps haben eigene pname-Fixierung
+    const firstTd=t.querySelector('tbody tr td'); if(!firstTd)return;
+    const badgeFirst=!!firstTd.querySelector('.rank-badge')&&!firstTd.querySelector('.player-name');
+    t.classList.add('msticky'); t.classList.toggle('msticky2',badgeFirst);
+  });
 }
 function sicHTML(state){ // 0 = inaktiv (beide Pfeile), 1 = aufsteigend, -1 = absteigend
   return `<span class="sic${state?' on':''}">${state===1?'<span>▲</span>':state===-1?'<span>▼</span>':'<span>▲</span><span>▼</span>'}</span>`;
@@ -1101,8 +1153,8 @@ function renderTeamMatrix(){
 function rankTableInto(id,obj,suffix,fmt,includeZero){
   const rows=Object.entries(obj).filter(e=>includeZero||e[1]>0).sort((a,b)=>b[1]-a[1]);
   const max=Math.max(...rows.map(r=>r[1]),1);
-  document.getElementById(id).innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${suffix}</th><th class="bar-cell"></th></tr></thead><tbody>${
-   rows.map(([n,v],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(n,24)}</td><td class="r mono"><b>${fmt?fmt(v):v}</b></td><td class="bar-cell"><div class="bar" style="width:${Math.round(v/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
+  document.getElementById(id).innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${suffix}</th><th class="bar-cell bar-only"></th></tr></thead><tbody>${
+   rows.map(([n,v],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(n,24)}</td><td class="r mono"><b>${fmt?fmt(v):v}</b></td><td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(v/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
 }
 function renderRecords(){
   let best={t:0},worstBL={t:1e9};
@@ -1153,7 +1205,7 @@ function renderTwins(){
 }
 function renderGroupStats(){
   const gf=STATS18.groupFav,max=gf[0][1];
-  document.getElementById('groupFavTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Ergebnis','Result')}</th><th class="r">${L('Anzahl','Count')}</th><th class="bar-cell"></th></tr></thead><tbody>${gf.map(([r,c],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td class="r mono">${c.toLocaleString(LANG==='en'?'en-GB':'de-DE')}</td><td class="bar-cell"><div class="bar" style="width:${Math.round(c/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
+  document.getElementById('groupFavTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Ergebnis','Result')}</th><th class="r">${L('Anzahl','Count')}</th><th class="bar-cell bar-only"></th></tr></thead><tbody>${gf.map(([r,c],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td class="r mono">${c.toLocaleString(LANG==='en'?'en-GB':'de-DE')}</td><td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(c/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const gu=STATS18.groupUnpop||[];
   document.getElementById('groupUnpopTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Ergebnis','Result')}</th><th>${L('Tipper','Player')}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${gu.map(([r,c,who=[]],i)=>`<tr><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td>${who.length===1?nmCell(who[0],22):(who.length?who.map(esc).join(', '):'–')}</td><td class="r mono">${c}×</td></tr>`).join('')}</tbody>`;
   const w=STATS18.worstDays.slice(0,4),b=STATS18.bestDays.slice(0,4);
@@ -1193,12 +1245,12 @@ function renderSpread(){
   const rows=DISPLAY_ORDER.filter(id=>!SMAP[id].running).map(id=>{const s=SMAP[id];const act=s.standings.filter(p=>p.active);const f=act[0],l=act[act.length-1];
     return {short:s.short,w:f.name,wp:f.total,l:l.name,lp:l.total,spread:f.total-l.total};}).sort((a,b)=>a.spread-b.spread);
   const max=Math.max(...rows.map(r=>r.spread));
-  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th>🥇 ${L('Sieger','Winner')}</th><th class="r">${L('Pkt','Pts')}</th><th>🔴 ${L('Letzter','Last')}</th><th class="r">${L('Pkt','Pts')}</th><th class="r">${L('Abstand','Gap')}</th><th class="bar-cell" data-nosort style="width:26%"></th></tr></thead><tbody>${
+  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th>🥇 ${L('Sieger','Winner')}</th><th class="r">${L('Pkt','Pts')}</th><th>🔴 ${L('Letzter','Last')}</th><th class="r">${L('Pkt','Pts')}</th><th class="r">${L('Abstand','Gap')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
    rows.map(r=>`<tr><td class="player-name">${esc(r.short)}</td>
      <td>${nmCell(r.w,24)}</td><td class="r mono">${r.wp}</td>
      <td>${nmCell(r.l,24)}</td><td class="r mono">${r.lp}</td>
      <td class="r mono"><b>${r.spread}</b></td>
-     <td class="bar-cell"><div class="bar" style="width:${Math.round(r.spread/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
+     <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.spread/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
 }
 function renderH2H(){
   const names=PLAYERS.map(p=>p.name).sort();
@@ -1291,8 +1343,8 @@ function renderScope(scope){
         <div class="mteams"><span class="mteam"><svg class="club-ic" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true"><clipPath id="sbFCB"><circle cx="16" cy="16" r="9"/></clipPath><circle cx="16" cy="16" r="15.5" fill="#DC052D"/><circle cx="16" cy="16" r="9" fill="#fff"/><g clip-path="url(#sbFCB)"><g transform="rotate(45 16 16)"><rect x="4" y="2" width="4" height="28" fill="#0066B2"/><rect x="12" y="2" width="4" height="28" fill="#0066B2"/><rect x="20" y="2" width="4" height="28" fill="#0066B2"/></g></g></svg> FC Bayern München</span><span class="msep">–</span><span class="mteam">VfB Stuttgart <svg class="club-ic" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true"><path d="M16 2l12 4v10c0 8-6 12-12 14C10 28 4 24 4 16V6z" fill="#fff" stroke="#D30029" stroke-width="2"/><rect x="6" y="12" width="20" height="6" fill="#D30029"/></svg></span></div>
         <div class="mjoke">${L('Tipp der Redaktion: <b>7:0</b> für die Bayern — Matthew tippt vermutlich <b>0:7</b>. 😉','Our tip: <b>7:0</b> for Bayern — Matthew will probably tip <b>0:7</b>. 😉')}</div>
       </div>
-      <div class="sb-welcome">${MEMOJI['Elias']?`<img class="av sb-newav" src="${MEMOJI['Elias']}" width="52" height="52" alt="Elias">`:''}<span>🌱 ${L('Neu in der Runde: <b>Elias</b> — herzlich willkommen! Auf dass die Verjüngungskur der Tippgemeinschaft uns allen neuen Antrieb gibt. 💪','New in the round: <b>Elias</b> — a warm welcome! May this rejuvenation of our tipping crew give us all fresh drive. 💪')}</span></div>
-      <div class="sb-roster">${s.standings.map(p=>av(p.name,34)).join('')}${MEMOJI['Elias']?`<span class="sb-new"><img class="av" src="${MEMOJI['Elias']}" width="34" height="34" alt="Elias"><span class="sb-newtag">${L('neu','new')}</span></span>`:''}</div>
+      <div class="sb-welcome">${['Elias','Marie'].filter(n=>MEMOJI[n]).map(n=>`<img class="av sb-newav" src="${MEMOJI[n]}" width="52" height="52" alt="${n}">`).join('')}<span>🌱 ${L('Neu in der Runde: <b>Elias</b> &amp; <b>Marie</b> — herzlich willkommen! Auf dass die Verjüngungskur der Tippgemeinschaft uns allen neuen Antrieb gibt. 💪','New in the round: <b>Elias</b> &amp; <b>Marie</b> — a warm welcome! May this rejuvenation of our tipping crew give us all fresh drive. 💪')}</span></div>
+      <div class="sb-roster">${s.standings.map(p=>av(p.name,34)).join('')}${['Elias','Marie'].filter(n=>MEMOJI[n]).map(n=>`<span class="sb-new"><img class="av" src="${MEMOJI[n]}" width="34" height="34" alt="${n}"><span class="sb-newtag">${L('neu','new')}</span></span>`).join('')}</div>
     </div>`;
     document.getElementById('mainEye').textContent=L('Teilnehmerfeld','The field');
     document.getElementById('mainTitle').textContent=L('Wer ist am Start?','Who\'s in?')+' · '+s.short;
@@ -1314,7 +1366,7 @@ function renderScope(scope){
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.');
   document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
-  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope);
+  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); applyMobileSticky();
   document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.toggle('hidden',!gesamt));
 }
 
@@ -1326,22 +1378,21 @@ document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{
   window.scrollTo({top:0,behavior:'smooth'});
 });
 function themeCur(){const a=document.documentElement.getAttribute('data-theme');return a||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
-function updateThemeLabel(){const ic=document.getElementById('themeIcon'),tx=document.getElementById('themeTxt'),t=themeCur();
-  ic.textContent=t==='dark'?'☀️':'🌙'; tx.textContent=t==='dark'?L('Hell','Light'):L('Dunkel','Dark');}
+function updateThemeLabel(){const ic=document.getElementById('themeIcon'),t=themeCur();
+  ic.textContent=t==='dark'?'☀️':'🌙';
+  document.getElementById('themeBtn').setAttribute('aria-label', t==='dark'?L('Helles Design','Light theme'):L('Dunkles Design','Dark theme'));}
 (function(){const btn=document.getElementById('themeBtn');
   function set(t){document.documentElement.setAttribute('data-theme',t);updateThemeLabel();}
   set(themeCur());btn.onclick=()=>set(themeCur()==='dark'?'light':'dark');})();
+document.querySelector('.logo-k').onclick=()=>location.reload(); // kicktipp-Logo lädt die Seite neu
 
-/* Sticky-Offsets dynamisch: Header ist auf Mobile mehrzeilig/höher */
+/* Sticky-Offset der Filterbar dynamisch an der Tab-Höhe ausrichten */
 (function(){
-  const hdr=document.querySelector('header.top'), tabs=document.querySelector('nav.tabs');
-  function fix(){ const h=getComputedStyle(hdr).position==='sticky'?hdr.offsetHeight:0, t=tabs.offsetHeight;
-    document.documentElement.style.setProperty('--hdrH', h+'px');
-    document.documentElement.style.setProperty('--stickB', (h+t+2)+'px'); }
-  const fixSoon=()=>requestAnimationFrame(fix); // erst nach Style-Neuberechnung messen
-  if(typeof ResizeObserver!=='undefined'){ const ro=new ResizeObserver(fixSoon); ro.observe(hdr); ro.observe(tabs); }
+  const tabs=document.querySelector('nav.tabs');
+  function fix(){ document.documentElement.style.setProperty('--stickB', (tabs.offsetHeight+2)+'px'); }
+  const fixSoon=()=>requestAnimationFrame(fix);
+  if(typeof ResizeObserver!=='undefined'){ const ro=new ResizeObserver(fixSoon); ro.observe(tabs); }
   addEventListener('resize', fixSoon);
-  try{ matchMedia('(max-width:720px)').addEventListener('change', fixSoon); }catch(e){}
   fix();
 })();
 
@@ -1390,32 +1441,23 @@ function todoBox(){
     <div class="todo-col"><div class="todo-h">🏆 ${L('Ausschüttungen ausstehend','Payouts outstanding')}</div>${list(outOpen)}</div></div>`;
 }
 function reconCard(seasonId){
+  // Eine Zeile pro Tipper (auch der Kontoinhaber) — jede Einzahlung dediziert abhakbar
   const s=SMAP[seasonId],fee=feeFor(s.type);
   const act=partsOf(s).map(p=>p.name);
-  const groups={};const missing=[];let owner=null;
-  act.forEach(h=>{const pp=PAYPAL[h]||{missing:true};
-    if(pp.owner){owner=fee;return;}
-    if(pp.missing||!pp.payer){missing.push(h);return;}
-    const g=groups[pp.payer]||(groups[pp.payer]={amt:0,covers:[]});g.amt+=fee;g.covers.push(h);});
-  const expected=Object.values(groups).reduce((a,g)=>a+g.amt,0)+missing.length*fee;
-  const rows=Object.entries(groups).sort((a,b)=>b[1].amt-a[1].amt).map(([payer,g])=>{
-    const key=`brun_recon_${seasonId}_${payer.replace(/\s+/g,'_')}`;
-    return `<label class="recon-row" data-amt="${g.amt}">
-      <input type="checkbox" class="chk" data-key="${key}" data-amt="${g.amt}" data-handles="${esc(g.covers.join(','))}">
-      <span class="payer">${esc(payer)}<span class="cov"> · ${esc(g.covers.join(' + '))}</span></span>
-      <span class="amt">${eur(g.amt)}</span></label>`;}).join('');
-  const missRows=missing.map(h=>`<div class="recon-row missing" data-amt="${fee}">
-      <span style="width:20px;text-align:center">⚠️</span>
-      <span class="payer">${esc(h)}<span class="cov"> · ${L('PayPal-Name fehlt — bitte ergänzen','PayPal name missing — please add')}</span></span>
-      <span class="amt">${eur(fee)}</span></div>`).join('');
-  const ownerRow=owner!=null?`<div class="recon-row owner done">
-      <span style="width:20px;text-align:center">✓</span>
-      <span class="payer">${esc(OWNER_HANDLE)}<span class="cov"> · ${L('Kontoinhaber – Einsatz gedeckt (eigenes Konto)','Account holder – stake covered (own account)')}</span></span>
-      <span class="amt">—</span></div>`:'';
+  const expected=act.length*fee;
+  const rows=act.map(h=>{
+    const pp=PAYPAL[h]||{};
+    const info=pp.owner?L('Kontoinhaber (eigenes Konto)','account holder (own account)')
+      :(pp.payer?L('zahlt via ','pays via ')+pp.payer:L('PayPal-Name fehlt — bitte ergänzen','PayPal name missing — please add'));
+    const key=`brun_recon_${seasonId}_h_${h.replace(/\s+/g,'_')}`;
+    return `<label class="recon-row" data-amt="${fee}">
+      <input type="checkbox" class="chk" data-key="${key}" data-amt="${fee}" data-handles="${esc(h)}">
+      <span class="payer">${esc(h)}<span class="cov"> · ${esc(info)}</span></span>
+      <span class="amt">${eur(fee)}</span></label>`;}).join('');
   return `<div class="card recon" data-season="${seasonId}">
     <div class="rhd"><h3>${esc(s.name)}</h3><span class="modebadge">${L('Einsatz','Stake')} ${eur(fee)}</span>
       <span class="exp">${L('Erwarteter Eingang','Expected incoming')}: <b>${eur(expected)}</b></span></div>
-    ${rows}${missRows}${ownerRow}
+    ${rows}
     <div class="recon-foot"><span>✓ ${L('Eingegangen','Received')}: <span class="rec-in mono">${eur(0)}</span></span>
       <span>${L('Offen','Open')}: <span class="rec-open mono">${eur(expected)}</span></span></div></div>`;}
 function wireRecon(){
@@ -1479,6 +1521,7 @@ function renderAll(){
   makeSortable(document.getElementById('accTable'),4);
   makeSortable(document.getElementById('spreadTable'),5,1);
   if(typeof renderFinance==='function' && document.getElementById('finGate') && document.getElementById('finGate').hidden && OWNER_HANDLE) try{renderFinance();}catch(e){}
+  applyMobileSticky();
 }
 /* ---------- Sprache anwenden ---------- */
 function swapStatic(){
