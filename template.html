@@ -1293,7 +1293,7 @@ function renderSpread(){
   const rows=DISPLAY_ORDER.filter(id=>!SMAP[id].running).map(id=>{const s=SMAP[id];const act=s.standings.filter(p=>p.active);const f=act[0],l=act[act.length-1];
     return {short:s.short,w:f.name,wp:f.total,l:l.name,lp:l.total,spread:f.total-l.total};}).sort((a,b)=>a.spread-b.spread);
   const max=Math.max(...rows.map(r=>r.spread));
-  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th>🥇 ${L('Sieger','Winner')}</th><th class="r">${L('Pkt','Pts')}</th><th>🔴 ${L('Letzter','Last')}</th><th class="r">${L('Pkt','Pts')}</th><th class="r">${L('Abstand','Gap')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
+  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th>🥇 <span class="mhide">${L('Sieger','Winner')}</span></th><th class="r">${L('Pkt','Pts')}</th><th>🔴 <span class="mhide">${L('Letzter','Last')}</span></th><th class="r">${L('Pkt','Pts')}</th><th class="r">${L('Abstand','Gap')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
    rows.map(r=>`<tr><td class="player-name">${esc(r.short)}</td>
      <td>${nmCell(r.w,24)}</td><td class="r mono">${r.wp}</td>
      <td>${nmCell(r.l,24)}</td><td class="r mono">${r.lp}</td>
