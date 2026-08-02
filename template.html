@@ -356,6 +356,14 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   table.msticky2 thead th:nth-child(2),table.msticky2 tbody td:nth-child(2){position:sticky;left:44px;z-index:2;background:var(--surface);max-width:150px}
   table.msticky2 thead th:nth-child(2){background:var(--surface-2);z-index:3}
   table.msticky2 thead th:first-child,table.msticky2 tbody td:first-child{width:44px!important;min-width:44px!important;max-width:44px!important;padding-left:6px;padding-right:6px} /* !important: schlägt Inline-Breiten (30/34px) — sonst Lücke bis left:44px der Namensspalte */
+  .rank-tbl thead th{font-size:9.5px}
+  .sic{margin-left:3px}
+  .rank-tbl thead th[style*="--cw"]{width:var(--cw)} /* Spaltenbreiten-Hints der Karten (nur mobil) */
+  /* Kessel-Tabellen: feste Aufteilung, passt ohne Scrollen */
+  #konstanzTable,#accTable,#outcomeTable,#vergessTable,#tendenzTable{width:100%;table-layout:fixed}
+  #outcomeTable .mini{display:none} /* Brüche (487/697) nur auf Desktop */
+  table.msticky2 tbody td:nth-child(2){overflow:hidden} /* Namen laufen nie in Nachbarspalten */
+  #persTable tbody td.mono,#outcomeTable tbody td.mono{font-size:11px;white-space:nowrap} /* Prozente kleiner statt umbrechen */
   .cellwrap{max-width:calc(100vw - 245px);white-space:normal} /* Saison-/Gegner-Listen: umbrechen statt Spalte dehnen (Rest = Pos+Name+Wert+Padding) */
   /* Namen bei Platzmangel auspunkten + kompaktere Zellen (kein Mini-Scroll) */
   .rank-tbl thead th,.rank-tbl tbody td{padding-left:6px;padding-right:6px}
@@ -918,28 +926,28 @@ const RANK_CARDS=[
   {key:'placed',eye:{de:'✍️ Fleiß',en:'✍️ Diligence'},title:{de:'Fleißigste Tipper',en:'Most diligent tippers'},note:{de:'Abgegebene Tipps insgesamt.',en:'Total tips submitted.'},color:'blue',noBar:1,
     cols:[{h:{de:'Tipps',en:'Tips'},f:p=>p.placed||0},{h:{de:'Möglich',en:'Possible'},f:p=>(p.placed||0)+(p.missing||0)},{h:{de:'Quote',en:'Rate'},f:p=>dec(100*(p.placed||0)/((p.placed||0)+(p.missing||0)||1))+' %'}]},
   {key:'antiBayern',eye:{de:'⚔️ Anti-Bayern',en:'⚔️ Anti-Bayern'},title:{de:'Gegen die Bayern getippt',en:'Tipped against Bayern'},note:{de:'Auf eine Bayern-Niederlage getippt (nur Bundesliga).',en:'Tipped a Bayern defeat (Bundesliga only).'},color:'blue',blOnly:1,noBar:1,zeroMsg:{de:'Niemand hat gegen die Bayern getippt. 🐻',en:'Nobody tipped against Bayern. 🐻'},
-    cols:[{h:{de:'Anti-Bayern',en:'Anti-Bayern'},f:p=>p.antiBayern||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.abOppByPlayer&&ADV.abOppByPlayer[p.name]);if(!o||!o.length)return '–';
+    cols:[{w:'54px',h:{de:'Anti-​FCB',en:'Anti-​FCB'},f:p=>p.antiBayern||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.abOppByPlayer&&ADV.abOppByPlayer[p.name]);if(!o||!o.length)return '–';
       const g={};o.forEach(([t,c])=>{(g[c]||(g[c]=[])).push(t);});
       return Object.keys(g).map(Number).sort((a,b)=>b-a).map(c=>g[c].map(x=>tshort(esc(x))).join(', ')+(g[c].length>1?L(` (jeweils ${c}×)`,` (${c}× each)`):` (${c}×)`)).join(', ');}}]},
   {key:'proBayern',eye:{de:'🐻 Pro-Bayern / MIA SAN MIA',en:'🐻 Pro-Bayern / MIA SAN MIA'},title:{de:'Meiste Punkte durch Bayern-Siege',en:'Most points from Bayern wins'},note:{de:'Punkte aus Tipps auf einen Bayern-Sieg (nur Bundesliga).',en:'Points from tips on a Bayern win (Bundesliga only).'},color:'',gesamtOnly:1,noBar:1,full:1,
-    cols:[{h:{de:'<span class="mfull">Punkte</span><span class="mshort">Pkt.</span>',en:'<span class="mfull">Points</span><span class="mshort">Pts</span>'},f:p=>p.proBayern||0},{h:{de:'Tipps auf Sieg',en:'Win tips'},f:p=>p.proBayTips||0},{h:{de:'<span class="mfull">Bayernspiele</span><span class="mshort">FCB</span>',en:'<span class="mfull">Bayern games</span><span class="mshort">FCB</span>'},f:p=>p.bayernTipped||0},{h:{de:'Ø alle Spiele',en:'Ø all games'},f:p=>dec((p.bayern||0)/(p.bayernTipped||1))}]},
+    cols:[{w:'42px',h:{de:'<span class="mfull">Punkte</span><span class="mshort">Pkt.</span>',en:'<span class="mfull">Points</span><span class="mshort">Pts</span>'},f:p=>p.proBayern||0},{w:'50px',h:{de:'Tipps auf Sieg',en:'Win tips'},f:p=>p.proBayTips||0},{w:'60px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{w:'58px',h:{de:'Ø alle Spiele',en:'Ø all games'},f:p=>dec((p.bayern||0)/(p.bayernTipped||1))}]},
   {key:'klassiker',eye:{de:'⚔️ Der Klassiker',en:'⚔️ Der Klassiker'},title:{de:'Der Klassiker-König',en:'The Klassiker King'},note:{de:'Meiste Punkte in den direkten Duellen Bayern gegen Dortmund.',en:'Most points in the direct Bayern-vs-Dortmund duels.'},color:'',gesamtOnly:1,noBar:1,
     cols:[{h:{de:'Punkte',en:'Points'},f:p=>p.klassiker||0},{h:{de:'Duelle',en:'Duels'},f:p=>p.klassikerN||0},{h:{de:'Ø/Spiel',en:'Ø/game'},f:p=>dec((p.klassiker||0)/(p.klassikerN||1))}]},
   {key:'bayFluesterer',eye:{de:'🎯 Bayern-Kenner',en:'🎯 Bayern reader'},title:{de:'Der Bayern-Flüsterer',en:'The Bayern Whisperer'},note:{de:'Beste Punkteausbeute pro Bayern-Spiel — wer die Bayern am zuverlässigsten liest.',en:'Best points yield per Bayern game — who reads Bayern most reliably.'},color:'good',gesamtOnly:1,noBar:1,
-    cols:[{h:{de:'<span class="mfull">Ø Pkt/Spiel</span><span class="mshort">Ø Pkt</span>',en:'<span class="mfull">Ø pts/game</span><span class="mshort">Ø pts</span>'},f:p=>dec(p.bayFluesterer)},{h:{de:'<span class="mfull">FCB-Spiele</span><span class="mshort">Spiele</span>',en:'<span class="mfull">FCB games</span><span class="mshort">Games</span>'},f:p=>p.bayernTipped||0},{h:{de:'Punkte',en:'Points'},f:p=>p.bayern||0}]},
+    cols:[{w:'60px',h:{de:'Ø Pkt/​Spiel',en:'Ø pts/​game'},f:p=>dec(p.bayFluesterer)},{w:'60px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{h:{de:'Punkte',en:'Points'},f:p=>p.bayern||0}]},
   {key:'schuetzenfest',eye:{de:'🎆 Kantersieg-Fantasie',en:'🎆 Rout fantasy'},title:{de:'Der Schützenfest-Optimist',en:'The Goal-Fest Optimist'},note:{de:'Wer im Schnitt die meisten Bayern-Tore tippt — je höher, desto größer der erwartete Kantersieg.',en:'Who tips the most Bayern goals on average — the higher, the bigger the expected rout.'},color:'blue',gesamtOnly:1,noBar:1,colLabel:{de:'Ø getippte Bayern-Tore',en:'Ø tipped Bayern goals'},fmt:v=>dec(v)},
   {key:'bayExact',eye:{de:'💎 Bayern-Perfektion',en:'💎 Bayern perfection'},title:{de:'Perfekte Bayern-Tipps',en:'Perfect Bayern tips'},note:{de:'Exakt getippte Ergebnisse (4 Punkte) in Bayern-Spielen.',en:'Exactly tipped results (4 points) in Bayern games.'},color:'',gesamtOnly:1,noBar:1,colLabel:{de:'exakte Bayern-Tipps',en:'exact Bayern tips'}},
   {key:'bayTitle',eye:{de:'📜 Titel-Glaube',en:'📜 Title faith'},title:{de:'Wer glaubt an die Bayern?',en:'Who believes in Bayern?'},note:{de:'Wie oft Bayern in den Bonusfragen als Deutscher Meister bzw. Herbstmeister getippt wurde.',en:'How often Bayern was tipped as German champion resp. autumn champion in the bonus questions.'},color:'',gesamtOnly:1,noBar:1,showZero:1,
     cols:[{h:{de:'<span class="mfull">Meister-Tipps</span><span class="mshort">Meister</span>',en:'<span class="mfull">Champion tips</span><span class="mshort">Champ</span>'},f:p=>p.bayTitleM||0},{h:{de:'<span class="mfull">Herbstmeister</span><span class="mshort">Herbstm.</span>',en:'<span class="mfull">Autumn champ</span><span class="mshort">Autumn</span>'},f:p=>p.bayTitleH||0}]},
   {key:'antiBVB',eye:{de:'🖤 Gegen den BVB',en:'🖤 Against BVB'},title:{de:'Gegen den BVB getippt',en:'Tipped against BVB'},note:{de:'Auf eine Dortmund-Niederlage getippt (nur Bundesliga).',en:'Tipped a Dortmund defeat (Bundesliga only).'},color:'dark',gesamtOnly:1,noBar:1,full:1,zeroMsg:{de:'Niemand hat gegen den BVB getippt.',en:'Nobody tipped against BVB.'},
-    cols:[{h:{de:'Anti-BVB',en:'Anti-BVB'},f:p=>p.antiBVB||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.bvbOppByPlayer&&ADV.bvbOppByPlayer[p.name]);if(!o||!o.length)return '–';
+    cols:[{w:'54px',h:{de:'Anti-​BVB',en:'Anti-​BVB'},f:p=>p.antiBVB||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.bvbOppByPlayer&&ADV.bvbOppByPlayer[p.name]);if(!o||!o.length)return '–';
       const g={};o.forEach(([t,c])=>{(g[c]||(g[c]=[])).push(t);});
       return Object.keys(g).map(Number).sort((a,b)=>b-a).map(c=>g[c].map(x=>tshort(esc(x))).join(', ')+(g[c].length>1?L(` (jeweils ${c}×)`,` (${c}× each)`):` (${c}×)`)).join(', ');}}]},
   {key:'schadenPts',eye:{de:'😏 Schadenfreude',en:'😏 Schadenfreude'},title:{de:'Schadenfreude-Punkte',en:'Schadenfreude points'},note:{de:'Punkte, die aus korrekt getippten Dortmund-Niederlagen geholt wurden.',en:'Points earned from correctly tipped Dortmund defeats.'},color:'good',gesamtOnly:1,noBar:1,colLabel:{de:'Punkte aus BVB-Pleiten',en:'Points from BVB defeats'}},
   {key:'proBVB',eye:{de:'🎭 Der Verräter',en:'🎭 The traitor'},title:{de:'Der heimliche BVB-Sympathisant',en:'The secret BVB sympathiser'},note:{de:'Wer in der Bayern-Runde am häufigsten auf einen Dortmund-Sieg getippt hat. 😏',en:'Who most often tipped a Dortmund win in the Bayern round. 😏'},color:'blue',gesamtOnly:1,noBar:1,colLabel:{de:'Tipps auf BVB-Sieg',en:'Tips on BVB win'}},
   {key:'doppelmoral',eye:{de:'⚖️ Doppelmoral',en:'⚖️ Double standard'},title:{de:'Der Doppelmoral-Index',en:'The Double-Standard Index'},note:{de:'Spieltage, an denen gleichzeitig ein Bayern-Sieg UND eine Dortmund-Pleite getippt wurde — der Prototyp-Bayern-Fan.',en:'Matchdays where a Bayern win AND a Dortmund defeat were tipped at once — the prototype Bayern fan.'},color:'dark',gesamtOnly:1,noBar:1,colLabel:{de:'Bayern-Sieg + BVB-Pleite',en:'Bayern win + BVB loss'}},
   {key:'arroganz',eye:{de:'🔴 Uli-Hoeneß-Award',en:'🔴 Uli Hoeneß Award'},title:{de:'Der Arroganz-Index',en:'The Arrogance Index'},note:{de:'Durchschnittlich getippter Bayern-Vorsprung (Tordifferenz) — plus der dreisteste Kantersieg-Tipp aller Zeiten.',en:'Average tipped Bayern margin (goal difference) — plus the boldest rout tip of all time.'},color:'',gesamtOnly:1,noBar:1,
-    cols:[{h:{de:'Ø Vorsprung',en:'Ø margin'},f:p=>dec(p.arroganz)},{h:{de:'Dreistester Tipp',en:'Boldest tip'},left:1,f:p=>p.arroMax?`${esc(p.arroMax.tip)} <span class="mini">(+${p.arroMax.margin}${p.arroMax.match?' · '+tshort(esc(p.arroMax.match)):''})</span>`:'–'}]},
+    cols:[{w:'66px',h:{de:'Ø Vor​sprung',en:'Ø margin'},f:p=>dec(p.arroganz)},{h:{de:'Dreistester Tipp',en:'Boldest tip'},left:1,f:p=>p.arroMax?`${esc(p.arroMax.tip)} <span class="mini">(+${p.arroMax.margin}${p.arroMax.match?' · '+tshort(esc(p.arroMax.match)):''})</span>`:'–'}]},
   {key:'goretzka',eye:{de:'🥅 Goretzka-Gedächtnis',en:'🥅 Goretzka memorial'},title:{de:'Der Goretzka-Gedächtnis-Sieg',en:'The Goretzka Memorial Win'},note:{de:'Wer stur auf das dreckige 2:1 für Bayern in der Auswärts-Bundesliga tippt.',en:'Who stubbornly tips the scrappy 2:1 Bayern away win in the Bundesliga.'},color:'',gesamtOnly:1,noBar:1,showZero:1,colLabel:{de:'2:1-Auswärtstipps für Bayern',en:'2:1 away tips for Bayern'}},
   {key:'leaderMd',eye:{de:'👑 Tabellenführung',en:'👑 Table lead'},title:{de:'Meiste Spieltage an der Spitze',en:'Most matchdays on top'},note:{de:'Wie oft jemand nach einem Spieltag die Gesamtwertung anführte (geteilt bei Gleichstand), plus die längste Führung am Stück.',en:'How often someone led the overall standings after a matchday (shared when tied), plus the longest lead in a row.'},color:'',gesamtOnly:1,noBar:1,showZero:1,
     cols:[{h:{de:'Spieltage vorn',en:'MDs on top'},f:p=>p.leaderMd||0},{h:{de:'Längste Serie',en:'Longest streak'},f:p=>p.leadStreak||0}]},
@@ -979,7 +987,7 @@ function rankCardHTML(scope,cfg){
   const cols = cfg.cols || [{h:cfg.colLabel||{de:'Wert',en:'Value'}, f:p=>cfg.fmt?cfg.fmt(p[cfg.key],p):(p[cfg.key]||0)}];
   const body = rows.length? `<div class="rscroll"><table class="rank-tbl${cfg.wrap?' rwrap':''}"><thead><tr>
       <th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th>
-      ${cols.map(c=>`<th class="${c.left?'':'r'}">${tr(c.h)}</th>`).join('')}
+      ${cols.map(c=>`<th class="${c.left?'':'r'}"${c.w?` style="--cw:${c.w}"`:''}>${tr(c.h)}</th>`).join('')}
       ${cfg.noBar?'':'<th data-nosort class="bar-cell bar-only" style="width:26%"></th>'}
     </tr></thead><tbody>${rows.map((p,i)=>`<tr class="p${i+1}">
       <td><span class="rank-badge">${i+1}</span></td>
@@ -1050,7 +1058,7 @@ function renderBestTeam(){
   draw('BL');
 }
 const NSHORT={'Manurinho':'Manu','Matthew':'Matt','Lutz_Brunner7b':'Lutz'}; // mobile Kurznamen
-const TSHORT={'Bayer 04 Lev.':'B04','RB Leipzig':'RBL','Dortmund':'BVB','Bayern':'FCB','Freiburg':'SCF','Stuttgart':'VfB','Frankfurt':'SGE','Augsburg':'FCA','Mönchengladbach':'BMG','1899 Hoffenheim':'TSG','Wolfsburg':'WOB','FSV Mainz 05':'M05','Union Berlin':'FCU','Werder Bremen':'SVW','Bochum':'BOC','Köln':'KOE','Heidenheim 1846':'HDH','St. Pauli':'STP','Hertha BSC':'BSC','Darmstadt 98':'SVD','Holstein Kiel':'KSV','Hamburger SV':'HSV','Greuther Fürth':'SGF','Schalke 04':'S04','Arminia Bielefeld':'DSC','England':'ENG','Deutschland':'DEU','Frankreich':'FRA','Spanien':'SPA','Argentinien':'ARG'}; // Team-/Länder-Kürzel mobil — hier einfach erweitern
+const TSHORT={'Bayer 04 Lev.':'B04','RB Leipzig':'RBL','Dortmund':'BVB','Bayern':'FCB','Freiburg':'SCF','Stuttgart':'VfB','Frankfurt':'SGE','Augsburg':'FCA','Mönchengladbach':'BMG','1899 Hoffenheim':'TSG','Wolfsburg':'WOB','FSV Mainz 05':'M05','Union Berlin':'FCU','Werder Bremen':'SVW','Bochum':'BOC','Köln':'KOE','Heidenheim 1846':'HDH','St. Pauli':'STP','Hertha BSC':'BSC','Darmstadt 98':'SVD','Holstein Kiel':'KSV','Hamburger SV':'HSV','Greuther Fürth':'SGF','Schalke 04':'S04','Arminia Bielefeld':'DSC','England':'ENG','Deutschland':'DEU','Frankreich':'FRA','Spanien':'SPA','Argentinien':'ARG','Schweiz':'SUI','Italien':'ITA','Südafrika':'RSA','Kanada':'CAN'}; // Team-/Länder-Kürzel mobil — hier einfach erweitern
 const TSHORT_RE=new RegExp(Object.keys(TSHORT).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
 function tshort(html){return String(html).replace(TSHORT_RE,m=>`<span class="mfull">${m}</span><span class="mshort">${TSHORT[m]}</span>`);}
 function dispName(n){const k=NSHORT[n];return k?`<span class="mfull">${esc(n)}</span><span class="mshort">${esc(k)}</span>`:esc(n);}
@@ -1089,7 +1097,7 @@ function setSic(th,state){
   if(!wrap){
     wrap=document.createElement('span'); wrap.className='sicwrap';
     const tn=[...th.childNodes].reverse().find(n=>n.nodeType===3&&n.textContent.trim());
-    if(tn){ const m=tn.textContent.match(/^([\s\S]*?)(\S+)(\s*)$/); if(m){ tn.textContent=m[1]; wrap.textContent=m[2]; } th.appendChild(wrap); }
+    if(tn){ const m=tn.textContent.match(/^([\s\S]*?)([^\s\u200B]+)(\s*)$/); if(m){ tn.textContent=m[1]; wrap.textContent=m[2]; } th.appendChild(wrap); }
     else { const le=[...th.children].reverse().find(e=>!e.classList.contains('sicwrap')); th.appendChild(wrap); if(le) wrap.appendChild(le); }
   }
   wrap.insertAdjacentHTML('beforeend', sicHTML(state));
@@ -1124,20 +1132,20 @@ function renderPersonality(){
   const rows=[...PLAYERS].sort((a,b)=>STATS18.pers[b.name].avgGoals-STATS18.pers[a.name].avgGoals);
   const el=document.getElementById('persTable'); el.style.tableLayout='fixed';
   const lbl2=(full,short)=>`<span class="mfull">${full}</span><span class="mshort">${short}</span>`;
-  el.innerHTML=`<thead><tr><th style="width:28%">${L('Tipper','Player')}</th><th class="r" style="width:18%">${lbl2(L('Ø Tore/Spiel','Ø goals/game'),L('Ø Tore','Ø goals'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Heimsieg-Tipps','Home-win tips'),'🏠 '+L('Heim','Home'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Remis-Tipps','Draw tips'),'🤝 '+L('Remis','Draw'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Auswärtssieg-Tipps','Away-win tips'),'✈️ '+L('Ausw.','Away'))}</th></tr></thead><tbody>${
+  el.innerHTML=`<thead><tr><th style="width:28%">${L('Tipper','Player')}</th><th class="r" style="width:18%">${lbl2(L('Ø Tore/Spiel','Ø goals/game'),L('Ø Tore','Ø goals'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Heimsieg-Tipps','Home-win tips'),L('Heim','Home'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Remis-Tipps','Draw tips'),L('Remis','Draw'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Auswärtssieg-Tipps','Away-win tips'),L('Ausw.','Away'))}</th></tr></thead><tbody>${
    rows.map(p=>{const s=STATS18.pers[p.name];return `<tr><td>${nmCell(p.name,26)}</td>
      <td class="r mono"><b>${dec(s.avgGoals)}</b></td><td class="r mono">${dec(s.homeWinPct)} %</td><td class="r mono">${dec(s.drawPct)} %</td><td class="r mono">${dec(s.awayWinPct)} %</td></tr>`;}).join('')}</tbody>`;
 }
 function renderAccuracy(){
   const rows=[...PLAYERS].sort((a,b)=>STATS18.pers[b.name].ptsPerTip-STATS18.pers[a.name].ptsPerTip);
-  document.getElementById('accTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Trefferquote','Hit rate')}</th><th class="r">${L('Exakt-Quote','Exact rate')}</th><th class="r">${L('Punkte/Tipp','Points/tip')}</th></tr></thead><tbody>${
+  document.getElementById('accTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Treffer-​Quote','Hit rate')}</th><th class="r">${L('Exakt-​Quote','Exact rate')}</th><th class="r">${L('Punkte/​Tipp','Points/​tip')}</th></tr></thead><tbody>${
    rows.map((p,i)=>{const s=STATS18.pers[p.name];return `<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(p.name,24)}</td>
      <td class="r mono">${dec(s.hitRate)} %</td><td class="r mono">${dec(s.exactPct)} %</td><td class="r mono"><b>${dec(s.ptsPerTip)}</b></td></tr>`;}).join('')}</tbody>`;
 }
 function renderKonstanz(){
   const K=STATS18.konstanz||{};
   const rows=PLAYERS.map(p=>p.name).filter(n=>K[n]).map(n=>({name:n,...K[n]})).sort((a,b)=>a.sd-b.sd);
-  document.getElementById('konstanzTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Streuung σ','Std dev σ')}</th><th class="r">${L('Ø Punkte/ST','Ø points/MD')}</th><th class="r">${L('Spieltage','Matchdays')}</th></tr></thead><tbody>${
+  document.getElementById('konstanzTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Streuung σ','Std dev σ')}</th><th class="r">${L('Ø Punkte/​ST','Ø points/​MD')}</th><th class="r"><span class="mfull">${L('Spieltage','Matchdays')}</span><span class="mshort">${L('Spielt.','MDs')}</span></th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}${i===0?' <span class="mini">👑</span>':(i===rows.length-1?' <span class="mini">🎢</span>':'')}</td>
      <td class="r mono"><b>${dec(r.sd)}</b></td><td class="r mono dim">${dec(r.avg)}</td><td class="r mono dim">${r.n}</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('konstanzTable'),2,1);
@@ -1147,7 +1155,7 @@ function renderOutcome(){
   const cell=o=>o&&o.pct!=null?`<b>${dec(o.pct)} %</b> <span class="mini">${o.ok}/${o.tot}</span>`:'–';
   const ov=o=>{const tot=o.H.tot+o.D.tot+o.A.tot,ok=o.H.ok+o.D.ok+o.A.ok;return tot?100*ok/tot:0;};
   const rows=PLAYERS.map(p=>p.name).filter(n=>O[n]).map(n=>({name:n,o:O[n],ov:ov(O[n])})).sort((a,b)=>b.ov-a.ov);
-  document.getElementById('outcomeTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">🏠 ${L('Heim&shy;siege','Home wins')}</th><th class="r">🤝 ${L('Remis','Draws')}</th><th class="r">✈️ ${L('Auswärts&shy;siege','Away wins')}</th><th class="r">${L('Gesamt','Total')}</th></tr></thead><tbody>${
+  document.getElementById('outcomeTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r"><span class="mfull">🏠 ${L('Heimsiege','Home wins')}</span><span class="mshort">${L('Heim','Home')}</span></th><th class="r"><span class="mfull">🤝 ${L('Remis','Draws')}</span><span class="mshort">${L('Remis','Draw')}</span></th><th class="r"><span class="mfull">✈️ ${L('Auswärtssiege','Away wins')}</span><span class="mshort">${L('Ausw.','Away')}</span></th><th class="r">${L('Gesamt','Total')}</th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td>
      <td class="r mono">${cell(r.o.H)}</td><td class="r mono">${cell(r.o.D)}</td><td class="r mono">${cell(r.o.A)}</td><td class="r mono"><b>${dec(r.ov)} %</b></td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('outcomeTable'),5,-1);
@@ -1166,7 +1174,7 @@ function renderWorstTip(){
 }
 function renderTendenz(){
   const rows=[...PLAYERS].map(p=>({name:p.name,s:STATS18.pers[p.name]})).filter(r=>r.s).sort((a,b)=>a.s.ptsPerHit-b.s.ptsPerHit);
-  document.getElementById('tendenzTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Ø Punkte/Treffer','Ø points/hit')}</th><th class="r">${L('Trefferquote','Hit rate')}</th><th class="r">${L('Exakt-Quote','Exact rate')}</th></tr></thead><tbody>${
+  document.getElementById('tendenzTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Ø Punkte/​Treffer','Ø points/​hit')}</th><th class="r">${L('Treffer-​Quote','Hit rate')}</th><th class="r">${L('Exakt-​Quote','Exact rate')}</th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="r mono"><b>${dec(r.s.ptsPerHit)}</b></td><td class="r mono dim">${dec(r.s.hitRate)} %</td><td class="r mono dim">${dec(r.s.exactPct)} %</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('tendenzTable'),2,1);
 }
@@ -1228,7 +1236,7 @@ function renderRecords(){
 function fillProphet(){ if(document.getElementById('prophetTable')) rankTableInto('prophetTable',STATS18.prophetChamp,L('× richtig','× correct')); }
 function renderVergess(){
   const rows=PLAYERS.map(p=>{const m=METRICS.gesamt[p.name]||{};const miss=m.missing||0;const lost=Math.round(miss*STATS18.pers[p.name].ptsPerTip);return {name:p.name,miss,lost};}).sort((a,b)=>b.miss-a.miss);
-  document.getElementById('vergessTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Vergessen','Missed')}</th><th class="r">${L('Verschenkt','Wasted')}</th></tr></thead><tbody>${
+  document.getElementById('vergessTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r"><span class="mfull">${L('Vergessen','Missed')}</span><span class="mshort">${L('Verg.','Miss.')}</span></th><th class="r"><span class="mfull">${L('Verschenkt','Wasted')}</span><span class="mshort">${L('Versch.','Waste')}</span></th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="r mono"><b>${r.miss}</b></td><td class="r mono dim">${r.lost} ${L('Pkt','pts')}</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('vergessTable'),2,-1);
 }
