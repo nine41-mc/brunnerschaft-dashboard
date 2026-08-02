@@ -371,8 +371,10 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   #mainTable .nm-cell,#bonusCatTable .nm-cell{max-width:none} /* Badge+Avatar+Name in einer Zelle: Kurznamen passen ausgeschrieben */
   table.msticky2 tbody td:nth-child(2){max-width:124px}
   table.msticky .nm-cell .player-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  /* Titel-/Laternen-Historie: nur Medaillen im Kopf, nur Avatare in den Zeilen */
+  /* Titel-/Laternen-Historie: nur Medaillen im Kopf, nur Avatare in den Zeilen — beides zentriert übereinander */
   #historyTable .nm-cell .player-name,#lanternTable .nm-cell .player-name{display:none}
+  #historyTable thead th:not(:first-child),#lanternTable thead th:not(:first-child),
+  #historyTable tbody td:not(:first-child),#lanternTable tbody td:not(:first-child){text-align:center}
   #historyTable,#lanternTable{table-layout:auto!important}
   /* Head-to-Head: Auswahl untereinander, „vs" mittig dazwischen */
   .h2h-bar{flex-direction:column;align-items:stretch}
