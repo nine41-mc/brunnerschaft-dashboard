@@ -865,7 +865,7 @@ function seasonTiles(scope){
 function tileHTML(t){return `<div class="card tile ${t.cls||''}"><span class="rail"></span>`
   +`${MEMOJI[t.big]?`<img class="av tile-av" src="${MEMOJI[t.big]}" width="46" height="46" alt="">`:''}`
   +`<div class="cap">${t.cap}</div>`
-  +`<div class="big${String(t.big).length>13?' sm':''}">${esc(t.big)}</div>`
+  +`<div class="big${dispText(String(t.big)).length>13?' sm':''}">${esc(dispText(String(t.big)))}</div>`
   +`<div class="meta">${esc(t.meta)}</div></div>`;}
 function renderTiles(scope){
   const tiles=scope==='gesamt'?gesamtTiles():seasonTiles(scope);
@@ -911,20 +911,20 @@ function renderMainTable(scope){
 const pctI=(a,b)=>b?Math.round(a/b*100):0;      // ganze Prozent
 const RANK_CARDS=[
   {key:'mdWins',eye:{de:'📅 Spieltagsiege',en:'📅 Matchday wins'},title:{de:'Meiste Spieltagsiege',en:'Most matchday wins'},note:{de:'Bester Tipp am Spieltag (geteilt bei Gleichstand).',en:'Best tip on the matchday (shared when tied).'},color:'',noBar:1,
-    cols:[{h:{de:'Siege',en:'Wins'},f:p=>p.mdWins||0},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.mdWins,p.mdCount)+' %'}]},
+    cols:[{h:{de:'Siege',en:'Wins'},f:p=>p.mdWins||0},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.mdWins,p.mdCount)+'&nbsp;%'}]},
   {key:'wonDay',eye:{de:'🔥 Spieltagsiege',en:'🔥 Matchday wins'},title:{de:'Meiste Punkte an gewonnenen Spieltagen',en:'Most points on won matchdays'},note:{de:'Summe der eigenen Punkte an gewonnenen Spieltagen (keine Extra-Punkte).',en:'Sum of your own points on won matchdays (no extra points).'},color:'',gesamtOnly:1,colLabel:{de:'Punkte',en:'Points'}},
   {key:'avgMd',eye:{de:'📈 Konstanz',en:'📈 Consistency'},title:{de:'Ø-Punkte pro Spieltag',en:'Ø points per matchday'},note:{de:'Durchschnittliche Spieltagspunkte.',en:'Average matchday points.'},color:'good',noBar:1,
     cols:[{h:{de:'Ø/ST',en:'Ø/MD'},f:p=>dec(p.avgMd)},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0}]},
   {key:'p4',pair:1,eye:{de:'🎯 Volltreffer',en:'🎯 Bullseyes'},title:{de:'Meiste 4-Punkte-Tipps',en:'Most 4-point tips'},note:{de:'Exaktes Ergebnis getippt.',en:'Exact result tipped.'},color:'',noBar:1,
-    cols:[{h:{de:'4er',en:'4s'},f:p=>p.p4||0},{h:{de:'Anteil',en:'Share'},f:p=>dec(100*(p.p4||0)/(p.placed||1))+' %'}]},
+    cols:[{h:{de:'4er',en:'4s'},f:p=>p.p4||0},{h:{de:'Anteil',en:'Share'},f:p=>dec(100*(p.p4||0)/(p.placed||1))+'&nbsp;%'}]},
   {key:'p3',pair:1,eye:{de:'📐 Tordifferenz',en:'📐 Goal difference'},title:{de:'Meiste 3-Punkte-Tipps',en:'Most 3-point tips'},note:{de:'Richtige Tordifferenz getippt.',en:'Correct goal difference tipped.'},color:'good',noBar:1,
-    cols:[{h:{de:'3er',en:'3s'},f:p=>p.p3||0},{h:{de:'Anteil',en:'Share'},f:p=>dec(100*(p.p3||0)/(p.placed||1))+' %'}]},
+    cols:[{h:{de:'3er',en:'3s'},f:p=>p.p3||0},{h:{de:'Anteil',en:'Share'},f:p=>dec(100*(p.p3||0)/(p.placed||1))+'&nbsp;%'}]},
   {key:'bonus',eye:{de:'⭐ Bonus',en:'⭐ Bonus'},title:{de:'Meiste Bonuspunkte',en:'Most bonus points'},note:{de:'Punkte aus den Bonusfragen (Meister, Torschützenkönig …).',en:'Points from bonus questions (champion, top scorer …).'},color:'good',colLabel:{de:'Bonus',en:'Bonus'}},
   {key:'loser',eye:{de:'💩 Spieltags-Letzter',en:'💩 Matchday last'},title:{de:'Am häufigsten Tagesletzter',en:'Most often day-last'},note:{de:'Spieltage mit den wenigsten Punkten der Runde (geteilt bei Gleichstand).',en:'Matchdays with the fewest points in the group (shared when tied).'},color:'dark',gesamtOnly:1,noBar:1,
-    cols:[{h:{de:'Letzter',en:'Last'},f:p=>p.loser||0},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.loser,p.mdCount)+' %'}]},
+    cols:[{h:{de:'Letzter',en:'Last'},f:p=>p.loser||0},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.loser,p.mdCount)+'&nbsp;%'}]},
   {key:'zero',eye:{de:'🚫 Nuller-Spieltage',en:'🚫 Zero matchdays'},title:{de:'Meiste Null-Punkte-Spieltage',en:'Most zero-point matchdays'},note:{de:'Ganze Spieltage komplett ohne Punkte — 0 ist hier ein Ehrenwert.',en:'Whole matchdays entirely without points — 0 is an honour here.'},color:'dark',gesamtOnly:1,colLabel:{de:'Spieltage',en:'Matchdays'},showZero:1,zeroMsg:{de:'Niemand blieb je einen ganzen Spieltag ohne Punkte.',en:'No one ever went a whole matchday without points.'}},
   {key:'placed',eye:{de:'✍️ Fleiß',en:'✍️ Diligence'},title:{de:'Fleißigste Tipper',en:'Most diligent tippers'},note:{de:'Abgegebene Tipps insgesamt.',en:'Total tips submitted.'},color:'blue',noBar:1,
-    cols:[{h:{de:'Tipps',en:'Tips'},f:p=>p.placed||0},{h:{de:'Möglich',en:'Possible'},f:p=>(p.placed||0)+(p.missing||0)},{h:{de:'Quote',en:'Rate'},f:p=>dec(100*(p.placed||0)/((p.placed||0)+(p.missing||0)||1))+' %'}]},
+    cols:[{h:{de:'Tipps',en:'Tips'},f:p=>p.placed||0},{h:{de:'Möglich',en:'Possible'},f:p=>(p.placed||0)+(p.missing||0)},{h:{de:'Quote',en:'Rate'},f:p=>dec(100*(p.placed||0)/((p.placed||0)+(p.missing||0)||1))+'&nbsp;%'}]},
   {key:'antiBayern',eye:{de:'⚔️ Anti-Bayern',en:'⚔️ Anti-Bayern'},title:{de:'Gegen die Bayern getippt',en:'Tipped against Bayern'},note:{de:'Auf eine Bayern-Niederlage getippt (nur Bundesliga).',en:'Tipped a Bayern defeat (Bundesliga only).'},color:'blue',blOnly:1,noBar:1,zeroMsg:{de:'Niemand hat gegen die Bayern getippt. 🐻',en:'Nobody tipped against Bayern. 🐻'},
     cols:[{w:'54px',h:{de:'Anti-​FCB',en:'Anti-​FCB'},f:p=>p.antiBayern||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.abOppByPlayer&&ADV.abOppByPlayer[p.name]);if(!o||!o.length)return '–';
       const g={};o.forEach(([t,c])=>{(g[c]||(g[c]=[])).push(t);});
@@ -962,15 +962,15 @@ const RANK_CARDS=[
       const l=[...DISPLAY_ORDER].reverse().filter(id=>{const n=SMAP[id].standings.filter(x=>x.active).length;return pos[id]===n&&n>0;}).map(id=>SMAP[id].short);
       return l.length?l.join(', '):'–';}}]},
   {key:'podium',eye:{de:'🏅 Podest',en:'🏅 Podium'},title:{de:'Meiste Top-3-Platzierungen',en:'Most top-3 finishes'},note:{de:'Podest-Platzierungen (1.–3.) in der Gesamtwertung — 0 ist hier kein Ehrenwert. 😉',en:'Podium finishes (1st–3rd) in the overall standings — 0 is not an honour here. 😉'},color:'',gesamtOnly:1,noBar:1,showZero:1,
-    cols:[{h:{de:'<span class="mfull">Podeste</span><span class="mshort">Pod.</span>',en:'<span class="mfull">Podiums</span><span class="mshort">Pod.</span>'},f:p=>p.podium||0},{h:{de:'Teiln.',en:'Entries'},f:p=>p.played||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.podium,p.played)+' %'}]},
+    cols:[{h:{de:'<span class="mfull">Podeste</span><span class="mshort">Pod.</span>',en:'<span class="mfull">Podiums</span><span class="mshort">Pod.</span>'},f:p=>p.podium||0},{h:{de:'Teiln.',en:'Entries'},f:p=>p.played||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.podium,p.played)+'&nbsp;%'}]},
   {key:'pannen',eye:{de:'🤡 Pleiten-Spieltage',en:'🤡 Flop matchdays'},title:{de:'Der Clowns-Hut',en:'The Clown Hat'},note:{de:'Bundesliga-Spieltage mit weniger als 5 Punkten — die echten Pannen-Tage.',en:'Bundesliga matchdays with fewer than 5 points — the real flop days.'},color:'dark',gesamtOnly:1,noBar:1,showZero:1,
-    cols:[{h:{de:'Pleiten',en:'Flops'},f:p=>p.pannen||0},{h:{de:'<span class="mfull">BL-Spielt.</span><span class="mshort">Spielt.</span>',en:'<span class="mfull">BL MDs</span><span class="mshort">MDs</span>'},f:p=>p.pannenMd||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.pannen,p.pannenMd)+' %'}]},
+    cols:[{h:{de:'Pleiten',en:'Flops'},f:p=>p.pannen||0},{h:{de:'<span class="mfull">BL-Spielt.</span><span class="mshort">Spielt.</span>',en:'<span class="mfull">BL MDs</span><span class="mshort">MDs</span>'},f:p=>p.pannenMd||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.pannen,p.pannenMd)+'&nbsp;%'}]},
   {key:'megalo',eye:{de:'💥 Größenwahn',en:'💥 Delusions of grandeur'},title:{de:'Der Größenwahn-Index',en:'The Grandeur Index'},note:{de:'Torreiche Tipps (5+ Tore) — und wie oft sie mit null Punkten endeten.',en:'High-scoring tips (5+ goals) — and how often they ended with zero points.'},color:'blue',gesamtOnly:1,noBar:1,
-    cols:[{h:{de:'Nieten',en:'Blanks'},f:p=>p.megalo||0},{h:{de:'<span class="mfull">Versuche</span><span class="mshort">Vers.</span>',en:'<span class="mfull">Attempts</span><span class="mshort">Tries</span>'},f:p=>p.megaloTry||0},{h:{de:'<span class="mfull">Fehlquote</span><span class="mshort">Quote</span>',en:'<span class="mfull">Miss rate</span><span class="mshort">Rate</span>'},f:p=>pctI(p.megalo,p.megaloTry)+' %'}]},
+    cols:[{h:{de:'Nieten',en:'Blanks'},f:p=>p.megalo||0},{h:{de:'<span class="mfull">Versuche</span><span class="mshort">Vers.</span>',en:'<span class="mfull">Attempts</span><span class="mshort">Tries</span>'},f:p=>p.megaloTry||0},{h:{de:'<span class="mfull">Fehlquote</span><span class="mshort">Quote</span>',en:'<span class="mfull">Miss rate</span><span class="mshort">Rate</span>'},f:p=>pctI(p.megalo,p.megaloTry)+'&nbsp;%'}]},
   {key:'beton',eye:{de:'🧱 Torlos-Optimist',en:'🧱 Goalless optimist'},title:{de:'Der Beton-Prophet',en:'The Concrete Prophet'},note:{de:'Wer stur 0:0 tippt — und wie oft dann doch mindestens ein Tor fiel (also daneben lag).',en:'Who stubbornly tips 0:0 — and how often at least one goal fell after all (i.e. missed).'},color:'dark',gesamtOnly:1,noBar:1,showZero:1,wrap:1,zeroMsg:{de:'Niemand tippt hier auf Beton. 🧱',en:'Nobody bets on concrete here. 🧱'},
     cols:[{h:{de:'Getippt',en:'Tipped'},f:p=>p.betonTot||0},{h:{de:'Daneben',en:'Missed'},f:p=>p.beton||0}]},
   {key:'habitPct',eye:{de:'🤖 Mister 2:1',en:'🤖 Mr. 2:1'},title:{de:'Der Tipp-Bot',en:'The Tip Bot'},note:{de:'Wer stur immer dasselbe Ergebnis tippt — höchster Anteil eines einzigen Lieblingstipps.',en:'Who stubbornly always tips the same result — highest share of a single favourite tip.'},color:'',gesamtOnly:1,noBar:1,
-    cols:[{h:{de:'Anteil',en:'Share'},f:p=>dec(p.habitPct)+' %'},{h:{de:'<span class="mfull">Standardtipp</span><span class="mshort">Std.-Tipp</span>',en:'<span class="mfull">Default tip</span><span class="mshort">Default</span>'},f:p=>esc((p.habitRes&&p.habitRes[0])||'–')+(p.habitRes&&p.habitRes[1]?` (${p.habitRes[1]}×)`:'')}]},
+    cols:[{h:{de:'Anteil',en:'Share'},f:p=>dec(p.habitPct)+'&nbsp;%'},{h:{de:'<span class="mfull">Standardtipp</span><span class="mshort">Std.-Tipp</span>',en:'<span class="mfull">Default tip</span><span class="mshort">Default</span>'},f:p=>esc((p.habitRes&&p.habitRes[0])||'–')+(p.habitRes&&p.habitRes[1]?` (${p.habitRes[1]}×)`:'')}]},
   {key:'bayFanTips',eye:{de:'🐻 Vereins-Fanatiker',en:'🐻 Club fanatic'},title:{de:'Das Bayern-Opfer',en:'The Bayern Devotee'},note:{de:'Tipps auf einen Bayern-Sieg, die Fan-Verblindungs-Quote (Sieg-Tipps ÷ echte Bayern-Siege) und die Treue-Kosten (Sieg-Tipps ganz ohne Punkte).',en:'Tips on a Bayern win, the fan-blindness ratio (win tips ÷ actual Bayern wins) and the loyalty cost (win tips with zero points).'},color:'',gesamtOnly:1,noBar:1,full:1,
     cols:[{h:{de:'<span class="mfull">Sieg-Tipps</span><span class="mshort">Tipps</span>',en:'<span class="mfull">Win tips</span><span class="mshort">Tips</span>'},f:p=>p.bayFanTips||0},{h:{de:'<span class="mfull">Verblindung</span><span class="mshort">Faktor</span>',en:'<span class="mfull">Blindness</span><span class="mshort">Factor</span>'},f:p=>p.bayFanWin?dec(p.bayFanTips/p.bayFanWin):'–'},{h:{de:'<span class="mfull">Treue-Kosten</span><span class="mshort">Kosten</span>',en:'<span class="mfull">Loyalty cost</span><span class="mshort">Cost</span>'},f:p=>p.bayFanCost||0}]}
 ];
@@ -1057,11 +1057,15 @@ function renderBestTeam(){
   });
   draw('BL');
 }
-const NSHORT={'Manurinho':'Manu','Matthew':'Matt','Lutz_Brunner7b':'Lutz'}; // mobile Kurznamen
+const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben'}; // Anzeigenamen (überall)
+const NSHORT={'Matthew':'Matt'}; // nur bei Platznot (mobil)
+function dispFull(n){return NFULL[n]||n;}
+const NF_RE=new RegExp(Object.keys(NFULL).sort((x,y)=>y.length-x.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
+function dispText(str){return String(str).replace(NF_RE,m=>NFULL[m]);} // Namen in Fließtext ersetzen
 const TSHORT={'Bayer 04 Lev.':'B04','RB Leipzig':'RBL','Dortmund':'BVB','Bayern':'FCB','Freiburg':'SCF','Stuttgart':'VfB','Frankfurt':'SGE','Augsburg':'FCA','Mönchengladbach':'BMG','1899 Hoffenheim':'TSG','Wolfsburg':'WOB','FSV Mainz 05':'M05','Union Berlin':'FCU','Werder Bremen':'SVW','Bochum':'BOC','Köln':'KOE','Heidenheim 1846':'HDH','St. Pauli':'STP','Hertha BSC':'BSC','Darmstadt 98':'SVD','Holstein Kiel':'KSV','Hamburger SV':'HSV','Greuther Fürth':'SGF','Schalke 04':'S04','Arminia Bielefeld':'DSC','England':'ENG','Deutschland':'DEU','Frankreich':'FRA','Spanien':'SPA','Argentinien':'ARG','Schweiz':'SUI','Italien':'ITA','Südafrika':'RSA','Kanada':'CAN'}; // Team-/Länder-Kürzel mobil — hier einfach erweitern
 const TSHORT_RE=new RegExp(Object.keys(TSHORT).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
 function tshort(html){return String(html).replace(TSHORT_RE,m=>`<span class="mfull">${m}</span><span class="mshort">${TSHORT[m]}</span>`);}
-function dispName(n){const k=NSHORT[n];return k?`<span class="mfull">${esc(n)}</span><span class="mshort">${esc(k)}</span>`:esc(n);}
+function dispName(n){const f=dispFull(n),k=NSHORT[n];return k?`<span class="mfull">${esc(f)}</span><span class="mshort">${esc(k)}</span>`:esc(f);}
 function nmCell(name,size){return `<div class="nm-cell">${av(name,size||24)}<span class="player-name">${dispName(name)}</span></div>`;}
 function renderHistory(){
   const rows=DISPLAY_ORDER.map(id=>SMAP[id]).filter(s=>!s.running&&s.standings.some(p=>p.active));
@@ -1134,13 +1138,13 @@ function renderPersonality(){
   const lbl2=(full,short)=>`<span class="mfull">${full}</span><span class="mshort">${short}</span>`;
   el.innerHTML=`<thead><tr><th style="width:28%">${L('Tipper','Player')}</th><th class="r" style="width:18%">${lbl2(L('Ø Tore/Spiel','Ø goals/game'),L('Ø Tore','Ø goals'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Heimsieg-Tipps','Home-win tips'),L('Heim','Home'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Remis-Tipps','Draw tips'),L('Remis','Draw'))}</th><th class="r" style="width:18%;white-space:normal">${lbl2(L('Auswärtssieg-Tipps','Away-win tips'),L('Ausw.','Away'))}</th></tr></thead><tbody>${
    rows.map(p=>{const s=STATS18.pers[p.name];return `<tr><td>${nmCell(p.name,26)}</td>
-     <td class="r mono"><b>${dec(s.avgGoals)}</b></td><td class="r mono">${dec(s.homeWinPct)} %</td><td class="r mono">${dec(s.drawPct)} %</td><td class="r mono">${dec(s.awayWinPct)} %</td></tr>`;}).join('')}</tbody>`;
+     <td class="r mono"><b>${dec(s.avgGoals)}</b></td><td class="r mono">${dec(s.homeWinPct)}&nbsp;%</td><td class="r mono">${dec(s.drawPct)}&nbsp;%</td><td class="r mono">${dec(s.awayWinPct)}&nbsp;%</td></tr>`;}).join('')}</tbody>`;
 }
 function renderAccuracy(){
   const rows=[...PLAYERS].sort((a,b)=>STATS18.pers[b.name].ptsPerTip-STATS18.pers[a.name].ptsPerTip);
   document.getElementById('accTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Treffer-​Quote','Hit rate')}</th><th class="r">${L('Exakt-​Quote','Exact rate')}</th><th class="r">${L('Punkte/​Tipp','Points/​tip')}</th></tr></thead><tbody>${
    rows.map((p,i)=>{const s=STATS18.pers[p.name];return `<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(p.name,24)}</td>
-     <td class="r mono">${dec(s.hitRate)} %</td><td class="r mono">${dec(s.exactPct)} %</td><td class="r mono"><b>${dec(s.ptsPerTip)}</b></td></tr>`;}).join('')}</tbody>`;
+     <td class="r mono">${dec(s.hitRate)}&nbsp;%</td><td class="r mono">${dec(s.exactPct)}&nbsp;%</td><td class="r mono"><b>${dec(s.ptsPerTip)}</b></td></tr>`;}).join('')}</tbody>`;
 }
 function renderKonstanz(){
   const K=STATS18.konstanz||{};
@@ -1152,12 +1156,12 @@ function renderKonstanz(){
 }
 function renderOutcome(){
   const O=STATS18.outcomeType||{};
-  const cell=o=>o&&o.pct!=null?`<b>${dec(o.pct)} %</b> <span class="mini">${o.ok}/${o.tot}</span>`:'–';
+  const cell=o=>o&&o.pct!=null?`<b>${dec(o.pct)}&nbsp;%</b> <span class="mini">${o.ok}/${o.tot}</span>`:'–';
   const ov=o=>{const tot=o.H.tot+o.D.tot+o.A.tot,ok=o.H.ok+o.D.ok+o.A.ok;return tot?100*ok/tot:0;};
   const rows=PLAYERS.map(p=>p.name).filter(n=>O[n]).map(n=>({name:n,o:O[n],ov:ov(O[n])})).sort((a,b)=>b.ov-a.ov);
   document.getElementById('outcomeTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r"><span class="mfull">🏠 ${L('Heimsiege','Home wins')}</span><span class="mshort">${L('Heim','Home')}</span></th><th class="r"><span class="mfull">🤝 ${L('Remis','Draws')}</span><span class="mshort">${L('Remis','Draw')}</span></th><th class="r"><span class="mfull">✈️ ${L('Auswärtssiege','Away wins')}</span><span class="mshort">${L('Ausw.','Away')}</span></th><th class="r">${L('Gesamt','Total')}</th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td>
-     <td class="r mono">${cell(r.o.H)}</td><td class="r mono">${cell(r.o.D)}</td><td class="r mono">${cell(r.o.A)}</td><td class="r mono"><b>${dec(r.ov)} %</b></td></tr>`).join('')}</tbody>`;
+     <td class="r mono">${cell(r.o.H)}</td><td class="r mono">${cell(r.o.D)}</td><td class="r mono">${cell(r.o.A)}</td><td class="r mono"><b>${dec(r.ov)}&nbsp;%</b></td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('outcomeTable'),5,-1);
 }
 function renderCrazy(){
@@ -1175,7 +1179,7 @@ function renderWorstTip(){
 function renderTendenz(){
   const rows=[...PLAYERS].map(p=>({name:p.name,s:STATS18.pers[p.name]})).filter(r=>r.s).sort((a,b)=>a.s.ptsPerHit-b.s.ptsPerHit);
   document.getElementById('tendenzTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Ø Punkte/​Treffer','Ø points/​hit')}</th><th class="r">${L('Treffer-​Quote','Hit rate')}</th><th class="r">${L('Exakt-​Quote','Exact rate')}</th></tr></thead><tbody>${
-   rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="r mono"><b>${dec(r.s.ptsPerHit)}</b></td><td class="r mono dim">${dec(r.s.hitRate)} %</td><td class="r mono dim">${dec(r.s.exactPct)} %</td></tr>`).join('')}</tbody>`;
+   rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="r mono"><b>${dec(r.s.ptsPerHit)}</b></td><td class="r mono dim">${dec(r.s.hitRate)}&nbsp;%</td><td class="r mono dim">${dec(r.s.exactPct)}&nbsp;%</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('tendenzTable'),2,1);
 }
 function renderTeamMatrix(){
@@ -1188,7 +1192,7 @@ function renderTeamMatrix(){
     return{bg:`rgb(${r},${g},${b})`,fg:t>0.5?'#fff':'#14532d'};};
   let html='<thead><tr><th class="pname">'+L('Tipper','Player')+'</th>'+cols.map(c=>`<th class="season">${tshort(esc(c))}</th>`).join('')+'</tr></thead><tbody>';
   names.forEach(n=>{html+=`<tr><th class="pname"><div class="nm-cell">${av(n,26)}<span>${dispName(n)}</span></div></th>`;
-    M[n].forEach((v,i)=>{const c=gc(v);html+=`<td class="cell"><div class="hc" style="background:${c.bg};color:${c.fg}" title="${esc(n)} · ${esc(cols[i])}: ${v} ${L('Punkte','points')}">${v}</div></td>`;});
+    M[n].forEach((v,i)=>{const c=gc(v);html+=`<td class="cell"><div class="hc" style="background:${c.bg};color:${c.fg}" title="${esc(dispFull(n))} · ${esc(cols[i])}: ${v} ${L('Punkte','points')}">${v}</div></td>`;});
     html+='</tr>';});
   document.getElementById('teamMatrix').innerHTML=html+'</tbody>';
 }
@@ -1224,7 +1228,7 @@ function renderRecords(){
   function renderRecTable(type){
     const list=(type==='BL'?STATS18.recTopBL:STATS18.recTopCup)||[];
     document.getElementById('recTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Punkte','Points')}</th><th class="r">Max</th><th class="r">${L('Quote','Rate')}</th><th class="r">${L('Spieltag','Matchday')}</th></tr></thead><tbody>${
-     list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.n,24)}</td><td class="r mono"><b>${r.pts}</b></td><td class="r mono dim">${r.max}</td><td class="r mono dim">${dec(100*r.pts/(r.max||1))} %</td><td class="r mono">${r.md}</td></tr>`).join('')}</tbody>`;
+     list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.n,24)}</td><td class="r mono"><b>${r.pts}</b></td><td class="r mono dim">${r.max}</td><td class="r mono dim">${dec(100*r.pts/(r.max||1))}&nbsp;%</td><td class="r mono">${r.md}</td></tr>`).join('')}</tbody>`;
     makeSortable(document.getElementById('recTable'),2);
   }
   document.querySelectorAll('#recToggle .pill').forEach(b=>b.onclick=()=>{
@@ -1241,7 +1245,7 @@ function renderVergess(){
   makeSortable(document.getElementById('vergessTable'),2,-1);
 }
 function renderTwins(){
-  const mk=arr=>`<thead><tr><th>${L('Paar','Pair')}</th><th class="r">${L('gleiche Tipps','same tips')}</th><th class="r">${L('von','of')}</th></tr></thead><tbody>${arr.map(t=>`<tr><td class="player-name">${dispName(t.pair[0])} &amp; ${dispName(t.pair[1])}</td><td class="r mono"><b>${dec(t.pct)} %</b></td><td class="r mono" style="color:var(--ink-3)">${t.same}/${t.shared}</td></tr>`).join('')}</tbody>`;
+  const mk=arr=>`<thead><tr><th>${L('Paar','Pair')}</th><th class="r">${L('gleiche Tipps','same tips')}</th><th class="r">${L('von','of')}</th></tr></thead><tbody>${arr.map(t=>`<tr><td class="player-name">${dispName(t.pair[0])} &amp; ${dispName(t.pair[1])}</td><td class="r mono"><b>${dec(t.pct)}&nbsp;%</b></td><td class="r mono" style="color:var(--ink-3)">${t.same}/${t.shared}</td></tr>`).join('')}</tbody>`;
   document.getElementById('twinsTop').innerHTML=mk(STATS18.twins.slice(0,6));
   document.getElementById('twinsBottom').innerHTML=mk(STATS18.twins.slice(-6).reverse());
 }
@@ -1249,7 +1253,7 @@ function renderGroupStats(){
   const gf=STATS18.groupFav,max=gf[0][1];
   document.getElementById('groupFavTable').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Ergebnis','Result')}</th><th class="r">${L('Anzahl','Count')}</th><th class="bar-cell bar-only"></th></tr></thead><tbody>${gf.map(([r,c],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td class="r mono">${c.toLocaleString(LANG==='en'?'en-GB':'de-DE')}</td><td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(c/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const gu=STATS18.groupUnpop||[];
-  document.getElementById('groupUnpopTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Ergebnis','Result')}</th><th>${L('Tipper','Player')}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${gu.map(([r,c,who=[]],i)=>`<tr><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td>${who.length===1?nmCell(who[0],22):(who.length?who.map(esc).join(', '):'–')}</td><td class="r mono">${c}×</td></tr>`).join('')}</tbody>`;
+  document.getElementById('groupUnpopTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Ergebnis','Result')}</th><th>${L('Tipper','Player')}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${gu.map(([r,c,who=[]],i)=>`<tr><td><span class="rank-badge">${i+1}</span></td><td class="mono"><b>${r}</b></td><td>${who.length===1?nmCell(who[0],22):(who.length?who.map(x=>esc(dispFull(x))).join(', '):'–')}</td><td class="r mono">${c}×</td></tr>`).join('')}</tbody>`;
   const w=STATS18.worstDays.slice(0,4),b=STATS18.bestDays.slice(0,4);
   document.getElementById('collectiveTable').innerHTML=`<thead><tr><th>${L('Typ','Type')}</th><th>${L('Spieltag','Matchday')}</th><th class="r">Ø/${L('Person','person')}</th></tr></thead><tbody>${
    w.map(d=>`<tr><td>🫣 Blackout</td><td>${esc(d.season)}, ${L(d.md+'. ST','MD '+d.md)}</td><td class="r mono" style="color:var(--bad)">${dec(d.avg)}</td></tr>`).join('')+
@@ -1269,13 +1273,13 @@ function renderHeart(){
   if(p3leader)chips.push(`<span class="heart-chip">👑 ${L('Tordifferenz-König','goal-difference king')} (<b>${g.p3}</b>×)</span>`);
   if(g.missing===0)chips.push(`<span class="heart-chip">💯 ${L('<b>nie</b> einen Tipp vergessen','<b>never</b> forgot a tip')}</span>`);
   chips.push(`<span class="heart-chip"><b>${w.played}/8</b> ${L('Wettbewerben dabei','competitions played')}</span>`);
-  const others=tl.filter(p=>p.name!==w.name).sort((a,b)=>b.totalPts-a.totalPts).slice(0,2).map(p=>esc(p.name));
+  const others=tl.filter(p=>p.name!==w.name).sort((a,b)=>b.totalPts-a.totalPts).slice(0,2).map(p=>esc(dispFull(p.name)));
   document.getElementById('heartBox').innerHTML=`<div class="card heart">
     <div class="heart-inner">
       ${MEMOJI[w.name]?`<img class="heart-av" src="${MEMOJI[w.name]}" alt="">`:''}
       <div class="heart-main">
         <div class="heart-eye">❤️🏆 ${L('Sieger der Herzen','People\'s Champion')}</div>
-        <div class="heart-name">${esc(w.name)}</div>
+        <div class="heart-name">${esc(dispFull(w.name))}</div>
         <div class="heart-sub">${L('Der zweitbeste Punktesammler aller Zeiten — treu bei jedem Wettbewerb dabei, immer vorne mit dabei, aber der große Titel fehlt bis heute. Ein echter Publikumsliebling. ❤️','The second-best points collector of all time — loyally present at every competition, always up front, but the big title still eludes him. A true crowd favourite. ❤️')}</div>
         <div class="heart-chips">${chips.join('')}</div>
       </div>
@@ -1297,8 +1301,8 @@ function renderSpread(){
 function renderH2H(){
   const names=PLAYERS.map(p=>p.name).sort();
   const A=document.getElementById('h2hA'),B=document.getElementById('h2hB');
-  A.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join('');
-  B.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join('');
+  A.innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(dispFull(n))}</option>`).join('');
+  B.innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(dispFull(n))}</option>`).join('');
   A.value='CH7';B.value='Lutz_Brunner7b';
   const CH=DISPLAY_ORDER.filter(id=>!SMAP[id].running);
   function calc(){const a=A.value,b=B.value,pa=PMAP[a],pb=PMAP[b];
@@ -1329,7 +1333,7 @@ function renderHeatmap(){
   players.forEach(p=>{html+=`<tr><th class="pname"><div class="nm-cell">${av(p.name,26)}<span>${dispName(p.name)}</span></div></th>`;
     HSEAS.forEach(s=>{const pos=p.positions[s.id];const active=s.standings.filter(x=>x.active).length;const c=hc(pos,active);
       html+=pos==null?`<td class="cell na"><div class="hc">–</div></td>`
-        :`<td class="cell"><div class="hc" style="background:${c.bg};color:${c.fg}" title="${esc(p.name)} · ${esc(s.name)}: ${L('Platz','rank')} ${pos} ${L('von','of')} ${active}">${pos}</div></td>`;});
+        :`<td class="cell"><div class="hc" style="background:${c.bg};color:${c.fg}" title="${esc(dispFull(p.name))} · ${esc(s.name)}: ${L('Platz','rank')} ${pos} ${L('von','of')} ${active}">${pos}</div></td>`;});
     html+='</tr>';});
   document.getElementById('heat').innerHTML=html+'</tbody>';
   document.getElementById('heatLegend').innerHTML=`<span class="sw"><i style="background:rgb(179,0,26)"></i>${L('1. Platz','1st place')}</span>
@@ -1344,12 +1348,12 @@ function renderSeasonCards(){
     const isCup=s.type!=='BL'; const typeLbl=isCup?L('Turnier','Tournament'):L('Liga','League');
     if(s.running)return `<div class="card season"><div class="shead"><h3>${esc(s.name)}</h3><span class="stype ${isCup?'cup':''}">${typeLbl}</span></div><div style="padding:15px 16px;color:var(--ink-2);font-size:13.5px">⏳ <b>${L('Saison läuft','Season in progress')}</b> — ${L('noch keine Spieltage gewertet.','no matchdays scored yet.')}<br><span class="mini">${s.standings.length} ${L('Teilnehmer am Start.','players at the start.')}</span></div></div>`;
     const act=s.standings.filter(p=>p.active);
-    const podium=act.slice(0,3).map((p,i)=>`<div class="podium-row"><span class="medal">${MEDAL[i]}</span>${av(p.name,30)}<span class="nm">${esc(p.name)}</span><span class="pts">${p.total} ${L('Pkt','pts')}</span></div>`).join('');
+    const podium=act.slice(0,3).map((p,i)=>`<div class="podium-row"><span class="medal">${MEDAL[i]}</span>${av(p.name,30)}<span class="nm">${esc(dispFull(p.name))}</span><span class="pts">${p.total} ${L('Pkt','pts')}</span></div>`).join('');
     const stMap={}; s.standings.forEach(p=>stMap[p.name]=p);
     const rest=PLAYERS.map(p=>p.name).filter(n=>!(stMap[n]&&stMap[n].active));
-    const full=act.map(p=>`<div class="row"><span class="nm">${p.pos}. ${esc(p.name)}</span><span class="mono">${p.total} ${L('Pkt','pts')}</span></div>`).join('')
+    const full=act.map(p=>`<div class="row"><span class="nm">${p.pos}. ${esc(dispFull(p.name))}</span><span class="mono">${p.total} ${L('Pkt','pts')}</span></div>`).join('')
       +rest.map(n=>{const st=stMap[n];const lbl=st?L('nicht getippt','did not tip'):L('nicht dabei','not in this competition');
-        return `<div class="row inactive"><span class="nm">${esc(n)} · ${lbl}</span><span class="mono">–</span></div>`;}).join('');
+        return `<div class="row inactive"><span class="nm">${esc(dispFull(n))} · ${lbl}</span><span class="mono">–</span></div>`;}).join('');
     return `<div class="card season"><div class="shead"><h3>${esc(s.name)}</h3><span class="stype ${isCup?'cup':''}">${typeLbl}</span></div>${podium}
       <details><summary>${L('Komplette Tabelle','Full table')} (${act.length} ${L('Tipper','players')})</summary><div class="full">${full}</div></details></div>`;}).join('');
 }
@@ -1471,7 +1475,7 @@ function payoutBlock(s){const f=seasonFinance(s);const se=SETTLE[s.id];
   const pot=`<div class="potline"><span>${L('Teilnehmer','Players')}: <b>${f.n}</b></span><span>${L('Einsatz','Stake')}: <b>${eur(f.fee)}</b></span><span>${L('Topf','Pot')}: <b style="color:var(--brand)">${eur(f.pot)}</b></span></div>`;
   const body=f.running
     ? `<div class="fin-info"><span class="ic">⏳</span><span><b>${L('Saison läuft.','Season in progress.')}</b> ${L('Die Ausschüttung („'+modeLabel(f.mode)+'") steht erst nach dem letzten Spieltag fest.','The payout ("'+modeLabel(f.mode)+'") is only determined after the final matchday.')}</span></div>`
-    : `<div class="payouts" style="grid-template-columns:repeat(${f.payouts.length},1fr)">${f.payouts.map((p,i)=>`<div class="payout g${i+1}"><div class="rk">${p.icon} ${p.label}</div><div class="nm">${esc(p.name)}</div><div class="amt">${eur(p.amt)}</div><div class="pct">${p.pctLabel}</div></div>`).join('')}</div>
+    : `<div class="payouts" style="grid-template-columns:repeat(${f.payouts.length},1fr)">${f.payouts.map((p,i)=>`<div class="payout g${i+1}"><div class="rk">${p.icon} ${p.label}</div><div class="nm">${esc(dispFull(p.name))}</div><div class="amt">${eur(p.amt)}</div><div class="pct">${p.pctLabel}</div></div>`).join('')}</div>
       <div class="fin-info"><span class="ic">ℹ️</span><span><b>${modeLabel(f.mode)}:</b> ${modeInfo(f.mode)}</span></div>`;
   return `<div class="card fin-season">${head}${pot}${body}</div>`;}
 function todoBox(){
@@ -1497,7 +1501,7 @@ function reconCard(seasonId){
     const key=`brun_recon_${seasonId}_h_${h.replace(/\s+/g,'_')}`;
     return `<label class="recon-row" data-amt="${fee}">
       <input type="checkbox" class="chk" data-key="${key}" data-amt="${fee}" data-handles="${esc(h)}">
-      <span class="payer">${esc(h)}<span class="cov"> · ${esc(info)}</span></span>
+      <span class="payer">${esc(dispFull(h))}<span class="cov"> · ${esc(info)}</span></span>
       <span class="amt">${eur(fee)}</span></label>`;}).join('');
   return `<div class="card recon" data-season="${seasonId}">
     <div class="rhd"><h3>${esc(s.name)}</h3><span class="modebadge">${L('Einsatz','Stake')} ${eur(fee)}</span>
@@ -1531,7 +1535,7 @@ function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won
   SEASONS.filter(s=>!s.running).forEach(s=>{const f=seasonFinance(s);f.act.forEach(p=>bal[p.name].paid+=f.fee);f.payouts.forEach(p=>bal[p.name].won+=p.amt);});
   const rows=Object.entries(bal).map(([name,b])=>({name,...b,net:b.won-b.paid})).filter(r=>r.paid>0).sort((a,b)=>b.net-a.net);
   document.getElementById('balance').innerHTML=`<thead><tr><th style="width:34px"></th><th>${L('Tipper','Player')}</th><th class="r">${L('Einsätze','Stakes')}</th><th class="r">${L('Gewinne','Winnings')}</th><th class="r">${L('Bilanz','Balance')}</th></tr></thead>
-    <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><span class="rank-badge">${i+1}</span></td><td class="player-name">${esc(r.name)}</td>
+    <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><span class="rank-badge">${i+1}</span></td><td class="player-name">${esc(dispFull(r.name))}</td>
       <td class="r mono" style="color:var(--ink-2)">${eur(r.paid)}</td><td class="r mono">${eur(r.won)}</td>
       <td class="r ${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${eur(r.net)}</td></tr>`).join('')}</tbody>`;}
 ['feeBL','feeCUP'].forEach(id=>document.getElementById(id).oninput=renderFinance);
