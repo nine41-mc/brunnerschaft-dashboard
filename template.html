@@ -110,7 +110,7 @@ section.block{margin:38px 0}
 .mini{font-size:12px;color:var(--ink-3)}
 
 /* Filter pills */
-.filterbar{position:sticky;top:var(--stickB,98px);z-index:30;background:var(--bg);padding:6px 0 12px;margin:0 0 6px;
+.filterbar{position:sticky;top:calc(var(--hdrH,58px) + var(--tabsH,46px));z-index:30;background:var(--bg);padding:6px 0 12px;margin:0 0 6px;
   border-bottom:1px solid var(--line)} /* kein Margin oben: Margins sind transparent -> Seite schien beim Scrollen durch */
 .filter-label{font-size:11px;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
 .pills{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -1401,15 +1401,14 @@ function updateThemeLabel(){const ic=document.getElementById('themeIcon'),t=them
   set(themeCur());btn.onclick=()=>set(themeCur()==='dark'?'light':'dark');})();
 document.querySelector('.logo-k').onclick=()=>location.reload(); // kicktipp-Logo lädt die Seite neu
 
-/* Sticky-Offsets dynamisch: Desktop klebt der Header (Tabs darunter), mobil nur die Tabs */
+/* Tab-Höhe als CSS-Variable: die Filterbar rastet bei var(--hdrH)+var(--tabsH) ein
+   (--hdrH kommt aus CSS: Desktop = Header-Höhe, mobil = Statusleisten-Safe-Area) */
 (function(){
-  const hdr=document.querySelector('header.top'), tabs=document.querySelector('nav.tabs');
-  function fix(){ const h=getComputedStyle(hdr).position==='sticky'?hdr.offsetHeight:0;
-    document.documentElement.style.setProperty('--stickB', (h+tabs.offsetHeight)+'px'); }
+  const tabs=document.querySelector('nav.tabs');
+  function fix(){ document.documentElement.style.setProperty('--tabsH', tabs.offsetHeight+'px'); }
   const fixSoon=()=>requestAnimationFrame(fix);
-  if(typeof ResizeObserver!=='undefined'){ const ro=new ResizeObserver(fixSoon); ro.observe(hdr); ro.observe(tabs); }
+  if(typeof ResizeObserver!=='undefined'){ const ro=new ResizeObserver(fixSoon); ro.observe(tabs); }
   addEventListener('resize', fixSoon);
-  try{ matchMedia('(max-width:720px)').addEventListener('change', fixSoon); }catch(e){}
   fix();
 })();
 
