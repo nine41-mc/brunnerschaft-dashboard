@@ -131,7 +131,7 @@ section.block{margin:38px 0}
 .mshort{display:none}  /* Kurz-Labels nur mobil (siehe Mobile-Block) */
 .bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
 /* Horizontale Scrollbalken überall ausblenden (Scrollen per Wisch/Trackpad bleibt möglich) */
-.rscroll,.tbl-wrap,.heat-wrap{scrollbar-width:none}
+.rscroll,.tbl-wrap,.heat-wrap{scrollbar-width:none;overscroll-behavior-x:none}
 .rscroll::-webkit-scrollbar,.tbl-wrap::-webkit-scrollbar,.heat-wrap::-webkit-scrollbar{display:none}
 /* Namens-Spalte in Heat-/Team-Matrix immer fixiert */
 table.heat th.pname{position:sticky;left:0;background:var(--surface);z-index:2}
@@ -207,6 +207,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   border:1.5px solid var(--line-2);background:var(--surface-2);flex:0 0 auto;display:inline-block}
 .nm-cell{display:inline-flex;align-items:center;gap:9px}
 .tile-av{position:absolute;top:20px;right:20px;width:56px;height:56px;box-shadow:0 2px 8px -2px rgba(0,0,0,.3)}
+.tile-avs{position:absolute;top:14px;right:20px;display:flex;flex-direction:column;gap:5px}
+.tile-avs .av{width:30px;height:30px;box-shadow:0 2px 6px -2px rgba(0,0,0,.3)}
 /* Platz für das Avatar nur bei den oberen Zeilen (cap/big) reservieren; die meta-Zeile liegt unter dem Bild und darf die volle Breite nutzen */
 .tile .cap,.tile .big{padding-right:74px}
 .podium-row .av{margin-right:-2px}
@@ -369,6 +371,7 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   #outcomeTable .mini{display:none} /* Brüche (487/697) nur auf Desktop */
   #bestTeamTable .mini{display:block} /* Punktzahl konsequent in der zweiten Zeile */
   table.msticky2 tbody td:nth-child(2){overflow:hidden} /* Namen laufen nie in Nachbarspalten */
+  table.msticky2.rank-tbl thead th:nth-child(2){width:98px} /* Namensspalte fest: Namen nie abgeschnitten */
   #persTable tbody td.mono,#outcomeTable tbody td.mono{font-size:11px;white-space:nowrap} /* Prozente kleiner statt umbrechen */
   .cellwrap{max-width:calc(100vw - 245px);white-space:normal} /* Saison-/Gegner-Listen: umbrechen statt Spalte dehnen (Rest = Pos+Name+Wert+Padding) */
   /* Namen bei Platzmangel auspunkten + kompaktere Zellen (kein Mini-Scroll) */
@@ -856,7 +859,7 @@ function seasonTiles(scope){
   const tiles=[
     {cls:'gold',cap:L('🥇 Sieger','🥇 Winner'),big:winner.name,meta:winner.points+L(' Punkte',' points')},
     {cls:'red',cap:L('🔴 Letzter','🔴 Last'),big:last.name,meta:last.points+L(' Punkte · Platz ',' points · place ')+last.pos},
-    {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(winner.name)+L(' vor ',' ahead of ')+esc(last.name)},
+    {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(dispFull(winner.name))+L(' vor ',' ahead of ')+esc(dispFull(last.name)),avs:[winner.name,last.name]},
     {cls:'gold',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:md.mdWins+L(' Spieltagsiege',' matchday wins')},
     {cls:'gold',cap:L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),big:avg.name,meta:'Ø '+dec(avg.avgMd)+L(' Punkte pro Spieltag',' points per matchday')},
     {cls:'gold',cap:L('🎯 Volltreffer-König','🎯 Bullseye king'),big:p4.name,meta:p4.p4+L(' exakte Ergebnisse',' exact results')},
@@ -871,7 +874,7 @@ function seasonTiles(scope){
   return tiles;
 }
 function tileHTML(t){return `<div class="card tile ${t.cls||''}"><span class="rail"></span>`
-  +`${MEMOJI[t.big]?`<img class="av tile-av" src="${MEMOJI[t.big]}" width="46" height="46" alt="">`:''}`
+  +`${t.avs?`<span class="tile-avs">${t.avs.map(n=>MEMOJI[n]?`<img class="av" src="${MEMOJI[n]}" width="30" height="30" alt="${esc(dispFull(n))}">`:'').join('')}</span>`:(MEMOJI[t.big]?`<img class="av tile-av" src="${MEMOJI[t.big]}" width="46" height="46" alt="">`:'')}`
   +`<div class="cap">${t.cap}</div>`
   +`<div class="big${dispText(String(t.big)).length>13?' sm':''}">${esc(dispText(String(t.big)))}</div>`
   +`<div class="meta">${esc(t.meta)}</div></div>`;}
@@ -932,17 +935,17 @@ const RANK_CARDS=[
     cols:[{h:{de:'Letzter',en:'Last'},f:p=>p.loser||0},{h:{de:'Spielt.',en:'MDs'},f:p=>p.mdCount||0},{h:{de:'Quote',en:'Rate'},f:p=>pctI(p.loser,p.mdCount)+'&nbsp;%'}]},
   {key:'zero',eye:{de:'🚫 Nuller-Spieltage',en:'🚫 Zero matchdays'},title:{de:'Meiste Null-Punkte-Spieltage',en:'Most zero-point matchdays'},note:{de:'Ganze Spieltage komplett ohne Punkte — 0 ist hier ein Ehrenwert.',en:'Whole matchdays entirely without points — 0 is an honour here.'},color:'dark',gesamtOnly:1,colLabel:{de:'Spieltage',en:'Matchdays'},showZero:1,zeroMsg:{de:'Niemand blieb je einen ganzen Spieltag ohne Punkte.',en:'No one ever went a whole matchday without points.'}},
   {key:'placed',eye:{de:'✍️ Fleiß',en:'✍️ Diligence'},title:{de:'Fleißigste Tipper',en:'Most diligent tippers'},note:{de:'Abgegebene Tipps insgesamt.',en:'Total tips submitted.'},color:'blue',noBar:1,
-    cols:[{h:{de:'Tipps',en:'Tips'},f:p=>p.placed||0},{h:{de:'Möglich',en:'Possible'},f:p=>(p.placed||0)+(p.missing||0)},{h:{de:'Quote',en:'Rate'},f:p=>dec(100*(p.placed||0)/((p.placed||0)+(p.missing||0)||1))+'&nbsp;%'}]},
+    cols:[{h:{de:'Tipps',en:'Tips'},f:p=>p.placed||0},{h:{de:'<span class="mfull">Möglich</span><span class="mshort">Mögl.</span>',en:'<span class="mfull">Possible</span><span class="mshort">Poss.</span>'},f:p=>(p.placed||0)+(p.missing||0)},{h:{de:'Quote',en:'Rate'},f:p=>dec(100*(p.placed||0)/((p.placed||0)+(p.missing||0)||1))+'&nbsp;%'}]},
   {key:'antiBayern',eye:{de:'⚔️ Anti-Bayern',en:'⚔️ Anti-Bayern'},title:{de:'Gegen die Bayern getippt',en:'Tipped against Bayern'},note:{de:'Auf eine Bayern-Niederlage getippt (nur Bundesliga).',en:'Tipped a Bayern defeat (Bundesliga only).'},color:'blue',blOnly:1,noBar:1,zeroMsg:{de:'Niemand hat gegen die Bayern getippt. 🐻',en:'Nobody tipped against Bayern. 🐻'},
     cols:[{w:'54px',h:{de:'Anti-​FCB',en:'Anti-​FCB'},f:p=>p.antiBayern||0},{h:{de:'getippt gegen',en:'tipped against'},left:1,f:p=>{const o=(typeof ADV!=='undefined'&&ADV.abOppByPlayer&&ADV.abOppByPlayer[p.name]);if(!o||!o.length)return '–';
       const g={};o.forEach(([t,c])=>{(g[c]||(g[c]=[])).push(t);});
       return Object.keys(g).map(Number).sort((a,b)=>b-a).map(c=>g[c].map(x=>tshort(esc(x))).join(', ')+(g[c].length>1?L(` (jeweils ${c}×)`,` (${c}× each)`):` (${c}×)`)).join(', ');}}]},
   {key:'proBayern',eye:{de:'🐻 Pro-Bayern / MIA SAN MIA',en:'🐻 Pro-Bayern / MIA SAN MIA'},title:{de:'Meiste Punkte durch Bayern-Siege',en:'Most points from Bayern wins'},note:{de:'Punkte aus Tipps auf einen Bayern-Sieg (nur Bundesliga).',en:'Points from tips on a Bayern win (Bundesliga only).'},color:'',gesamtOnly:1,noBar:1,full:1,
-    cols:[{w:'42px',h:{de:'<span class="mfull">Punkte</span><span class="mshort">Pkt.</span>',en:'<span class="mfull">Points</span><span class="mshort">Pts</span>'},f:p=>p.proBayern||0},{w:'50px',h:{de:'Tipp Sieg',en:'Win tips'},f:p=>p.proBayTips||0},{w:'60px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{w:'58px',h:{de:'Ø alle Spiele',en:'Ø all games'},f:p=>dec((p.bayern||0)/(p.bayernTipped||1))}]},
+    cols:[{w:'42px',h:{de:'<span class="mfull">Punkte</span><span class="mshort">Pkt.</span>',en:'<span class="mfull">Points</span><span class="mshort">Pts</span>'},f:p=>p.proBayern||0},{w:'44px',h:{de:'Tipp Sieg',en:'Win tips'},f:p=>p.proBayTips||0},{w:'56px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{w:'52px',h:{de:'Ø alle Spiele',en:'Ø all games'},f:p=>dec((p.bayern||0)/(p.bayernTipped||1))}]},
   {key:'klassiker',eye:{de:'⚔️ Der Klassiker',en:'⚔️ Der Klassiker'},title:{de:'Der Klassiker-König',en:'The Klassiker King'},note:{de:'Meiste Punkte in den direkten Duellen Bayern gegen Dortmund.',en:'Most points in the direct Bayern-vs-Dortmund duels.'},color:'',gesamtOnly:1,noBar:1,
     cols:[{h:{de:'Punkte',en:'Points'},f:p=>p.klassiker||0},{h:{de:'Duelle',en:'Duels'},f:p=>p.klassikerN||0},{h:{de:'Ø/Spiel',en:'Ø/game'},f:p=>dec((p.klassiker||0)/(p.klassikerN||1))}]},
   {key:'bayFluesterer',eye:{de:'🎯 Bayern-Kenner',en:'🎯 Bayern reader'},title:{de:'Der Bayern-Flüsterer',en:'The Bayern Whisperer'},note:{de:'Beste Punkteausbeute pro Bayern-Spiel — wer die Bayern am zuverlässigsten liest.',en:'Best points yield per Bayern game — who reads Bayern most reliably.'},color:'good',gesamtOnly:1,noBar:1,
-    cols:[{w:'60px',h:{de:'Ø Pkt/​Spiel',en:'Ø pts/​game'},f:p=>dec(p.bayFluesterer)},{w:'60px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{h:{de:'Punkte',en:'Points'},f:p=>p.bayern||0}]},
+    cols:[{w:'60px',h:{de:'Ø Pkt/​Spiel',en:'Ø pts/​game'},f:p=>dec(p.bayFluesterer)},{w:'56px',h:{de:'FCB-​Spiele',en:'FCB games'},f:p=>p.bayernTipped||0},{h:{de:'Punkte',en:'Points'},f:p=>p.bayern||0}]},
   {key:'schuetzenfest',eye:{de:'🎆 Kantersieg-Fantasie',en:'🎆 Rout fantasy'},title:{de:'Der Schützenfest-Optimist',en:'The Goal-Fest Optimist'},note:{de:'Wer im Schnitt die meisten Bayern-Tore tippt — je höher, desto größer der erwartete Kantersieg.',en:'Who tips the most Bayern goals on average — the higher, the bigger the expected rout.'},color:'blue',gesamtOnly:1,noBar:1,colLabel:{de:'Ø getippte Bayern-Tore',en:'Ø tipped Bayern goals'},fmt:v=>dec(v)},
   {key:'bayExact',eye:{de:'💎 Bayern-Perfektion',en:'💎 Bayern perfection'},title:{de:'Perfekte Bayern-Tipps',en:'Perfect Bayern tips'},note:{de:'Exakt getippte Ergebnisse (4 Punkte) in Bayern-Spielen.',en:'Exactly tipped results (4 points) in Bayern games.'},color:'',gesamtOnly:1,noBar:1,colLabel:{de:'exakte Bayern-Tipps',en:'exact Bayern tips'}},
   {key:'bayTitle',eye:{de:'📜 Titel-Glaube',en:'📜 Title faith'},title:{de:'Wer glaubt an die Bayern?',en:'Who believes in Bayern?'},note:{de:'Wie oft Bayern in den Bonusfragen als Deutscher Meister bzw. Herbstmeister getippt wurde.',en:'How often Bayern was tipped as German champion resp. autumn champion in the bonus questions.'},color:'',gesamtOnly:1,noBar:1,showZero:1,
@@ -1380,6 +1383,7 @@ function renderScope(scope){
   const gesamt=scope==='gesamt';
   if(!gesamt && SMAP[scope].running){
     const s=SMAP[scope];
+    const NEU=['Elias','Marie']; // Neuzugänge dieser Saison
     const target=new Date(2026,7,28,20,30), now=new Date(); const days=Math.ceil((target-now)/864e5);
     const countTxt = days>1 ? `${days}<small> ${L('Tage','days')}</small>` : (days===1?`1<small> ${L('Tag','day')}</small>` : `⚽`);
     const subTxt = days>1 ? L('bis zum ersten Anstoß','until the first whistle') : (days===1?L('nur noch einmal schlafen!','one more sleep!'):L('Anpfiff! Es geht los.','Kick-off! Here we go.'));
@@ -1398,15 +1402,15 @@ function renderScope(scope){
         <div class="mjoke">${L('Tipp der Redaktion: <b>7:0</b> für die Bayern — Matthew tippt vermutlich <b>0:7</b>. 😉','Our tip: <b>7:0</b> for Bayern — Matthew will probably tip <b>0:7</b>. 😉')}</div>
       </div>
       <div class="sb-welcome">${['Elias','Marie'].filter(n=>MEMOJI[n]).map(n=>`<img class="av sb-newav" src="${MEMOJI[n]}" width="52" height="52" alt="${n}">`).join('')}<span>🌱 ${L('Neu in der Runde: <b>Elias</b> &amp; <b>Marie</b> — herzlich willkommen! Auf dass die Verjüngungskur der Tippgemeinschaft uns allen neuen Antrieb gibt. 💪','New in the round: <b>Elias</b> &amp; <b>Marie</b> — a warm welcome! May this rejuvenation of our tipping crew give us all fresh drive. 💪')}</span></div>
-      <div class="sb-roster">${s.standings.map(p=>av(p.name,34)).join('')}${['Elias','Marie'].filter(n=>MEMOJI[n]).map(n=>`<span class="sb-new"><img class="av" src="${MEMOJI[n]}" width="34" height="34" alt="${n}"><span class="sb-newtag">${L('neu','new')}</span></span>`).join('')}</div>
+      <div class="sb-roster">${s.standings.map(p=>NEU.includes(p.name)&&MEMOJI[p.name]?`<span class="sb-new"><img class="av" src="${MEMOJI[p.name]}" width="34" height="34" alt="${p.name}"><span class="sb-newtag">${L('neu','new')}</span></span>`:av(p.name,34)).join('')}${NEU.filter(n=>MEMOJI[n]&&!s.standings.some(p=>p.name===n)).map(n=>`<span class="sb-new"><img class="av" src="${MEMOJI[n]}" width="34" height="34" alt="${n}"><span class="sb-newtag">${L('neu','new')}</span></span>`).join('')}</div>
     </div>`;
     document.getElementById('mainEye').textContent=L('Teilnehmerfeld','The field');
     document.getElementById('mainTitle').textContent=L('Wer ist am Start?','Who\'s in?')+' · '+s.short;
     document.getElementById('mainNote').textContent=L('Das Teilnehmerfeld der neuen Saison — Elias & Marie stoßen neu dazu.','The field for the new season — Elias & Marie are joining as newcomers.');
     document.getElementById('mainFoot').textContent='';
     document.getElementById('mainTable').style.tableLayout='';
-    const newcomers=['Elias','Marie'].filter(n=>!s.standings.some(p=>p.name===n));
-    document.getElementById('mainTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th></tr></thead><tbody>${s.standings.map(p=>`<tr><td>${nmCell(p.name,26)}</td></tr>`).join('')
+    const newcomers=NEU.filter(n=>!s.standings.some(p=>p.name===n));
+    document.getElementById('mainTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th></tr></thead><tbody>${s.standings.map(p=>`<tr><td><div class="nm-cell">${av(p.name,26)}<span class="player-name">${dispName(p.name)}</span>${NEU.includes(p.name)?`<span class="mini">🌱 ${L('neu dabei','new')}</span>`:''}</div></td></tr>`).join('')
       +newcomers.map(n=>`<tr><td><div class="nm-cell">${av(n,26)}<span class="player-name">${esc(n)}</span><span class="mini">🌱 ${L('neu dabei','new')}</span></div></td></tr>`).join('')}</tbody>`;
     document.getElementById('rankGrid').closest('section').classList.add('hidden');
     document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.add('hidden'));
