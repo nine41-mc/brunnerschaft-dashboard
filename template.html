@@ -127,7 +127,6 @@ section.block{margin:38px 0}
 .grid{display:grid;gap:14px}
 .grid>*,.two-col>*{min-width:0}
 .rscroll{overflow-x:auto;max-width:100%}
-.cellwrap{max-width:210px;white-space:normal} /* Listen-/Textspalten: umbrechen statt Karte dehnen (mobil enger, siehe Mobile-Block) */
 .bcc-sel{display:none} /* Kategorie-Dropdown nur mobil */
 .mshort{display:none}  /* Kurz-Labels nur mobil (siehe Mobile-Block) */
 .bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
@@ -1475,8 +1474,11 @@ function modeInfo(m){return {
   p532:L('Der Topf wird aufgeteilt: Sieger 50 %, Zweiter 30 %, Dritter 20 %.','The pot is split: winner 50 %, second 30 %, third 20 %.')}[m];}
 let OWNER_HANDLE='';
 let PAYPAL={};
+let FIN_EXTRA={}; // Teilnehmer ohne Kicktipp-Konto (z. B. Elias vor Registrierung)
 function feeFor(type){return type==='BL'?+document.getElementById('feeBL').value:+document.getElementById('feeCUP').value;}
-function partsOf(s){const a=s.standings.filter(p=>p.active);return a.length?a:s.standings;}
+function partsOf(s){const a=s.standings.filter(p=>p.active);const base=a.length?a:s.standings;
+  const ex=(FIN_EXTRA[s.id]||[]).filter(n=>!base.some(p=>p.name===n)).map(n=>({name:n}));
+  return base.concat(ex);}
 function seasonFinance(s){
   const act=partsOf(s);const n=act.length,fee=feeFor(s.type),pot=n*fee,mode=PAYOUT_MODE[s.id];
   let payouts=[];
@@ -1497,14 +1499,16 @@ function payoutBlock(s){const f=seasonFinance(s);const se=SETTLE[s.id];
   return `<div class="card fin-season">${head}${pot}${body}</div>`;}
 function todoBox(){
   const potOf=id=>seasonFinance(SMAP[id]).pot;
+  const openIn=id=>{const s2=SMAP[id];const fee=feeFor(s2.type);
+    return partsOf(s2).filter(p=>!(PAIDIN[id]||[]).includes(p.name)).length*fee;};
   const inOpen=DISPLAY_ORDER.filter(id=>!SETTLE[id].in);
   const outOpen=DISPLAY_ORDER.filter(id=>!SETTLE[id].out&&!SMAP[id].running);
-  const list=ids=>ids.length?ids.map(id=>`<div class="todo-row"><span>${esc(SMAP[id].name)}</span><b class="mono">${eur(potOf(id))}</b></div>`).join('')
-      +`<div class="todo-row total"><span>${L('Summe','Total')}</span><b class="mono">${eur(ids.reduce((a,id)=>a+potOf(id),0))}</b></div>`
+  const list=(ids,amt,extra)=>ids.length?ids.map(id=>`<div class="todo-row"><span>${esc(SMAP[id].name)}</span><b class="mono">${eur(amt(id))}${extra?` <span class="mini">${L('von','of')} ${eur(potOf(id))}</span>`:''}</b></div>`).join('')
+      +`<div class="todo-row total"><span>${L('Summe','Total')}</span><b class="mono">${eur(ids.reduce((a,id)=>a+amt(id),0))}</b></div>`
       :`<div class="todo-empty">${L('Alles erledigt ✓','All done ✓')}</div>`;
   return `<div class="card todo">
-    <div class="todo-col"><div class="todo-h">💰 ${L('Einzahlungen ausstehend','Payments outstanding')}</div>${list(inOpen)}</div>
-    <div class="todo-col"><div class="todo-h">🏆 ${L('Ausschüttungen ausstehend','Payouts outstanding')}</div>${list(outOpen)}</div></div>`;
+    <div class="todo-col"><div class="todo-h">💰 ${L('Einzahlungen noch offen','Payments still open')}</div>${list(inOpen,openIn,true)}</div>
+    <div class="todo-col"><div class="todo-h">🏆 ${L('Ausschüttungen ausstehend','Payouts outstanding')}</div>${list(outOpen,potOf)}</div></div>`;
 }
 function reconCard(seasonId){
   // Eine Zeile pro Tipper (auch der Kontoinhaber) — jede Einzahlung dediziert abhakbar
@@ -1654,7 +1658,7 @@ async function unlockFinance(pw, silent){
   if(!FIN_ENC){ if(err)err.textContent=L('Für diese Seite sind keine Finanzdaten hinterlegt.','No finance data is stored for this page.'); return; }
   try{
     const cfg = await decryptFinance(pw, FIN_ENC);
-    SETTLE=cfg.settle; PAYOUT_MODE=cfg.payoutMode; OWNER_HANDLE=cfg.ownerHandle; PAIDIN=cfg.paidIn||{};
+    SETTLE=cfg.settle; PAYOUT_MODE=cfg.payoutMode; OWNER_HANDLE=cfg.ownerHandle; PAIDIN=cfg.paidIn||{}; FIN_EXTRA=cfg.extra||{};
     PAYPAL=Object.fromEntries(Object.entries(cfg.paypal).map(([h,payer])=>[h,{payer}])); PAYPAL[cfg.ownerHandle]={owner:true};
     if(cfg.fees){ document.getElementById('feeBL').value=cfg.fees.BL; document.getElementById('feeCUP').value=cfg.fees.CUP; }
     renderFinance();
