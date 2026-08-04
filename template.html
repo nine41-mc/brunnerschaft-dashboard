@@ -182,7 +182,7 @@ table.heat th.pname{position:sticky;left:0;background:var(--surface);z-index:2}
 table{border-collapse:collapse;width:100%;font-size:14px}
 thead th{background:var(--surface-2);text-align:left;padding:11px 12px;font-size:11.5px;font-weight:750;
   letter-spacing:.03em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
-tbody td{padding:10px 12px;border-top:1px solid var(--line)}
+tbody td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle}
 /* Lieblingstipp & unbeliebteste Tipps: identische Zeilenhöhe -> beide Tabellen gleich hoch */
 #groupFavTable tbody tr,#groupUnpopTable tbody tr{height:44px}
 .sicwrap{white-space:nowrap} /* letztes Wort + Sortier-Icon bleiben zusammen */
@@ -366,6 +366,9 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   /* Kessel-Tabellen: feste Aufteilung, passt ohne Scrollen */
   #konstanzTable,#accTable,#outcomeTable,#vergessTable,#tendenzTable{width:100%;table-layout:fixed}
   #outcomeTable thead th:nth-child(2){width:92px}
+  #outcomeTable thead th,#outcomeTable tbody td{padding-left:5px;padding-right:5px}
+  #outcomeTable thead th:first-child{width:36px!important}
+  #outcomeTable tbody td.mono{font-size:10px}
   #konstanzTable thead th:nth-child(2),#accTable thead th:nth-child(2),#tendenzTable thead th:nth-child(2),#vergessTable thead th:nth-child(2){width:108px}
   #accTable tbody td.mono,#tendenzTable tbody td.mono,#konstanzTable tbody td.mono,#vergessTable tbody td.mono{font-size:11px;white-space:nowrap}
   #outcomeTable .mini{display:none} /* Brüche (487/697) nur auf Desktop */
