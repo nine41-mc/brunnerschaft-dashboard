@@ -376,8 +376,10 @@ export async function buildData(config){
     pers[n]={avgGoals:r2(p.goals/p.tips),drawPct:r2(100*p.draws/p.tips),homeWinPct:r2(100*p.homeWin/p.tips),awayWinPct:r2(100*(p.tips-p.homeWin-p.draws)/p.tips),hitRate:r2(100*p.hit/p.tips),exactPct:r2(100*p.exact/p.tips),ptsPerTip:r2(p.mpts/p.tips),ptsPerHit:p.hit?r2(p.mpts/p.hit):0,favResult:fav,habitPct:r2(100*(fav[1]||0)/p.tips),favTeam:top(p.backT),favCountry:top(p.backC),tips:p.tips}; }
   const twins=Object.entries(pair).map(([k,o])=>({pair:k.split('|'),pct:r2(100*o.same/o.shared),shared:o.shared,same:o.same})).sort((a,b)=>b.pct-a.pct);
   record.sort((a,b)=>b.pts-a.pts); const recTop=record.slice(0,6);
-  const recTopBL=record.filter(r=>r.type==='BL').slice(0,6);
-  const recTopCup=record.filter(r=>r.type==='CUP').slice(0,6);
+  // Bester Einzelspieltag JE TIPPER (alle Teilnehmer der Wettbewerbsart)
+  const bestPer=t=>{const m={};record.forEach(r=>{if(r.type===t&&(!m[r.n]||r.pts>m[r.n].pts))m[r.n]=r;});return Object.values(m).sort((a,b)=>b.pts-a.pts);};
+  const recTopBL=bestPer('BL');
+  const recTopCup=bestPer('CUP');
   // dedupe collective (BL days pushed once above)
   const collDays={}; worstDays.forEach(d=>{collDays[d.season+'#'+d.md]=d;});
   const allDays=Object.values(collDays).sort((a,b)=>a.avg-b.avg);
