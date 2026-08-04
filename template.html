@@ -841,10 +841,10 @@ function gesamtTiles(){
   return [
     {cls:'gold',cap:L('👑 Punktekönig aller Zeiten','👑 All-time points king'),big:topPts.name,meta:topPts.totalPts.toLocaleString(LANG==='en'?'en-GB':'de-DE')+L(' Punkte · ',' points · ')+topPts.played+L(' Wettbewerbe',' competitions')},
     {cls:'gold',cap:L('🏆 Rekordmeister','🏆 Record champion'),big:topChamp.name,meta:topChamp.champ+L(' Titel · ',' titles · ')+topChamp.champBL+'× Bundesliga'},
-    {cls:'red',cap:L('🥇 Amtierender BL-Meister','🥇 Reigning BL champion'),big:blW?blW.name:'—',meta:blC?blC.short+' · '+blW.total+L(' Punkte',' points'):''},
-    {cls:'red',cap:L('🌍 Amtierender ','🌍 Reigning ')+(wmC&&wmC.type==='EM'?'EM':L('WM','World Cup'))+L('-Sieger',' winner'),big:wmW?wmW.name:'—',meta:wmC?wmC.short+' · '+wmW.total+L(' Punkte',' points'):''},
-    {cls:'good',cap:L('📐 Tordifferenz-König','📐 Goal-difference king'),big:top3[0],meta:top3[1].p3+L('× richtige Tordifferenz','× correct goal difference')},
-    {cls:'dark',cap:L('🔴 Rote-Laterne-Abo','🔴 Red-lantern regular'),big:lastName,meta:(lg.length>1?L('je ','each '):'')+maxLast+L('× Letzter geworden','× finished last')},
+    {cls:'gold',cap:L('🥇 Amtierender BL-Meister','🥇 Reigning BL champion'),big:blW?blW.name:'—',meta:blC?blC.short+' · '+blW.total+L(' Punkte',' points'):''},
+    {cls:'gold',cap:L('🌍 Amtierender ','🌍 Reigning ')+(wmC&&wmC.type==='EM'?'EM':L('WM','World Cup'))+L('-Sieger',' winner'),big:wmW?wmW.name:'—',meta:wmC?wmC.short+' · '+wmW.total+L(' Punkte',' points'):''},
+    {cls:'gold',cap:L('📐 Tordifferenz-König','📐 Goal-difference king'),big:top3[0],meta:top3[1].p3+L('× richtige Tordifferenz','× correct goal difference')},
+    {cls:'red',cap:L('🔴 Rote-Laterne-Abo','🔴 Red-lantern regular'),big:lastName,meta:(lg.length>1?L('je ','each '):'')+maxLast+L('× Letzter geworden','× finished last')},
   ];
 }
 function seasonTiles(scope){
@@ -855,17 +855,17 @@ function seasonTiles(scope){
   const spread=winner.points-last.points;
   const tiles=[
     {cls:'gold',cap:L('🥇 Sieger','🥇 Winner'),big:winner.name,meta:winner.points+L(' Punkte',' points')},
-    {cls:'dark',cap:L('🔴 Letzter','🔴 Last'),big:last.name,meta:last.points+L(' Punkte · Platz ',' points · place ')+last.pos},
-    {cls:'red',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(winner.name)+L(' vor ',' ahead of ')+esc(last.name)},
-    {cls:'red',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:md.mdWins+L(' Spieltagsiege',' matchday wins')},
-    {cls:'good',cap:L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),big:avg.name,meta:'Ø '+dec(avg.avgMd)+L(' Punkte pro Spieltag',' points per matchday')},
-    {cls:'red',cap:L('🎯 Volltreffer-König','🎯 Bullseye king'),big:p4.name,meta:p4.p4+L(' exakte Ergebnisse',' exact results')},
+    {cls:'red',cap:L('🔴 Letzter','🔴 Last'),big:last.name,meta:last.points+L(' Punkte · Platz ',' points · place ')+last.pos},
+    {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(winner.name)+L(' vor ',' ahead of ')+esc(last.name)},
+    {cls:'gold',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:md.mdWins+L(' Spieltagsiege',' matchday wins')},
+    {cls:'gold',cap:L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),big:avg.name,meta:'Ø '+dec(avg.avgMd)+L(' Punkte pro Spieltag',' points per matchday')},
+    {cls:'gold',cap:L('🎯 Volltreffer-König','🎯 Bullseye king'),big:p4.name,meta:p4.p4+L(' exakte Ergebnisse',' exact results')},
   ];
   if(s.type==='BL'){ const ab=by('antiBayern');
     tiles.push({cls:'blue',cap:L('⚔️ Größter Bayern-Gegner','⚔️ Biggest Bayern foe'),big:ab.antiBayern>0?ab.name:'—',
       meta:ab.antiBayern>0?ab.antiBayern+L('× auf Bayern-Pleite getippt','× tipped a Bayern defeat'):L('keiner gegen die Bayern','nobody against Bayern')});
   } else { const mm=by('missing');
-    tiles.push({cls:'blue',cap:L('😴 Tipp-Muffel','😴 Tip slacker'),big:mm.missing>0?mm.name:L('niemand','nobody'),
+    tiles.push({cls:'red',cap:L('😴 Tipp-Muffel','😴 Tip slacker'),big:mm.missing>0?mm.name:L('niemand','nobody'),
       meta:mm.missing>0?mm.missing+L(' Spiele vergessen',' games forgotten'):L('alle brav getippt','everyone tipped')});
   }
   return tiles;
@@ -1226,10 +1226,10 @@ function renderRecords(){
   const wsMax=STATS18.winStreak[0][1];const ws=STATS18.winStreak.filter(w=>w[1]===wsMax).map(w=>w[0]);
   const tiles=[
     {cls:'gold',cap:L('🏅 Rekord-Spieltag','🏅 Record matchday'),big:rec.n,meta:rec.pts+L(' Punkte · ',' points · ')+rec.season+', '+L(rec.md+'. Spieltag','MD '+rec.md)},
-    {cls:'good',cap:L('📈 Beste Einzelsaison','📈 Best single season'),big:best.name,meta:best.t+L(' Punkte · ',' points · ')+best.season},
-    {cls:'dark',cap:L('📉 Schwächste BL-Saison','📉 Weakest BL season'),big:worstBL.name,meta:worstBL.t+L(' Punkte · ',' points · ')+worstBL.season},
-    {cls:'red',cap:L('🚀 Größte Aufholjagd (BL)','🚀 Biggest comeback (BL)'),big:up.name,meta:L('Platz ','Place ')+up.a+' → '+up.b+'  ('+up.from+' → '+up.to+')'},
-    {cls:'blue',cap:L('🪂 Größter Absturz (BL)','🪂 Biggest drop (BL)'),big:down.name,meta:L('Platz ','Place ')+down.a+' → '+down.b+'  ('+down.from+' → '+down.to+')'},
+    {cls:'gold',cap:L('📈 Beste Einzelsaison','📈 Best single season'),big:best.name,meta:best.t+L(' Punkte · ',' points · ')+best.season},
+    {cls:'red',cap:L('📉 Schwächste BL-Saison','📉 Weakest BL season'),big:worstBL.name,meta:worstBL.t+L(' Punkte · ',' points · ')+worstBL.season},
+    {cls:'gold',cap:L('🚀 Größte Aufholjagd (BL)','🚀 Biggest comeback (BL)'),big:up.name,meta:L('Platz ','Place ')+up.a+' → '+up.b+'  ('+up.from+' → '+up.to+')'},
+    {cls:'red',cap:L('🪂 Größter Absturz (BL)','🪂 Biggest drop (BL)'),big:down.name,meta:L('Platz ','Place ')+down.a+' → '+down.b+'  ('+down.from+' → '+down.to+')'},
     {cls:'gold',cap:L('🔥 Längste Sieg-Serie','🔥 Longest win streak'),big:ws.join(', '),meta:wsMax+L(' Spieltagsiege in Folge',' matchday wins in a row')},
   ];
   document.getElementById('recordTiles').innerHTML=tiles.map(tileHTML).join('');
