@@ -127,6 +127,7 @@ section.block{margin:38px 0}
 .grid{display:grid;gap:14px}
 .grid>*,.two-col>*{min-width:0}
 .rscroll{overflow-x:auto;max-width:100%}
+.cellwrap{max-width:210px;white-space:normal} /* Listen-/Textspalten: umbrechen statt Karte dehnen (mobil enger, siehe Mobile-Block) */
 .bcc-sel{display:none} /* Kategorie-Dropdown nur mobil */
 .mshort{display:none}  /* Kurz-Labels nur mobil (siehe Mobile-Block) */
 .bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
@@ -135,7 +136,7 @@ section.block{margin:38px 0}
 .rscroll::-webkit-scrollbar,.tbl-wrap::-webkit-scrollbar,.heat-wrap::-webkit-scrollbar{display:none}
 /* Namens-Spalte in Heat-/Team-Matrix immer fixiert */
 table.heat th.pname{position:sticky;left:0;background:var(--surface);z-index:2}
-.rank-tbl{min-width:380px}
+.rank-tbl{min-width:380px;width:100%} /* exakt Kartenbreite — Textspalten brechen um statt zu scrollen */
 .rank-tbl.rwrap{min-width:0;width:100%}
 .rank-tbl.rwrap thead th{white-space:normal}
 .rankgrid .rcard.rfull{grid-column:1/-1}
@@ -192,7 +193,7 @@ tbody td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middl
   line-height:.72;font-size:7.5px;color:var(--ink);opacity:.55;transform:translateY(-1px)}
 .sic.on{color:var(--brand);opacity:1;font-size:9px}
 thead th:hover{color:var(--ink)}
-.rank-tbl thead th{padding:8px 10px;font-size:10.5px}
+.rank-tbl thead th{padding:8px 10px;font-size:10.5px;white-space:normal} /* Karten-Köpfe dürfen umbrechen (Icon bleibt am Wort) */
 td.dim{color:var(--ink-2);font-weight:400;font-size:13px}
 td.sortcol{font-weight:750;color:var(--ink)}
 tbody tr:hover{background:var(--surface-2)}
