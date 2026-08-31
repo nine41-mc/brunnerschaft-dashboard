@@ -207,7 +207,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   border:1.5px solid var(--line-2);background:var(--surface-2);flex:0 0 auto;display:inline-block}
 .av-ini{display:inline-flex;align-items:center;justify-content:center;font-weight:900;
   color:#fff;background:linear-gradient(135deg,#c01926,#8a0f1a);box-sizing:border-box;user-select:none}
-.nm-cell{display:inline-flex;align-items:center;gap:9px;vertical-align:middle;line-height:1.2} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
+.nm-cell{display:inline-flex;align-items:center;gap:9px;vertical-align:middle;line-height:1.2}
+.blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
 .tile-av{position:absolute;top:20px;right:20px;width:56px;height:56px;box-shadow:0 2px 8px -2px rgba(0,0,0,.3)}
 .tile-avs{position:absolute;top:20px;right:20px;display:flex;flex-direction:column;gap:6px}
 .tile-avs .av{width:38px;height:38px;box-shadow:0 2px 6px -2px rgba(0,0,0,.3)}
@@ -613,6 +614,13 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
           <div class="sec-note" data-en="The rarest tip results — scorelines the group almost never dares to predict.">Die seltensten Tipp-Ergebnisse — Resultate, die sich kaum jemand zu tippen traut.</div>
           <div class="tbl-wrap"><table id="groupUnpopTable"></table></div></div>
       </div>
+    </section>
+
+    <section class="block" data-panel="kessel" id="blitzSec">
+      <div class="eyebrow" data-en="🚀 Lightning start">🚀 Der Blitzstart</div>
+      <h2 class="sec-title" data-en="Leader after game 1 &amp; matchday 1">Führung nach Spiel 1 &amp; Spieltag 1</h2>
+      <div class="sec-note" data-en="Who topped the table after the very first match of a competition — and after matchday 1? Early glory, rarely a title omen.">Wer stand nach dem allerersten Spiel eines Wettbewerbs ganz oben — und wer nach dem 1. Spieltag? Früher Ruhm, selten ein Titel-Omen.</div>
+      <div class="tbl-wrap"><table id="blitzTable"></table></div>
     </section>
 
     <section class="block" data-panel="kessel">
@@ -1307,6 +1315,24 @@ function renderHeart(){
     <div class="heart-foot">${L('Ebenfalls stark &amp; noch ohne Titel:','Also strong &amp; still title-less:')} ${others.join(' · ')} · ${L('Kriterium: meiste Gesamtpunkte ohne je einen Wettbewerb gewonnen zu haben.','Criterion: most total points without ever winning a competition.')}</div>
   </div>`;
 }
+function renderBlitz(){
+  const rows=(typeof STATS18!=='undefined'&&STATS18.firstLead)||[];
+  const sec=document.getElementById('blitzSec');
+  if(!rows.length){ if(sec)sec.style.display='none'; return; }
+  const who=(o,sz)=>{ if(!o||o.pts==null) return '<span class="mini">–</span>';
+    if(!o.names.length) return `<span class="mini">${L('alle punktlos 😅','all pointless 😅')}</span>`;
+    const shown=o.names.slice(0,3).map(n=>nmCell(n,22)).join('');
+    const more=o.names.length>3?`<span class="mini">+${o.names.length-3} ${L('weitere','more')}</span>`:'';
+    return `<div class="blitz-who">${shown}${more}</div>`;
+  };
+  document.getElementById('blitzTable').innerHTML=`<thead><tr>
+    <th style="width:19%">${L('Wettbewerb','Competition')}</th>
+    <th>🚀 <span class="mhide">${L('Nach Spiel 1','After game 1')}</span></th><th class="r" style="width:52px">${L('Pkt','Pts')}</th>
+    <th>🏁 <span class="mhide">${L('Nach Spieltag 1','After matchday 1')}</span></th><th class="r" style="width:52px">${L('Pkt','Pts')}</th></tr></thead><tbody>${
+   rows.map(r=>`<tr><td><span class="player-name">${esc(r.short)}</span>${r.game&&r.game.fx?`<br><span class="mini">${tshort(esc(r.game.fx[0]))} ${r.game.res?`${r.game.res.rh}:${r.game.res.ra}`:'–'} ${tshort(esc(r.game.fx[1]))}</span>`:''}</td>
+     <td>${who(r.game)}</td><td class="r mono">${r.game&&r.game.names.length?`<b>${r.game.pts}</b>`:'–'}</td>
+     <td>${who(r.md)}</td><td class="r mono">${r.md&&r.md.names.length?`<b>${r.md.pts}</b>`:'–'}</td></tr>`).join('')}</tbody>`;
+}
 function renderSpread(){
   const rows=DISPLAY_ORDER.filter(id=>!SMAP[id].running).map(id=>{const s=SMAP[id];const act=s.standings.filter(p=>p.active);const f=act[0],l=act[act.length-1];
     return {short:s.short,w:f.name,wp:f.total,l:l.name,lp:l.total,spread:f.total-l.total};}).sort((a,b)=>a.spread-b.spread);
@@ -1366,7 +1392,11 @@ function renderHeatmap(){
 function renderSeasonCards(){
   document.getElementById('seasons').innerHTML=DISPLAY_ORDER.filter(id=>SMAP[id].standings.some(p=>p.active)).map(id=>{const s=SMAP[id];
     const isCup=s.type!=='BL'; const typeLbl=isCup?L('Turnier','Tournament'):L('Liga','League');
-    if(s.running)return `<div class="card season"><div class="shead"><h3>${esc(s.name)}</h3><span class="stype ${isCup?'cup':''}">${typeLbl}</span></div><div style="padding:15px 16px;color:var(--ink-2);font-size:13.5px">⏳ <b>${L('Saison läuft','Season in progress')}</b> — ${L('noch keine Spieltage gewertet.','no matchdays scored yet.')}<br><span class="mini">${s.standings.length} ${L('Teilnehmer am Start.','players at the start.')}</span></div></div>`;
+    if(s.running&&!s.standings.some(p=>p.total>0))return `<div class="card season"><div class="shead"><h3>${esc(s.name)}</h3><span class="stype ${isCup?'cup':''}">${typeLbl}</span></div><div style="padding:15px 16px;color:var(--ink-2);font-size:13.5px">⏳ <b>${L('Saison läuft','Season in progress')}</b> — ${L('noch keine Spieltage gewertet.','no matchdays scored yet.')}<br><span class="mini">${s.standings.length} ${L('Teilnehmer am Start.','players at the start.')}</span></div></div>`;
+    if(s.running){const act0=s.standings.filter(p=>p.active);
+      const pod=act0.slice(0,3).map((p,i)=>`<div class="podium-row"><span class="medal">${MEDAL[i]}</span>${av(p.name,30)}<span class="nm">${esc(dispFull(p.name))}</span><span class="pts">${p.total} ${L('Pkt','pts')}</span></div>`).join('');
+      return `<div class="card season"><div class="shead"><h3>${esc(s.name)}</h3><span class="stype ${isCup?'cup':''}">⏳ ${L('läuft','live')}</span></div>${pod}
+      <div style="padding:8px 16px 14px"><span class="mini">${L('Zwischenstand nach','Standings after')} ${s.playedMd||'?'} ${(s.playedMd||0)===1?L('Spieltag','matchday'):L('Spieltagen','matchdays')} — ${L('noch nichts entschieden!','nothing decided yet!')}</span></div></div>`;}
     const act=s.standings.filter(p=>p.active);
     const podium=act.slice(0,3).map((p,i)=>`<div class="podium-row"><span class="medal">${MEDAL[i]}</span>${av(p.name,30)}<span class="nm">${esc(dispFull(p.name))}</span><span class="pts">${p.total} ${L('Pkt','pts')}</span></div>`).join('');
     const stMap={}; s.standings.forEach(p=>stMap[p.name]=p);
@@ -1380,7 +1410,7 @@ function renderSeasonCards(){
 
 /* ---------- filter pills ---------- */
 function renderPills(){
-  const opts=[{id:'gesamt',label:L('Gesamt','Overall'),tag:L('alle','all')}].concat(DISPLAY_ORDER.filter(id=>SMAP[id].standings.some(p=>p.active)||SMAP[id].running).map(id=>({id,label:SMAP[id].short,tag:SMAP[id].running?L('bald','soon'):SMAP[id].type})));
+  const opts=[{id:'gesamt',label:L('Gesamt','Overall'),tag:L('alle','all')}].concat(DISPLAY_ORDER.filter(id=>SMAP[id].standings.some(p=>p.active)||SMAP[id].running).map(id=>({id,label:SMAP[id].short,tag:SMAP[id].running?(SMAP[id].standings.some(p=>p.total>0)?L('live','live'):L('bald','soon')):SMAP[id].type})));
   document.getElementById('pills').innerHTML=opts.map(o=>`<button class="pill" data-scope="${o.id}" aria-pressed="${o.id===CUR_SCOPE}">${esc(o.label)}${o.id!=='gesamt'?`<span class="t">${o.tag}</span>`:''}</button>`).join('');
   document.querySelectorAll('#pills .pill').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('#pills .pill').forEach(x=>x.setAttribute('aria-pressed',x===b));
@@ -1390,7 +1420,7 @@ function renderPills(){
 function renderScope(scope){
   CUR_SCOPE=scope;
   const gesamt=scope==='gesamt';
-  if(!gesamt && SMAP[scope].running){
+  if(!gesamt && SMAP[scope].running && !SMAP[scope].standings.some(p=>p.total>0)){
     const s=SMAP[scope];
     const NEU=['Messi','Marie','LuLu']; // Neuzugänge dieser Saison (Handles)
     const target=new Date(2026,7,28,20,30), now=new Date(); const days=Math.ceil((target-now)/864e5);
@@ -1431,7 +1461,7 @@ function renderScope(scope){
   document.getElementById('tilesTitle').textContent=gesamt?L('Auf einen Blick','At a glance'):SMAP[scope].name;
   document.getElementById('tilesNote').textContent=gesamt?L('Wer thront, wer trägt die rote Laterne.','Who reigns, who carries the red lantern.'):L('Die Highlights dieses Wettbewerbs.','The highlights of this competition.');
   document.getElementById('mainEye').textContent=gesamt?L('Die ewige Bestenliste','The all-time leaderboard'):L('Endstand','Final standings');
-  document.getElementById('mainTitle').textContent=gesamt?L('Ewige Tabelle','All-Time Table'):L('Abschlusstabelle ','Final table ')+SMAP[scope].short;
+  document.getElementById('mainTitle').textContent=gesamt?L('Ewige Tabelle','All-Time Table'):(SMAP[scope].running?L('Zwischenstand ','Current standings ')+SMAP[scope].short+(SMAP[scope].playedMd?L(' · nach '+SMAP[scope].playedMd+'. Spieltag',' · after MD '+SMAP[scope].playedMd):''):L('Abschlusstabelle ','Final table ')+SMAP[scope].short);
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.');
   document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
@@ -1586,6 +1616,7 @@ function renderAll(){
   renderTwins();
   renderGroupStats();
   renderHeart();
+  renderBlitz();
   renderSpread();
   renderH2H();
   renderPills();

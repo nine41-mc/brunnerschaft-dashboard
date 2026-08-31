@@ -160,7 +160,7 @@ export async function buildData(config){
   for(const s of seasons){
     const g=raw[s.id].g;
     const standings=g.players.map(p=>({pos:p.pos,name:p.name,total:p.total,active:p.total>0}));
-    DATA.seasons.push({ id:s.id, name:s.name, short:s.short, type:s.type, numMd:s.numMd, running:s.running||undefined, standings });
+    DATA.seasons.push({ id:s.id, name:s.name, short:s.short, type:s.type, numMd:s.numMd, running:s.running||undefined, playedMd:s.playedMd||0, standings });
   }
   const names=new Set(); DATA.seasons.forEach(s=>s.standings.forEach(p=>{if(p.active)names.add(p.name);}));
   for(const name of names){
@@ -186,7 +186,7 @@ export async function buildData(config){
   const METRICS={ perSeason:{}, gesamt:{} };
   const gEnsure=n=>METRICS.gesamt[n]||(METRICS.gesamt[n]={placed:0,missing:0,p4:0,p3:0,p2:0,antiBayern:0,bayernTipped:0,mdSum:0,mdCount:0,mdWins:0});
   for(const s of seasons){
-    if(s.running) continue;
+    if(!s.started) continue; // laufende Saison zählt live mit
     const g=raw[s.id].g; const active=g.players.filter(p=>p.total>0); const ps={}; METRICS.perSeason[s.id]=ps;
     const mdWins={};
     for(let mi=0;mi<s.numMd;mi++){ let max=-1,w=[]; active.forEach(p=>{const v=p.md[mi]; if(v==null)return; if(v>max){max=v;w=[p.name];}else if(v===max)w.push(p.name);}); if(max>0)w.forEach(x=>mdWins[x]=(mdWins[x]||0)+1); }
@@ -211,6 +211,7 @@ export async function buildData(config){
   const crazy=[]; // exakt getroffene, verrückte Ergebnisse
   const leaderMd={}, leadStreak={}; // Spieltage als Tabellenführer + längste Führung am Stück
   const worstTip=[]; // größte Abweichung Tipp <-> Ergebnis
+  const firstLead=[]; // Blitzstart: Führung nach Spiel 1 und nach Spieltag 1 je Saison
   const megalo={}; // Größenwahn: hohe Tipps (>=5 Tore) ohne Punkte
   const beton={}; // 0:0 getippt: gesamt + wie oft mind. 1 Tor fiel (daneben)
   const pannen={}, pannenMd={}; // Pannenkönig: BL-Spieltage <5 Pkt (nur mit abgegebenen Tipps)
@@ -239,6 +240,21 @@ export async function buildData(config){
       if(!md) return; const mi=idxs[k];
       const totalPtsMd = md.rows.reduce((a,r)=>a+r.mdTot,0);
       if(totalPtsMd<=0) return; // Spieltag (noch) nicht gespielt -> überspringen
+      if(mi===1){ // Blitzstart: Wer führte nach dem 1. Spiel und nach dem 1. Spieltag?
+        const fl={id:s.id,short:s.short};
+        if(md.results[0]){
+          let mx=-1,who=[]; md.rows.forEach(r=>{ if(!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
+            const pt=(r.tips[0]&&!r.tips[0].empty)?(r.tips[0].pts||0):0;
+            if(pt>mx){mx=pt;who=[r.name];} else if(pt===mx) who.push(r.name); });
+          fl.game={pts:mx,names:mx>0?who:[],fx:md.fixtures[0],res:md.results[0]};
+        }
+        if(md.results.length&&md.results.every(r=>r)){
+          let mx=-1,who=[]; md.rows.forEach(r=>{ if(!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
+            if(r.mdTot>mx){mx=r.mdTot;who=[r.name];} else if(r.mdTot===mx) who.push(r.name); });
+          fl.md={pts:mx,names:mx>0?who:[]};
+        }
+        if(fl.game||fl.md) firstLead.push(fl);
+      }
       const pmap={}; const dayTips=md.fixtures.map(()=>[]);
       // Gruppen-Konsens je Spiel (Mehrheits-Tendenz der Runde) für "Außenseiter"
       const matchTend=md.fixtures.map(()=>({H:0,D:0,A:0}));
@@ -345,7 +361,7 @@ export async function buildData(config){
   // ---- ADV ----
   const bestOf=map=>{const o={};for(const[n,t]of Object.entries(map)){const e=Object.entries(t).sort((a,b)=>b[1]-a[1]);if(e[0])o[n]=e[0];}return o;};
   const bonusCatAll={}; const prophetChamp={}, prophetHerbst={}, bayernTitleAll={};
-  for(const s of seasons){ if(!s.started||s.running) continue; const b=await scrapeBonus(s);
+  for(const s of seasons){ if(!s.started) continue; const b=await scrapeBonus(s);
     for(const[n,c]of Object.entries(b.cats)){ const cc=bonusCatAll[n]||(bonusCatAll[n]={Meister:0,Herbstmeister:0,Turniersieger:0,'Torschützenkönig':0,Sonstige:0}); for(const k in c)cc[k]+=c[k]; }
     for(const[n,v]of Object.entries(b.champCorrect)) prophetChamp[n]=(prophetChamp[n]||0)+v;
     for(const[n,v]of Object.entries(b.hmCorrect)) prophetHerbst[n]=(prophetHerbst[n]||0)+v;
@@ -397,7 +413,7 @@ export async function buildData(config){
       return Object.entries(groupRes).sort((a,b)=> a[1]-b[1] || gt(b[0])-gt(a[0])).slice(0,6)
         .map(([r,c])=>[r,c,Object.entries(groupResWho[r]||{}).sort((x,y)=>y[1]-x[1]).map(e=>e[0])]);})(),
     prophetChamp, prophetHerbst,
-    konstanz, leaderMd, leadStreak, underdog, underdogOpp, crazy:crazyTop, outcomeType,
+    konstanz, leaderMd, leadStreak, underdog, underdogOpp, crazy:crazyTop, outcomeType, firstLead,
     worstTip:[...worstTip].sort((a,b)=>b.dist-a.dist).slice(0,8).map(w=>({...w,match:w.fx?shortTeam(w.fx[0])+' – '+shortTeam(w.fx[1]):null,fx:undefined})),
     megalo, beton, pannen, pannenMd };
 
