@@ -121,7 +121,7 @@ section.block{margin:38px 0}
   font-family:inherit;font-size:13px;font-weight:650;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap}
 .pill:hover{border-color:var(--brand);color:var(--ink)}
 .pill[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
-.pill .t{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-left:6px}
+.pill .t{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-left:6px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .grid{display:grid;gap:14px}
@@ -162,7 +162,7 @@ table.heat th.pname{position:sticky;left:0;background:var(--surface);z-index:2}
 .startboard .sb-roster .av{border-color:rgba(255,255,255,.55);width:34px;height:34px}
 .startboard .sb-new{position:relative;display:inline-flex;flex-direction:column;align-items:center}
 .startboard .sb-new .av{border:2px solid #fff;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
-.startboard .sb-new .sb-newtag{margin-top:3px;background:#fff;color:var(--brand);font-size:8px;font-weight:900;padding:1px 6px;border-radius:8px;text-transform:uppercase;letter-spacing:.05em}
+.startboard .sb-new .sb-newtag{margin-top:3px;background:#fff;color:var(--brand);font-size:10px;font-weight:900;padding:1px 6px;border-radius:8px;text-transform:uppercase;letter-spacing:.05em}
 @media(max-width:560px){.startboard h2{font-size:25px}.startboard .sb-count{font-size:54px}.startboard .sb-welcome{flex-direction:column;text-align:center}}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
 .two-col .sec-note{min-height:40px}
@@ -219,7 +219,30 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   box-shadow:0 2px 10px -3px rgba(226,0,26,.45);transition:transform .12s ease,box-shadow .12s ease}
 .lb-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px -3px rgba(226,0,26,.55)}
 .lb-btn:active{transform:translateY(0);opacity:.9}
-@media(max-width:560px){.lb-btn{width:100%}} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
+@media(max-width:560px){.lb-btn{width:100%}}
+/* ---------- iOS-Feinschliff (Apple HIG) ---------- */
+*{-webkit-tap-highlight-color:transparent} /* eigener :active-State statt grauem iOS-Blitz */
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--hdrH,58px) + var(--tabsH,46px) + 10px)} /* Sprungziele landen nicht unter den sticky Leisten */
+main{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} /* Home-Indicator (PWA) */
+.top-inner{padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))} /* Notch im Querformat */
+.tabs-inner{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+.tbl-wrap,.rscroll,.heat-wrap{-webkit-overflow-scrolling:touch} /* Momentum-Scrolling */
+.pill:active,.tab:active,.season summary:active{opacity:.6}
+.pill:active{transform:scale(.97)}
+.theme-btn:active,.lang-switch button:active{opacity:.6}
+/* Unsichtbare 44pt-Hit-Areas — Optik unverändert */
+.theme-btn,.lang-switch button{position:relative}
+.theme-btn::after{content:"";position:absolute;inset:-6px;border-radius:50%}
+.lang-switch button::after{content:"";position:absolute;inset:-10px 0}
+@media(max-width:720px){
+  .pill{min-height:44px;padding:10px 16px;display:inline-flex;align-items:center} /* 44pt-Target */
+  .pills{gap:9px}
+  .card.season details summary{padding:13px 16px}
+  .h2h-bar select,.bcc-sel select{min-height:44px;font-size:16px} /* 16px verhindert iOS-Fokus-Zoom */
+  thead th{padding-top:13px;padding-bottom:13px}          /* nur vertikal — Spaltenbreiten bleiben exakt */
+  .rank-tbl thead th{padding-top:11px;padding-bottom:11px}
+  #outcomeTable thead th{padding-top:5px;padding-bottom:5px} /* bewusst kompakt gehalten, sonst scrollt sie wieder */
+} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
 .tile-av{position:absolute;top:20px;right:20px;width:56px;height:56px;box-shadow:0 2px 8px -2px rgba(0,0,0,.3)}
 .tile-avs{position:absolute;top:20px;right:20px;display:flex;flex-direction:column;gap:6px}
 .tile-avs .av{width:38px;height:38px;box-shadow:0 2px 6px -2px rgba(0,0,0,.3)}
