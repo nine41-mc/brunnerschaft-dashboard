@@ -208,7 +208,13 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .av-ini{display:inline-flex;align-items:center;justify-content:center;font-weight:900;
   color:#fff;background:linear-gradient(135deg,#c01926,#8a0f1a);box-sizing:border-box;user-select:none}
 .nm-cell{display:inline-flex;align-items:center;gap:9px;vertical-align:middle;line-height:1.2}
-.blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
+.blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.live-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(90deg,rgba(226,0,26,.09),rgba(226,0,26,.03));
+  border:1px solid rgba(226,0,26,.28);border-radius:12px;padding:10px 14px;margin:0 0 16px}
+.live-tag{background:var(--brand);color:#fff;font-size:10.5px;font-weight:900;letter-spacing:.1em;padding:3px 10px;border-radius:999px;text-transform:uppercase;flex:0 0 auto}
+.lb-txt{font-size:14px;font-weight:650;flex:1;min-width:170px}
+.lb-btn{background:var(--surface);color:var(--brand);border:1.5px solid rgba(226,0,26,.45);font-weight:800;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;flex:0 0 auto;font-family:var(--ff)}
+.lb-btn:hover{background:var(--brand);color:#fff} /* mittig in der Textzeile — Baseline-Ausrichtung erzeugte Leerraum unterm Avatar (v. a. Safari) */
 .tile-av{position:absolute;top:20px;right:20px;width:56px;height:56px;box-shadow:0 2px 8px -2px rgba(0,0,0,.3)}
 .tile-avs{position:absolute;top:20px;right:20px;display:flex;flex-direction:column;gap:6px}
 .tile-avs .av{width:38px;height:38px;box-shadow:0 2px 6px -2px rgba(0,0,0,.3)}
@@ -458,6 +464,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
 <main>
   <!-- ============ STATISTIKEN ============ -->
   <div class="panel active" id="panel-stats" role="tabpanel">
+    <div id="liveBanner"></div>
     <div class="eyebrow" data-en="Since 2021 · 8 competitions · 9 players">Seit 2021 · 8 Wettbewerbe · 9 Tipper</div>
     <h1 style="font-size:30px;font-weight:850;letter-spacing:-.9px" data-en="The Big Review">Der große Rückblick</h1>
     <p class="lead" data-en="Five Bundesliga seasons, three tournaments, countless pub debates. All numbers read live from our Kicktipp group. Cheers! 🍺">Fünf Bundesliga-Saisons, drei Turniere, unzählige Stammtisch-Diskussionen.
@@ -617,10 +624,14 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     </section>
 
     <section class="block" data-panel="kessel" id="blitzSec">
-      <div class="eyebrow" data-en="🚀 Lightning start">🚀 Der Blitzstart</div>
-      <h2 class="sec-title" data-en="Leader after game 1 &amp; matchday 1">Führung nach Spiel 1 &amp; Spieltag 1</h2>
-      <div class="sec-note" data-en="Who topped the table after the very first match of a competition — and after matchday 1? Early glory, rarely a title omen.">Wer stand nach dem allerersten Spiel eines Wettbewerbs ganz oben — und wer nach dem 1. Spieltag? Früher Ruhm, selten ein Titel-Omen.</div>
-      <div class="tbl-wrap"><table id="blitzTable"></table></div>
+      <div class="two-col">
+        <div><div class="eyebrow" data-en="🚀 Lightning start">🚀 Der Blitzstart</div><h2 class="sec-title" data-en="Leader after game 1">Führung nach Spiel 1</h2>
+          <div class="sec-note" data-en="Top of the table after the very first match — the ‘champion by feeling’.">Ganz oben nach dem allerersten Spiel — der gefühlte Meister.</div>
+          <div class="tbl-wrap"><table id="blitzGameTable"></table></div></div>
+        <div><div class="eyebrow" data-en="🏁 Matchday 1">🏁 Der Frühstarter</div><h2 class="sec-title" data-en="Leader after matchday 1">Führung nach Spieltag 1</h2>
+          <div class="sec-note" data-en="Top after matchday 1 — the ‘presumptive tipping champion for the next 10 years’.">Ganz oben nach dem 1. Spieltag — der gefühlte Tippsieger für die nächsten 10 Jahre.</div>
+          <div class="tbl-wrap"><table id="blitzMdTable"></table></div></div>
+      </div>
     </section>
 
     <section class="block" data-panel="kessel">
@@ -873,20 +884,23 @@ function seasonTiles(scope){
   const winner=arr.find(p=>p.pos===1), last=[...arr].sort((a,b)=>b.pos-a.pos)[0];
   const md=by('mdWins'), avg=by('avgMd'), p4=by('p4');
   const spread=winner.points-last.points;
+  const run=!!s.running;
+  const capWin=run?gLbl(winner.name,'🥇 Aktuell Erster','🥇 Aktuell Erste'):gLbl(winner.name,L('🥇 Sieger','🥇 Winner'),'🥇 Siegerin');
+  const capLast=run?gLbl(last.name,'🔴 Aktuell Letzter','🔴 Aktuell Letzte'):gLbl(last.name,L('🔴 Letzter','🔴 Last'),'🔴 Letzte');
   const tiles=[
-    {cls:'gold',cap:L('🥇 Sieger','🥇 Winner'),big:winner.name,meta:winner.points+L(' Punkte',' points')},
-    {cls:'red',cap:L('🔴 Letzter','🔴 Last'),big:last.name,meta:last.points+L(' Punkte · Platz ',' points · place ')+last.pos},
+    {cls:'gold',cap:LANG==='en'&&run?'🥇 Currently 1st':capWin,big:winner.name,meta:nWord(winner.points,L('Punkt','point'),L('Punkte','points'))},
+    {cls:'red',cap:LANG==='en'&&run?'🔴 Currently last':capLast,big:last.name,meta:nWord(last.points,L('Punkt','point'),L('Punkte','points'))+L(' · Platz ',' · place ')+last.pos},
     {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(dispFull(winner.name))+L(' vor ',' ahead of ')+esc(dispFull(last.name)),avs:[winner.name,last.name]},
-    {cls:'gold',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:md.mdWins+L(' Spieltagsiege',' matchday wins')},
+    {cls:'gold',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:nWord(md.mdWins,L('Spieltagsieg','matchday win'),L('Spieltagsiege','matchday wins'))},
     {cls:'gold',cap:L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),big:avg.name,meta:'Ø '+dec(avg.avgMd)+L(' Punkte pro Spieltag',' points per matchday')},
-    {cls:'gold',cap:L('🎯 Volltreffer-König','🎯 Bullseye king'),big:p4.name,meta:p4.p4+L(' exakte Ergebnisse',' exact results')},
+    {cls:'gold',cap:gLbl(p4.name,L('🎯 Volltreffer-König','🎯 Bullseye king'),'🎯 Volltreffer-Königin'),big:p4.name,meta:nWord(p4.p4,L('exaktes Ergebnis','exact result'),L('exakte Ergebnisse','exact results'))},
   ];
   if(s.type==='BL'){ const ab=by('antiBayern');
     tiles.push({cls:'blue',cap:L('⚔️ Größter Bayern-Gegner','⚔️ Biggest Bayern foe'),big:ab.antiBayern>0?ab.name:'—',
       meta:ab.antiBayern>0?ab.antiBayern+L('× auf Bayern-Pleite getippt','× tipped a Bayern defeat'):L('keiner gegen die Bayern','nobody against Bayern')});
   } else { const mm=by('missing');
     tiles.push({cls:'red',cap:L('😴 Tipp-Muffel','😴 Tip slacker'),big:mm.missing>0?mm.name:L('niemand','nobody'),
-      meta:mm.missing>0?mm.missing+L(' Spiele vergessen',' games forgotten'):L('alle brav getippt','everyone tipped')});
+      meta:mm.missing>0?nWord(mm.missing,L('Spiel vergessen','game forgotten'),L('Spiele vergessen','games forgotten')):L('alle brav getippt','everyone tipped')});
   }
   return tiles;
 }
@@ -1035,7 +1049,8 @@ function renderRankGrid(scope){
       if(c.blOnly&&!scopeIsBL(scp))return false;
       return true;
     }).sort((a,b)=>(b.full?1:0)-(a.full?1:0)); // volle-Breite-Karten zuerst
-    grid.innerHTML=cards.map(c=>rankCardHTML(scp,c)).join('');
+    const ordered=(scp!=='gesamt'&&SMAP[scp].running)?cards.filter(c=>c.key!=='bonus').concat(cards.filter(c=>c.key==='bonus')):cards; // Bonus erst am Saisonende relevant
+    grid.innerHTML=ordered.map(c=>rankCardHTML(scp,c)).join('');
     grid.querySelectorAll('table.rank-tbl').forEach(t=>makeSortable(t,2));
   };
   draw('rankGrid', c=>(c.tab||'stats')==='stats'&&!c.pair, scope); // Haupttab folgt dem Saison-Filter
@@ -1087,6 +1102,9 @@ function renderBestTeam(){
 }
 const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben','Messi':'Elias','LuLu':'Luisa'}; // Anzeigenamen (überall)
 const NSHORT={'Matthew':'Matt'}; // nur bei Platznot (mobil)
+const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
+function gLbl(name,m,f){return (LANG!=='en'&&NFEM.has(name))?f:m;} // DE: weibliche Form, EN: neutral
+function nWord(n,sg,pl){return n+'\u00a0'+(n===1?sg:pl);} // Singular/Plural
 function dispFull(n){return NFULL[n]||n;}
 const NF_RE=new RegExp(Object.keys(NFULL).sort((x,y)=>y.length-x.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
 function dispText(str){return String(str).replace(NF_RE,m=>NFULL[m]);} // Namen in Fließtext ersetzen
@@ -1250,7 +1268,7 @@ function renderRecords(){
     {cls:'red',cap:L('📉 Schwächste BL-Saison','📉 Weakest BL season'),big:worstBL.name,meta:worstBL.t+L(' Punkte · ',' points · ')+worstBL.season},
     {cls:'gold',cap:L('🚀 Größte Aufholjagd (BL)','🚀 Biggest comeback (BL)'),big:up.name,meta:L('Platz ','Place ')+up.a+' → '+up.b+'  ('+up.from+' → '+up.to+')'},
     {cls:'red',cap:L('🪂 Größter Absturz (BL)','🪂 Biggest drop (BL)'),big:down.name,meta:L('Platz ','Place ')+down.a+' → '+down.b+'  ('+down.from+' → '+down.to+')'},
-    {cls:'gold',cap:L('🔥 Längste Sieg-Serie','🔥 Longest win streak'),big:ws.join(', '),meta:wsMax+L(' Spieltagsiege in Folge',' matchday wins in a row')},
+    {cls:'gold',cap:L('🔥 Längste Sieg-Serie','🔥 Longest win streak'),big:ws.join(', '),meta:nWord(wsMax,L('Spieltagsieg in Folge','matchday win in a row'),L('Spieltagsiege in Folge','matchday wins in a row'))},
   ];
   document.getElementById('recordTiles').innerHTML=tiles.map(tileHTML).join('');
   function renderRecTable(type){
@@ -1315,22 +1333,38 @@ function renderHeart(){
     <div class="heart-foot">${L('Ebenfalls stark &amp; noch ohne Titel:','Also strong &amp; still title-less:')} ${others.join(' · ')} · ${L('Kriterium: meiste Gesamtpunkte ohne je einen Wettbewerb gewonnen zu haben.','Criterion: most total points without ever winning a competition.')}</div>
   </div>`;
 }
+function gotoScope(id){
+  const b=document.querySelector(`#pills .pill[data-scope="${id}"]`); if(b)b.click();
+  const fb=document.querySelector('.filterbar'); if(fb&&fb.scrollIntoView)fb.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderLiveBanner(){
+  const el=document.getElementById('liveBanner'); if(!el)return;
+  const live=DISPLAY_ORDER.map(id=>SMAP[id]).find(x=>x.running&&x.standings.some(p=>p.total>0));
+  if(!live){el.innerHTML='';return;}
+  const yr=live.short.replace(/^BL\s*/,'');
+  el.innerHTML=`<div class="live-banner"><span class="live-tag">⏳ ${L('Läuft','Live')}</span>
+    <span class="lb-txt">${live.type==='BL'?L('Die aktuelle BL-Saison '+yr+' ist in vollem Gange.','The current BL season '+yr+' is in full swing.'):L('Der Wettbewerb '+esc(live.short)+' ist in vollem Gange.','The competition '+esc(live.short)+' is in full swing.')}</span>
+    <button class="lb-btn" onclick="gotoScope('${live.id}')">${L('Aktueller Stand','Current standings')} ›</button></div>`;
+}
 function renderBlitz(){
   const rows=(typeof STATS18!=='undefined'&&STATS18.firstLead)||[];
   const sec=document.getElementById('blitzSec');
   if(!rows.length){ if(sec)sec.style.display='none'; return; }
-  const who=(o,sz)=>{ if(!o||o.pts==null) return '<span class="mini">–</span>';
+  const who=o=>{ if(!o||o.pts==null) return '<span class="mini">–</span>';
     if(!o.names.length) return `<span class="mini">${L('alle punktlos 😅','all pointless 😅')}</span>`;
     const shown=o.names.slice(0,3).map(n=>nmCell(n,22)).join('');
     const more=o.names.length>3?`<span class="mini">+${o.names.length-3} ${L('weitere','more')}</span>`:'';
     return `<div class="blitz-who">${shown}${more}</div>`;
   };
-  document.getElementById('blitzTable').innerHTML=`<thead><tr>
-    <th style="width:19%">${L('Wettbewerb','Competition')}</th>
-    <th>🚀 <span class="mhide">${L('Nach Spiel 1','After game 1')}</span></th><th class="r" style="width:52px">${L('Pkt','Pts')}</th>
-    <th>🏁 <span class="mhide">${L('Nach Spieltag 1','After matchday 1')}</span></th><th class="r" style="width:52px">${L('Pkt','Pts')}</th></tr></thead><tbody>${
+  document.getElementById('blitzGameTable').innerHTML=`<thead><tr>
+    <th style="width:34%">${L('Wettbewerb','Competition')}</th>
+    <th>${L('Vorn','In front')}</th><th class="r" style="width:48px">${L('Pkt','Pts')}</th></tr></thead><tbody>${
    rows.map(r=>`<tr><td><span class="player-name">${esc(r.short)}</span>${r.game&&r.game.fx?`<br><span class="mini">${tshort(esc(r.game.fx[0]))} ${r.game.res?`${r.game.res.rh}:${r.game.res.ra}`:'–'} ${tshort(esc(r.game.fx[1]))}</span>`:''}</td>
-     <td>${who(r.game)}</td><td class="r mono">${r.game&&r.game.names.length?`<b>${r.game.pts}</b>`:'–'}</td>
+     <td>${who(r.game)}</td><td class="r mono">${r.game&&r.game.names.length?`<b>${r.game.pts}</b>`:'–'}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('blitzMdTable').innerHTML=`<thead><tr>
+    <th style="width:34%">${L('Wettbewerb','Competition')}</th>
+    <th>${L('Vorn','In front')}</th><th class="r" style="width:48px">${L('Pkt','Pts')}</th></tr></thead><tbody>${
+   rows.map(r=>`<tr><td><span class="player-name">${esc(r.short)}</span></td>
      <td>${who(r.md)}</td><td class="r mono">${r.md&&r.md.names.length?`<b>${r.md.pts}</b>`:'–'}</td></tr>`).join('')}</tbody>`;
 }
 function renderSpread(){
@@ -1460,9 +1494,9 @@ function renderScope(scope){
   document.getElementById('tilesEye').textContent=gesamt?L('Die Rekorde','The records'):(SMAP[scope].type==='BL'?'Bundesliga':L('Turnier','Tournament'))+' · '+SMAP[scope].name;
   document.getElementById('tilesTitle').textContent=gesamt?L('Auf einen Blick','At a glance'):SMAP[scope].name;
   document.getElementById('tilesNote').textContent=gesamt?L('Wer thront, wer trägt die rote Laterne.','Who reigns, who carries the red lantern.'):L('Die Highlights dieses Wettbewerbs.','The highlights of this competition.');
-  document.getElementById('mainEye').textContent=gesamt?L('Die ewige Bestenliste','The all-time leaderboard'):L('Endstand','Final standings');
+  document.getElementById('mainEye').textContent=gesamt?L('Die ewige Bestenliste','The all-time leaderboard'):(SMAP[scope].running?L('Zwischenstand','Current standings'):L('Endstand','Final standings'));
   document.getElementById('mainTitle').textContent=gesamt?L('Ewige Tabelle','All-Time Table'):(SMAP[scope].running?L('Zwischenstand ','Current standings ')+SMAP[scope].short+(SMAP[scope].playedMd?L(' · nach '+SMAP[scope].playedMd+'. Spieltag',' · after MD '+SMAP[scope].playedMd):''):L('Abschlusstabelle ','Final table ')+SMAP[scope].short);
-  document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.');
+  document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):(SMAP[scope].running?L('Zwischenstand dieses Wettbewerbs — die Saison läuft noch. Sortierbar — Kopf anklicken.','Current standings — the season is still running. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.'));
   document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
   renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); applyMobileSticky();
@@ -1616,6 +1650,7 @@ function renderAll(){
   renderTwins();
   renderGroupStats();
   renderHeart();
+  renderLiveBanner();
   renderBlitz();
   renderSpread();
   renderH2H();
