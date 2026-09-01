@@ -1,6 +1,24 @@
 // Scrapt die (öffentlichen) Kicktipp-Daten der Brunnerschaft und berechnet alle Statistiken.
 // Portierung der im Browser erprobten Logik nach Node (fetch + jsdom).
 import { JSDOM } from 'jsdom';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// ---------- Saison-Archiv ----------
+// Abgeschlossene Wettbewerbe werden als JSON-Snapshot in archive/ abgelegt (im Repo committet),
+// damit die Daten erhalten bleiben, wenn Kicktipp alte Tipprunden löscht (z. B. EM 2024 zum 18.09.2026).
+// Beim Build wird das Archiv bevorzugt; nur laufende/unarchivierte Saisons werden live gescrapt.
+const ARCHIVE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'archive');
+function loadArchive(id){
+  const f=path.join(ARCHIVE_DIR, id+'.json');
+  if(!fs.existsSync(f)) return null;
+  try{ return JSON.parse(fs.readFileSync(f,'utf8')); }catch(e){ console.warn('Archiv defekt:',f,e.message); return null; }
+}
+function saveArchive(id, data){
+  fs.mkdirSync(ARCHIVE_DIR,{recursive:true});
+  fs.writeFileSync(path.join(ARCHIVE_DIR, id+'.json'), JSON.stringify(data));
+}
 
 const UA = { headers: { 'User-Agent': 'BrunnerschaftDashboard/1.0 (+github pages build)' } };
 const NAME_MAP = { 'Toblerone': 'Tobias' };
@@ -140,9 +158,14 @@ export async function buildData(config){
   seasons.sort((a,b)=>orderIdx(a.id)-orderIdx(b.id));
 
   const raw = {}; // id -> {season, gesamt}
+  const ARCH = {}; // geladene Archive je Saison
+  const COLLECT = {}; // frisch gescrapte Rohdaten (für neues Archiv am Saisonende)
   for(const s of seasons){
-    const g = await scrapeGesamt(s);
+    ARCH[s.id] = loadArchive(s.id);
+    const g = ARCH[s.id] ? ARCH[s.id].gesamt : await scrapeGesamt(s);
+    if(ARCH[s.id]) console.log(`  ↺ ${s.short}: aus Archiv`);
     raw[s.id] = { s, g };
+    COLLECT[s.id] = { gesamt: g };
   }
 
   // played-Erkennung: Anzahl Spieltage mit irgendeinem Punkt
@@ -232,7 +255,8 @@ export async function buildData(config){
   for(const s of seasons){
     if(!s.started) continue;
     const idxs=[]; for(let i=1;i<=s.numMd;i++) idxs.push(i);
-    const mds = await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
+    const mds = ARCH[s.id] ? idxs.map(i=>(ARCH[s.id].matchdays||[])[i-1]||null) : await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
+    COLLECT[s.id].matchdays = mds;
     const ps = METRICS.perSeason[s.id] || (METRICS.perSeason[s.id]={});
     const activeNames = new Set(raw[s.id].g.players.filter(p=>p.total>0).map(p=>p.name));
     const seasonMd=[]; // md -> {name:tot}
@@ -361,7 +385,7 @@ export async function buildData(config){
   // ---- ADV ----
   const bestOf=map=>{const o={};for(const[n,t]of Object.entries(map)){const e=Object.entries(t).sort((a,b)=>b[1]-a[1]);if(e[0])o[n]=e[0];}return o;};
   const bonusCatAll={}; const prophetChamp={}, prophetHerbst={}, bayernTitleAll={};
-  for(const s of seasons){ if(!s.started) continue; const b=await scrapeBonus(s);
+  for(const s of seasons){ if(!s.started) continue; const b=ARCH[s.id]?(ARCH[s.id].bonus||{cats:{},champCorrect:{},hmCorrect:{},bayernTitle:{}}):await scrapeBonus(s); COLLECT[s.id].bonus=b;
     for(const[n,c]of Object.entries(b.cats)){ const cc=bonusCatAll[n]||(bonusCatAll[n]={Meister:0,Herbstmeister:0,Turniersieger:0,'Torschützenkönig':0,Sonstige:0}); for(const k in c)cc[k]+=c[k]; }
     for(const[n,v]of Object.entries(b.champCorrect)) prophetChamp[n]=(prophetChamp[n]||0)+v;
     for(const[n,v]of Object.entries(b.hmCorrect)) prophetHerbst[n]=(prophetHerbst[n]||0)+v;
@@ -417,5 +441,12 @@ export async function buildData(config){
     worstTip:[...worstTip].sort((a,b)=>b.dist-a.dist).slice(0,8).map(w=>({...w,match:w.fx?shortTeam(w.fx[0])+' – '+shortTeam(w.fx[1]):null,fx:undefined})),
     megalo, beton, pannen, pannenMd };
 
+  // Abgeschlossene Saisons dauerhaft sichern (einmalig; Datei wird ins Repo committet)
+  for(const s of seasons){
+    if(s.running || !s.started || ARCH[s.id]) continue;
+    const c=COLLECT[s.id]; if(!c||!c.gesamt||!c.matchdays) continue;
+    saveArchive(s.id, { meta:{id:s.id, short:s.short, name:s.name, archivedAt:config.generated}, gesamt:c.gesamt, matchdays:c.matchdays, bonus:c.bonus||null });
+    console.log(`  💾 ${s.short}: Archiv geschrieben (archive/${s.id}.json)`);
+  }
   return { DATA, BONUS, BONUS_SEASON, METRICS, ADV, LZ, STATS18, seasons: DATA.seasons };
 }
