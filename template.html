@@ -640,10 +640,10 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     <section class="block" data-panel="kessel">
       <div class="two-col">
         <div><div class="eyebrow" data-en="👯 Tipping twins">👯 Tipp-Zwillinge</div><h2 class="sec-title" data-en="Most similar tippers">Ähnlichste Tipper</h2>
-          <div class="sec-note" data-en="Pairs with the most identical tips (share of shared games).">Paare mit den meisten identischen Tipps (Anteil gemeinsamer Spiele).</div>
+          <div class="sec-note" data-en="Pairs with the most identical tips (share of shared games). Counted from 100 shared tips.">Paare mit den meisten identischen Tipps (Anteil gemeinsamer Spiele). Gewertet ab 100 gemeinsamen Tipps.</div>
           <div class="tbl-wrap"><table id="twinsTop"></table></div></div>
         <div><div class="eyebrow" data-en="🌗 Opposites">🌗 Gegensätze</div><h2 class="sec-title" data-en="Most different tippers">Unterschiedlichste Tipper</h2>
-          <div class="sec-note" data-en="Pairs who tip alike the least often.">Paare, die am seltensten gleich tippen.</div>
+          <div class="sec-note" data-en="Pairs who tip alike the least often. Counted from 100 shared tips.">Paare, die am seltensten gleich tippen. Gewertet ab 100 gemeinsamen Tipps.</div>
           <div class="tbl-wrap"><table id="twinsBottom"></table></div></div>
       </div>
     </section>
@@ -1356,8 +1356,9 @@ function renderVergess(){
 }
 function renderTwins(){
   const mk=arr=>`<thead><tr><th>${L('Paar','Pair')}</th><th class="r">${L('gleiche Tipps','same tips')}</th><th class="r">${L('von','of')}</th></tr></thead><tbody>${arr.map(t=>`<tr><td class="player-name">${dispName(t.pair[0])} &amp; ${dispName(t.pair[1])}</td><td class="r mono"><b>${dec(t.pct)}&nbsp;%</b></td><td class="r mono" style="color:var(--ink-3)">${t.same}/${t.shared}</td></tr>`).join('')}</tbody>`;
-  document.getElementById('twinsTop').innerHTML=mk(STATS18.twins.slice(0,6));
-  document.getElementById('twinsBottom').innerHTML=mk(STATS18.twins.slice(-6).reverse());
+  const tw=STATS18.twins.filter(t=>t.shared>=100); // Mini-Stichproben (Neuzugänge) verzerren sonst die Quoten
+  document.getElementById('twinsTop').innerHTML=mk(tw.slice(0,10));
+  document.getElementById('twinsBottom').innerHTML=mk(tw.slice(-10).reverse());
 }
 function renderGroupStats(){
   const gf=STATS18.groupFav,max=gf[0][1];
