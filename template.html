@@ -209,6 +209,7 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   color:#fff;background:linear-gradient(135deg,#c01926,#8a0f1a);box-sizing:border-box;user-select:none}
 .nm-cell{display:inline-flex;align-items:center;gap:9px;vertical-align:middle;line-height:1.2}
 .blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.rankgrid-pair .rcard[data-key="bonus"]{grid-column:1/-1} /* Bonuspunkte als letzte Karte in voller Breite */
 .live-banner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;background:linear-gradient(180deg,rgba(226,0,26,.09),rgba(226,0,26,.03));
   border:1px solid rgba(226,0,26,.28);border-radius:14px;padding:16px 18px 18px;margin:0 0 18px}
 .lb-head{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
@@ -792,7 +793,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     <section class="block">
       <div class="eyebrow" data-en="Lifetime balance">Lebenslange Bilanz</div>
       <h2 class="sec-title" data-en="Cash balance per head">Kassen-Saldo pro Kopf</h2>
-      <div class="sec-note" data-en="Winnings minus stakes across all competitions (incl. the still-open BL 25/26 &amp; World Cup 2026).">Gewinne minus Einsätze über alle Wettbewerbe (inkl. der noch offenen BL 25/26 &amp; WM 2026).</div>
+      <div class="sec-note" data-en="Winnings minus stakes — only fully settled competitions count (running or unpaid ones are excluded).">Gewinne minus Einsätze — es zählen nur komplett abgerechnete Wettbewerbe (laufende bzw. noch nicht ausgezahlte bleiben außen vor).</div>
       <div class="tbl-wrap"><table id="balance" class="balance-tbl"></table></div>
     </section>
     <section class="block">
@@ -1088,8 +1089,8 @@ function renderRankGrid(scope){
     grid.innerHTML=ordered.map(c=>rankCardHTML(scp,c)).join('');
     grid.querySelectorAll('table.rank-tbl').forEach(t=>makeSortable(t,2));
   };
-  draw('rankGrid', c=>(c.tab||'stats')==='stats'&&!c.pair, scope); // Haupttab folgt dem Saison-Filter
-  draw('rankGridPair', c=>!!c.pair, scope);  // 4er/3er garantiert nebeneinander
+  draw('rankGrid', c=>(c.tab||'stats')==='stats'&&!c.pair&&c.key!=='bonus', scope); // Haupttab folgt dem Saison-Filter
+  draw('rankGridPair', c=>!!c.pair||c.key==='bonus', scope);  // 4er/3er nebeneinander, Bonus als allerletzte Karte darunter
   // Meister-Orakel als Karte direkt neben „Meiste Top-3-Platzierungen"
   if(scope==='gesamt'){
     const grid=document.getElementById('rankGrid');
@@ -1660,7 +1661,7 @@ function renderFinance(){
   document.getElementById('finAll').innerHTML=DISPLAY_ORDER.map(id=>payoutBlock(SMAP[id])).join('');
   renderBalance();}
 function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won:0});
-  SEASONS.filter(s=>!s.running).forEach(s=>{const f=seasonFinance(s);f.act.forEach(p=>bal[p.name].paid+=f.fee);f.payouts.forEach(p=>bal[p.name].won+=p.amt);});
+  SEASONS.filter(s=>!s.running&&SETTLE[s.id]&&SETTLE[s.id].out).forEach(s=>{const f=seasonFinance(s);f.act.forEach(p=>bal[p.name].paid+=f.fee);f.payouts.forEach(p=>bal[p.name].won+=p.amt);}); // nur komplett abgerechnete Wettbewerbe — laufende/offene würden den Saldo verfälschen
   const rows=Object.entries(bal).map(([name,b])=>({name,...b,net:b.won-b.paid})).filter(r=>r.paid>0).sort((a,b)=>b.net-a.net);
   document.getElementById('balance').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Einsätze','Stakes')}</th><th class="r">${L('Gewinne','Winnings')}</th><th class="r">${L('Bilanz','Balance')}</th></tr></thead>
     <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><span class="rank-badge">${i+1}</span></td><td class="player-name">${esc(dispFull(r.name))}</td>
