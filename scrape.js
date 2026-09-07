@@ -288,6 +288,7 @@ export async function buildData(config){
         const name=r.name; if(!activeNames.has(name)) return; // nur tatsächlich teilnehmende Tipper dieser Saison
         pmap[name]=r.mdTot;
         const pp=ps[name]||(ps[name]={});
+        if(r.mdTot>(pp.maxMd||0)){ pp.maxMd=r.mdTot; pp.maxMdAt=mi; } // bester einzelner Spieltag dieser Saison
         if(pp.placed===undefined){ pp.placed=0; pp.missing=0; pp.p4=0; pp.p3=0; pp.p2=0; pp.antiBayern=0; pp.bayernTipped=0; }
         const gp=gEnsure(name);
         if(s.type==='BL'){ const placedMd=r.tips.filter(t=>!t.empty).length; // Pannenkönig: nur Spieltage mit ≥1 Tipp

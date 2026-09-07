@@ -908,24 +908,31 @@ function gesamtTiles(){
 }
 function seasonTiles(scope){
   const arr=scopePlayers(scope); const s=SMAP[scope];
-  const by=k=>[...arr].sort((a,b)=>(b[k]||0)-(a[k]||0))[0];
-  const winner=arr.find(p=>p.pos===1), last=[...arr].sort((a,b)=>b.pos-a.pos)[0];
-  const md=by('mdWins'), avg=by('avgMd'), p4=by('p4');
-  const spread=winner.points-last.points;
+  const byAll=k=>{const mx=Math.max(...arr.map(p=>p[k]||0));return arr.filter(p=>(p[k]||0)===mx);}; // alle Führenden (Gleichstand!)
+  const by=k=>byAll(k)[0];
+  const winners=byAll('points');
+  const minPts=Math.min(...arr.map(p=>p.points)); const lasts=arr.filter(p=>p.points===minPts);
+  const md=byAll('mdWins'), avg=byAll('avgMd'), p4=byAll('p4');
+  const spread=winners[0].points-lasts[0].points;
   const run=!!s.running;
-  const capWin=run?gLbl(winner.name,'🥇 Aktuell Erster','🥇 Aktuell Erste'):gLbl(winner.name,L('🥇 Sieger','🥇 Winner'),'🥇 Siegerin');
-  const capLast=run?gLbl(last.name,'🔴 Aktuell Letzter','🔴 Aktuell Letzte'):gLbl(last.name,L('🔴 Letzter','🔴 Last'),'🔴 Letzte');
+  // Kachel mit Gleichstand-Unterstützung: mehrere Führende → alle Namen + gestapelte Avatare
+  const tt=(list,capSg,capPl,meta,cls)=>list.length>1
+    ? {cls,cap:capPl,big:list.map(p=>dispName(p.name)).join(' & '),avs:list.map(p=>p.name),meta}
+    : {cls,cap:capSg,big:list[0].name,meta};
+  const w0=winners[0],l0=lasts[0];
+  const capWin=run?(LANG==='en'?'🥇 Currently 1st':gLbl(w0.name,'🥇 Aktuell Erster','🥇 Aktuell Erste')):gLbl(w0.name,L('🥇 Sieger','🥇 Winner'),'🥇 Siegerin');
+  const capLast=run?(LANG==='en'?'🔴 Currently last':gLbl(l0.name,'🔴 Aktuell Letzter','🔴 Aktuell Letzte')):gLbl(l0.name,L('🔴 Letzter','🔴 Last'),'🔴 Letzte');
   const tiles=[
-    {cls:'gold',cap:LANG==='en'&&run?'🥇 Currently 1st':capWin,big:winner.name,meta:nWord(winner.points,L('Punkt','point'),L('Punkte','points'))},
-    {cls:'red',cap:LANG==='en'&&run?'🔴 Currently last':capLast,big:last.name,meta:nWord(last.points,L('Punkt','point'),L('Punkte','points'))+L(' · Platz ',' · place ')+last.pos},
-    {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(dispFull(winner.name))+L(' vor ',' ahead of ')+esc(dispFull(last.name)),avs:[winner.name,last.name]},
-    {cls:'gold',cap:L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),big:md.name,meta:nWord(md.mdWins,L('Spieltagsieg','matchday win'),L('Spieltagsiege','matchday wins'))},
-    {cls:'gold',cap:L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),big:avg.name,meta:'Ø '+dec(avg.avgMd)+L(' Punkte pro Spieltag',' points per matchday')},
-    {cls:'gold',cap:gLbl(p4.name,L('🎯 Volltreffer-König','🎯 Bullseye king'),'🎯 Volltreffer-Königin'),big:p4.name,meta:nWord(p4.p4,L('exaktes Ergebnis','exact result'),L('exakte Ergebnisse','exact results'))},
+    tt(winners,capWin,run?L('🥇 Aktuell Vorn','🥇 Currently 1st'):L('🥇 Sieger','🥇 Winners'),nWord(w0.points,L('Punkt','point'),L('Punkte','points')),'gold'),
+    tt(lasts,capLast,run?L('🔴 Aktuell Letzte','🔴 Currently last'):L('🔴 Letzte','🔴 Last'),nWord(l0.points,L('Punkt','point'),L('Punkte','points'))+(lasts.length>1?'':L(' · Platz ',' · place ')+l0.pos),'red'),
+    {cls:'blue',cap:L('📏 Abstand 1. ↔ Letzter','📏 Gap 1st ↔ last'),big:spread+L(' Pkt',' pts'),meta:esc(dispFull(w0.name))+L(' vor ',' ahead of ')+esc(dispFull(l0.name)),avs:[w0.name,l0.name]},
+    tt(md,L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),L('📅 Meiste Spieltagsiege','📅 Most matchday wins'),nWord(md[0].mdWins,L('Spieltagsieg','matchday win'),L('Spieltagsiege','matchday wins')),'gold'),
+    tt(avg,L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),L('📈 Bester Ø / Spieltag','📈 Best Ø / matchday'),'Ø '+dec(avg[0].avgMd)+L(' Punkte pro Spieltag',' points per matchday'),'gold'),
+    tt(p4,gLbl(p4[0].name,L('🎯 Volltreffer-König','🎯 Bullseye king'),'🎯 Volltreffer-Königin'),L('🎯 Volltreffer-Könige','🎯 Bullseye kings'),nWord(p4[0].p4,L('exaktes Ergebnis','exact result'),L('exakte Ergebnisse','exact results')),'gold'),
   ];
-  if(s.type==='BL'){ const ab=by('antiBayern');
-    tiles.push({cls:'blue',cap:L('⚔️ Größter Bayern-Gegner','⚔️ Biggest Bayern foe'),big:ab.antiBayern>0?ab.name:'—',
-      meta:ab.antiBayern>0?ab.antiBayern+L('× auf Bayern-Pleite getippt','× tipped a Bayern defeat'):L('keiner gegen die Bayern','nobody against Bayern')});
+  if(s.type==='BL'){ const rec=byAll('maxMd');
+    tiles.push(tt(rec,L('💥 Höchster Spieltag-Sieg','💥 Highest matchday haul'),L('💥 Höchster Spieltag-Sieg','💥 Highest matchday haul'),
+      nWord(rec[0].maxMd||0,L('Punkt','point'),L('Punkte','points'))+(rec.length===1&&rec[0].maxMdAt?L(' · '+rec[0].maxMdAt+'. Spieltag',' · MD '+rec[0].maxMdAt):''),'gold'));
   } else { const mm=by('missing');
     tiles.push({cls:'red',cap:L('😴 Tipp-Muffel','😴 Tip slacker'),big:mm.missing>0?mm.name:L('niemand','nobody'),
       meta:mm.missing>0?nWord(mm.missing,L('Spiel vergessen','game forgotten'),L('Spiele vergessen','games forgotten')):L('alle brav getippt','everyone tipped')});
