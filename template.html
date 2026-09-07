@@ -1073,7 +1073,7 @@ function rankCardHTML(scope,cfg){
       ${cfg.noBar?'':`<td class="bar-cell bar-only"><div class="bar ${cfg.color}" style="width:${Math.round((p[cfg.key]||0)/max*100)}%"></div></td>`}
     </tr>`).join('')}</tbody></table></div>`
     : `<div class="emptystate">${tr(cfg.zeroMsg)||L('Keine Daten.','No data.')}</div>`;
-  return `<div class="card rcard${cfg.full?' rfull':''}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
+  return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
 }
 function renderRankGrid(scope){
@@ -1084,7 +1084,7 @@ function renderRankGrid(scope){
       if(c.blOnly&&!scopeIsBL(scp))return false;
       return true;
     }).sort((a,b)=>(b.full?1:0)-(a.full?1:0)); // volle-Breite-Karten zuerst
-    const ordered=(scp!=='gesamt'&&SMAP[scp].running)?cards.filter(c=>c.key!=='bonus').concat(cards.filter(c=>c.key==='bonus')):cards; // Bonus erst am Saisonende relevant
+    const ordered=cards.filter(c=>c.key!=='bonus').concat(cards.filter(c=>c.key==='bonus')); // Bonus immer als letzte Karte — hängt sonst 'in der Luft'
     grid.innerHTML=ordered.map(c=>rankCardHTML(scp,c)).join('');
     grid.querySelectorAll('table.rank-tbl').forEach(t=>makeSortable(t,2));
   };
@@ -1092,7 +1092,9 @@ function renderRankGrid(scope){
   draw('rankGridPair', c=>!!c.pair, scope);  // 4er/3er garantiert nebeneinander
   // Meister-Orakel als Karte direkt neben „Meiste Top-3-Platzierungen"
   if(scope==='gesamt'){
-    document.getElementById('rankGrid').insertAdjacentHTML('beforeend',
+    const grid=document.getElementById('rankGrid');
+    const bonusCard=grid.querySelector('[data-key="bonus"]');
+    (bonusCard||grid).insertAdjacentHTML(bonusCard?'beforebegin':'beforeend',
       `<div class="card rcard"><div class="rhead"><div class="reye">🔮 ${L('Der Prophet','The Prophet')}</div>`
       +`<h3>${L('Meister-Orakel','Champion oracle')}</h3>`
       +`<div class="rnote">${L('Wie oft Meister bzw. Turniersieger korrekt getippt (von 8 Wettbewerben).','How often the champion resp. tournament winner was tipped correctly (out of 8 competitions).')}</div></div>`
@@ -1586,20 +1588,21 @@ function partsOf(s){const a=s.standings.filter(p=>p.active);const base=a.length?
 function seasonFinance(s){
   const act=partsOf(s);const n=act.length,fee=feeFor(s.type),pot=n*fee,mode=PAYOUT_MODE[s.id];
   let payouts=[];
-  if(s.running){/* Gewinner stehen noch nicht fest */}
-  else if(mode==='winner') payouts=[{name:act[0].name,label:L('Sieger','Winner'),icon:'🥇',amt:pot,pctLabel:L('100 % · ganzer Topf','100 % · whole pot')}];
-  else if(mode==='split3'){const each=pot/3,ic=['🥇','🥈','🥉'];payouts=act.slice(0,3).map((p,i)=>({name:p.name,label:[L('1. Platz','1st place'),L('2. Platz','2nd place'),L('3. Platz','3rd place')][i],icon:ic[i],amt:each,pctLabel:L('⅓ vom Topf','⅓ of the pot')}));}
-  else if(mode==='p532'){const sp=[50,30,20],ic=['🥇','🥈','🥉'],lb=[L('Sieger','Winner'),L('Zweiter','Second'),L('Dritter','Third')];payouts=act.slice(0,3).map((p,i)=>({name:p.name,label:lb[i],icon:ic[i],amt:pot*sp[i]/100,pctLabel:sp[i]+L(' % vom Topf',' % of the pot')}));}
-  else{const half=pot/2,last=act[act.length-1];payouts=[{name:act[0].name,label:L('Erster','First'),icon:'🥇',amt:half,pctLabel:L('50 % vom Topf','50 % of the pot')},{name:last.name,label:L('Letzter','Last'),icon:'🔴',amt:half,pctLabel:L('50 % vom Topf','50 % of the pot')}];}
+  const run=!!s.running; // laufende Saison: Verteilung nach aktuellem Zwischenstand anzeigen
+  const rl=(i,name)=>run?[gLbl(name,L('Aktuell Erster','Currently 1st'),'Aktuell Erste'),gLbl(name,L('Aktuell Zweiter','Currently 2nd'),'Aktuell Zweite'),gLbl(name,L('Aktuell Dritter','Currently 3rd'),'Aktuell Dritte')][i]:null;
+  if(mode==='winner') payouts=[{name:act[0].name,label:rl(0,act[0].name)||L('Sieger','Winner'),icon:'🥇',amt:pot,pctLabel:L('100 % · ganzer Topf','100 % · whole pot')}];
+  else if(mode==='split3'){const each=pot/3,ic=['🥇','🥈','🥉'];payouts=act.slice(0,3).map((p,i)=>({name:p.name,label:rl(i,p.name)||[L('1. Platz','1st place'),L('2. Platz','2nd place'),L('3. Platz','3rd place')][i],icon:ic[i],amt:each,pctLabel:L('⅓ vom Topf','⅓ of the pot')}));}
+  else if(mode==='p532'){const sp=[50,30,20],ic=['🥇','🥈','🥉'],lb=[L('Sieger','Winner'),L('Zweiter','Second'),L('Dritter','Third')];payouts=act.slice(0,3).map((p,i)=>({name:p.name,label:rl(i,p.name)||lb[i],icon:ic[i],amt:pot*sp[i]/100,pctLabel:sp[i]+L(' % vom Topf',' % of the pot')}));}
+  else{const half=pot/2,last=act[act.length-1];payouts=[{name:act[0].name,label:rl(0,act[0].name)||L('Erster','First'),icon:'🥇',amt:half,pctLabel:L('50 % vom Topf','50 % of the pot')},{name:last.name,label:run?gLbl(last.name,L('Aktuell Letzter','Currently last'),'Aktuell Letzte'):L('Letzter','Last'),icon:'🔴',amt:half,pctLabel:L('50 % vom Topf','50 % of the pot')}];}
   return{n,fee,pot,payouts,act,mode,running:!!s.running};}
 function stChip(label,done){return `<span class="status ${done?'ok':'open'}">${label}: ${done?L('✓ erledigt','✓ done'):L('offen','open')}</span>`;}
 function payoutBlock(s){const f=seasonFinance(s);const se=SETTLE[s.id];
   const head=`<div class="fhead"><h3>${esc(s.name)}</h3><span class="modebadge">${modeLabel(f.mode)}</span>${stChip(L('Einzahlung','Payment in'),se.in)}${f.running?`<span class="status open">${L('läuft · Auszahlung offen','running · payout open')}</span>`:stChip(L('Auszahlung','Payout'),se.out)}</div>`;
   const pot=`<div class="potline"><span>${L('Teilnehmer','Players')}: <b>${f.n}</b></span><span>${L('Einsatz','Stake')}: <b>${eur(f.fee)}</b></span><span>${L('Topf','Pot')}: <b style="color:var(--brand)">${eur(f.pot)}</b></span></div>`;
+  const grid=`<div class="payouts" style="grid-template-columns:repeat(${f.payouts.length},1fr)">${f.payouts.map((p,i)=>`<div class="payout g${i+1}"><div class="rk">${p.icon} ${p.label}</div><div class="nm">${esc(dispFull(p.name))}</div><div class="amt">${eur(p.amt)}</div><div class="pct">${p.pctLabel}</div></div>`).join('')}</div>`;
   const body=f.running
-    ? `<div class="fin-info"><span class="ic">⏳</span><span><b>${L('Saison läuft.','Season in progress.')}</b> ${L('Die Ausschüttung („'+modeLabel(f.mode)+'") steht erst nach dem letzten Spieltag fest.','The payout ("'+modeLabel(f.mode)+'") is only determined after the final matchday.')}</span></div>`
-    : `<div class="payouts" style="grid-template-columns:repeat(${f.payouts.length},1fr)">${f.payouts.map((p,i)=>`<div class="payout g${i+1}"><div class="rk">${p.icon} ${p.label}</div><div class="nm">${esc(dispFull(p.name))}</div><div class="amt">${eur(p.amt)}</div><div class="pct">${p.pctLabel}</div></div>`).join('')}</div>
-      <div class="fin-info"><span class="ic">ℹ️</span><span><b>${modeLabel(f.mode)}:</b> ${modeInfo(f.mode)}</span></div>`;
+    ? grid+`<div class="fin-info"><span class="ic">⏳</span><span><b>${L('Zwischenstand — so würde der Topf heute verteilt.','Interim — how the pot would be split today.')}</b> ${L('Die Ausschüttung („'+modeLabel(f.mode)+'") steht erst nach dem letzten Spieltag fest.','The payout ("'+modeLabel(f.mode)+'") is only determined after the final matchday.')}</span></div>`
+    : grid+`<div class="fin-info"><span class="ic">ℹ️</span><span><b>${modeLabel(f.mode)}:</b> ${modeInfo(f.mode)}</span></div>`;
   return `<div class="card fin-season">${head}${pot}${body}</div>`;}
 function todoBox(){
   const potOf=id=>seasonFinance(SMAP[id]).pot;
