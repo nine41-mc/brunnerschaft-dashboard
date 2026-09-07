@@ -2,7 +2,9 @@ name: Build & Deploy Brunnerschaft-Dashboard
 
 on:
   schedule:
-    - cron: '0 5 * * *'      # täglich 05:00 UTC (nach Spieltagen aktuell)
+    - cron: '0 5 * * *'       # morgens (Basis-Refresh)
+    - cron: '30 13-21 * * 5,6,0' # Fr–So stündlich 13:30–21:30 UTC: Stände kurz nach jedem Spielende (GitHub verzögert Cron oft — mehrere Slots als Puffer)
+    - cron: '30 17,19 * * 2,3' # Di/Mi abends (Pokal-/Nachholtermine)
   workflow_dispatch:          # manuell auslösbar
   push:
     branches: [ main ]
