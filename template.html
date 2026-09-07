@@ -550,6 +550,13 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="grid rankgrid rankgrid-pair" id="rankGridPair" style="margin-top:14px"></div>
     </section>
 
+    <section class="block" id="bonusTipsSec" hidden>
+      <div class="eyebrow" data-en="⭐ Bonus tips">⭐ Bonustipps</div>
+      <h2 class="sec-title" data-en="The round's bonus tips">Die Bonustipps der Runde</h2>
+      <div class="sec-note" data-en="Everyone's season-long bonus answers at a glance — no Kicktipp needed. Points follow once the questions are settled.">Alle Saison-Bonustipps auf einen Blick — ganz ohne Kicktipp. Punkte gibt's, sobald die Fragen aufgelöst sind.</div>
+      <div class="tbl-wrap"><table id="bonusTipsTable"></table></div>
+    </section>
+
 
 
     <section class="block gesamt-only">
@@ -1077,6 +1084,22 @@ function rankCardHTML(scope,cfg){
   return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
 }
+function renderBonusTips(scope){
+  const sec=document.getElementById('bonusTipsSec'); if(!sec)return;
+  const bt=scope!=='gesamt'&&((ADV.bonusTips||{})[scope]);
+  if(!bt){ sec.hidden=true; return; }
+  sec.hidden=false;
+  const lbl=h=>{ if(/^16-18/.test(h))return L('Plätze 16–18','Places 16–18');
+    if(/^Tor/.test(h))return L('Torschützen&shy;könig','Top scorer');
+    if(/^DM/.test(h))return L('Meister','Champion');
+    if(/^HM/.test(h))return L('Herbst&shy;meister','Autumn champ');
+    return esc(h.replace(/-+$/,'')); };
+  // gleiche Fragen (z. B. 3× Plätze 16–18) zu einer Spalte zusammenfassen
+  const groups=[]; bt.cols.forEach((h,i)=>{ const l=lbl(h); const g=groups[groups.length-1];
+    if(g&&g.label===l)g.idx.push(i); else groups.push({label:l,idx:[i]}); });
+  document.getElementById('bonusTipsTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${groups.map(g=>`<th>${g.label}</th>`).join('')}</tr></thead><tbody>${
+    bt.rows.map(r=>`<tr><td>${nmCell(r.name,24)}</td>${groups.map(g=>`<td class="mono">${g.idx.map(i=>esc(r.vals[i]||'–')).join(', ')}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
 function renderRankGrid(scope){
   const draw=(gridId,pred,scp)=>{
     const grid=document.getElementById(gridId); if(!grid)return;
@@ -1287,10 +1310,11 @@ function rankTableInto(id,obj,suffix,fmt,includeZero){
    rows.map(([n,v],i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(n,24)}</td><td class="r mono"><b>${fmt?fmt(v):v}</b></td><td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(v/max*100)}%"></div></td></tr>`).join('')}</tbody>`;
 }
 function renderRecords(){
-  let best={t:0},worstBL={t:1e9};
-  SEASONS.forEach(s=>s.standings.filter(p=>p.active).forEach(p=>{
-    if(p.total>best.t)best={t:p.total,name:p.name,season:s.short};
-    if(s.type==='BL'&&p.total<worstBL.t)worstBL={t:p.total,name:p.name,season:s.short};}));
+  let best={t:0};
+  SEASONS.filter(s=>!s.running).forEach(s=>s.standings.filter(p=>p.active).forEach(p=>{
+    if(p.total>best.t)best={t:p.total,name:p.name,season:s.short};}));
+  const bMax=Math.max(...PLAYERS.map(p=>BONUS[p.name]||0));
+  const bKings=PLAYERS.filter(p=>(BONUS[p.name]||0)===bMax).map(p=>p.name);
   const BLo=[...DISPLAY_ORDER].reverse().filter(id=>SMAP[id].type==='BL'&&!SMAP[id].running);
   let up={d:-99},down={d:-99};
   PLAYERS.forEach(p=>{let prev=null,prevId=null;BLo.forEach(id=>{const pos=p.positions[id];
@@ -1303,7 +1327,9 @@ function renderRecords(){
   const tiles=[
     {cls:'gold',cap:L('🏅 Rekord-Spieltag','🏅 Record matchday'),big:rec.n,meta:rec.pts+L(' Punkte · ',' points · ')+rec.season+', '+L(rec.md+'. Spieltag','MD '+rec.md)},
     {cls:'gold',cap:L('📈 Beste Einzelsaison','📈 Best single season'),big:best.name,meta:best.t+L(' Punkte · ',' points · ')+best.season},
-    {cls:'red',cap:L('📉 Schwächste BL-Saison','📉 Weakest BL season'),big:worstBL.name,meta:worstBL.t+L(' Punkte · ',' points · ')+worstBL.season},
+    bKings.length>1
+      ? {cls:'gold',cap:L('⭐ Bonuspunkt-Sieger','⭐ Bonus-point kings'),big:bKings.map(dispName).join(' & '),avs:bKings,meta:nWord(bMax,L('Bonuspunkt','bonus point'),L('Bonuspunkte','bonus points'))}
+      : {cls:'gold',cap:gLbl(bKings[0],L('⭐ Bonuspunkt-Sieger','⭐ Bonus-point king'),'⭐ Bonuspunkt-Siegerin'),big:bKings[0],meta:nWord(bMax,L('Bonuspunkt','bonus point'),L('Bonuspunkte','bonus points'))},
     {cls:'gold',cap:L('🚀 Größte Aufholjagd (BL)','🚀 Biggest comeback (BL)'),big:up.name,meta:L('Platz ','Place ')+up.a+' → '+up.b+'  ('+up.from+' → '+up.to+')'},
     {cls:'red',cap:L('🪂 Größter Absturz (BL)','🪂 Biggest drop (BL)'),big:down.name,meta:L('Platz ','Place ')+down.a+' → '+down.b+'  ('+down.from+' → '+down.to+')'},
     {cls:'gold',cap:L('🔥 Längste Sieg-Serie','🔥 Longest win streak'),big:ws.join(', '),meta:nWord(wsMax,L('Spieltagsieg in Folge','matchday win in a row'),L('Spieltagsiege in Folge','matchday wins in a row'))},
@@ -1537,7 +1563,7 @@ function renderScope(scope){
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):(SMAP[scope].running?L('Zwischenstand dieses Wettbewerbs — die Saison läuft noch. Sortierbar — Kopf anklicken.','Current standings — the season is still running. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.'));
   document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
-  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); applyMobileSticky();
+  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderBonusTips(scope); applyMobileSticky();
   document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.toggle('hidden',!gesamt));
 }
 

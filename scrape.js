@@ -128,6 +128,8 @@ async function scrapeBonus(s){
   const header=[...tb.rows[0].cells].map(c=>c.textContent.trim());
   const bIdx=header.indexOf('B'); const nameIdx=header.indexOf('Name');
   const cats={}, champCorrect={}, hmCorrect={}, bayernTitle={};
+  const ansEnd=header.findIndex((h,i)=>i>nameIdx&&/^[PBSG]$/.test(h)); // Punkte-/Statistikspalten (P, B, S, G) abschneiden
+  const answers={ cols: header.slice(nameIdx+1, ansEnd>0?ansEnd:(bIdx>0?bIdx:header.length)), rows: [] };
   const champCols=[], hmCols=[], dmCols=[];
   for(let i=nameIdx+1;i<bIdx;i++){ const h=header[i]; if(/^DM/.test(h)){champCols.push(i);dmCols.push(i);} if(/^(WM|EM)[A-Z]/.test(h))champCols.push(i); if(/^HM/.test(h))hmCols.push(i); }
   const ansText=cell=>{ const cl=cell.cloneNode(true); cl.querySelectorAll('sub').forEach(x=>x.remove()); return cl.textContent.trim(); };
@@ -142,8 +144,9 @@ async function scrapeBonus(s){
     const bt=bayernTitle[name]||(bayernTitle[name]={m:0,h:0});
     if(dmCols.some(i=>c[i]&&/^FCB$/i.test(ansText(c[i])))) bt.m++;
     if(hmCols.some(i=>c[i]&&/^FCB$/i.test(ansText(c[i])))) bt.h++;
+    answers.rows.push({ name, vals: answers.cols.map((_,k)=>ansText(c[nameIdx+1+k])||'') });
   }
-  return { cats, champCorrect, hmCorrect, bayernTitle };
+  return { cats, champCorrect, hmCorrect, bayernTitle, answers };
 }
 
 async function batched(items, fn, size=6){
@@ -189,7 +192,10 @@ export async function buildData(config){
   for(const name of names){
     let played=0,totalPts=0,champ=0,champBL=0,lastCnt=0,podium=0,bestFinish=99; const positions={};
     DATA.seasons.forEach(s=>{
-      if(s.running){ positions[s.id]=null; return; }
+      if(s.running){ positions[s.id]=null;
+        const aR=s.standings.filter(p=>p.active); const iR=aR.findIndex(p=>p.name===name);
+        if(iR>=0){ played++; totalPts+=aR[iR].total; } // laufende Saison zählt live in die Ewige Tabelle
+        return; }
       const active=s.standings.filter(p=>p.active); const idx=active.findIndex(p=>p.name===name);
       if(idx>=0){ played++; const r=idx+1; totalPts+=active[idx].total; positions[s.id]=r;
         if(r===1){champ++; if(s.type==='BL')champBL++;} if(r<=3)podium++; if(r===active.length)lastCnt++; bestFinish=Math.min(bestFinish,r);
@@ -386,7 +392,9 @@ export async function buildData(config){
   // ---- ADV ----
   const bestOf=map=>{const o={};for(const[n,t]of Object.entries(map)){const e=Object.entries(t).sort((a,b)=>b[1]-a[1]);if(e[0])o[n]=e[0];}return o;};
   const bonusCatAll={}; const prophetChamp={}, prophetHerbst={}, bayernTitleAll={};
+  const bonusTips={}; // laufende Saison: abgegebene Bonus-Antworten fürs Dashboard
   for(const s of seasons){ if(!s.started) continue; const b=ARCH[s.id]?(ARCH[s.id].bonus||{cats:{},champCorrect:{},hmCorrect:{},bayernTitle:{}}):await scrapeBonus(s); COLLECT[s.id].bonus=b;
+    if(s.running&&b.answers&&b.answers.rows.length) bonusTips[s.id]=b.answers;
     for(const[n,c]of Object.entries(b.cats)){ const cc=bonusCatAll[n]||(bonusCatAll[n]={Meister:0,Herbstmeister:0,Turniersieger:0,'Torschützenkönig':0,Sonstige:0}); for(const k in c)cc[k]+=c[k]; }
     for(const[n,v]of Object.entries(b.champCorrect)) prophetChamp[n]=(prophetChamp[n]||0)+v;
     for(const[n,v]of Object.entries(b.hmCorrect)) prophetHerbst[n]=(prophetHerbst[n]||0)+v;
@@ -404,7 +412,7 @@ export async function buildData(config){
   const bvbOppByPlayer=Object.fromEntries(Object.entries(bvbOpp).map(([n,m])=>[n,Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([o,c])=>[shortTeam(o),c])]));
   const ADV={ wonDay:wonDayPts, bayern:Object.fromEntries(Object.entries(teamPts).map(([n,t])=>[n,t['FC Bayern München']||0])), bestTeam:bestOf(teamPts), bestCountry:bestOf(countryPts), bestTeam3:bestOf3(teamPts,true), bestCountry3:bestOf3(countryPts,false), bonusCat:bonusCatAll, abOppTop, abOppByPlayer, proBayTips, proBayPts, proBayFail, bayWinAct, teamCols, teamMatrix,
     klassikerPts, klassikerN, bayGoalPred, bayExact, bayernTitle:bayernTitleAll, antiBVB, bvbOppByPlayer, proBVB, schadenPts, doppelmoral,
-    bayMarginSum, judasPts, zauderer, goretzka,
+    bayMarginSum, judasPts, zauderer, goretzka, bonusTips,
     bayMaxMargin:Object.fromEntries(Object.entries(bayMaxMargin).map(([n,o])=>[n,{margin:o.margin,tip:o.tip,match:o.fx?shortTeam(o.fx[0])+' – '+shortTeam(o.fx[1]):null,season:o.season}])) };
 
   // ---- LZ ----
