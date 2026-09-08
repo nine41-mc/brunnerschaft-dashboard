@@ -979,15 +979,15 @@ function renderMainTable(scope){
   const rows=[...arr].sort((a,b)=>{const av=a[sortState.k],bv=b[sortState.k];
     return typeof av==='string'?sortState.dir*av.localeCompare(bv):sortState.dir*((av||0)-(bv||0));});
   tbl.innerHTML=`<thead><tr>${cols.map(c=>`<th class="${c.r?'r':''}" data-k="${c.k}" style="cursor:pointer;white-space:nowrap">${c.t}${sicHTML(sortState.k===c.k?(sortState.dir<0?-1:1):0)}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map((p,i)=>{
-      const medal=gesamt?(i<3?` p${i+1}`:''):(p.pos<=3?` p${p.pos}`:'');
+    <tbody>${(()=>{const rks=sharedRanks(rows,p=>p[sortState.k]);return rows.map((p,i)=>{
+      const medal=gesamt?(rks[i]<=3?` p${rks[i]}`:''):(p.pos<=3?` p${p.pos}`:'');
       return `<tr class="${medal}">${cols.map(c=>{
         const sc=c.k===sortState.k?' sortcol':'';
-        if(c.k==='name')return `<td class="${sc}"><div class="nm-cell"><span class="rank-badge">${gesamt?i+1:p.pos}</span>${av(p.name,28)}<span class="player-name">${dispName(p.name)}</span></div></td>`;
+        if(c.k==='name')return `<td class="${sc}"><div class="nm-cell"><span class="rank-badge">${gesamt?rks[i]:p.pos}</span>${av(p.name,28)}<span class="player-name">${dispName(p.name)}</span></div></td>`;
         if(c.bar)return `<td class="r bar-cell${sc}"><b class="mono">${p.points.toLocaleString(LANG==='en'?'en-GB':'de-DE')}</b><div class="bar" style="width:${Math.round(p.points/maxPts*100)}%;margin-top:4px"></div></td>`;
         const v=c.f?c.f(p):(p[c.k]);
         return `<td class="r mono${sc}">${v}</td>`;
-      }).join('')}</tr>`;}).join('')}</tbody>`;
+      }).join('')}</tr>`;}).join('');})()}</tbody>`;
   tbl.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;
     if(k===sortState.k)sortState.dir*=-1; else{sortState.k=k;sortState.dir=(k==='name'||k==='pos')?1:-1;} renderMainTable(scope);});
 }
@@ -1074,12 +1074,12 @@ function rankCardHTML(scope,cfg){
       <th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th>
       ${cols.map(c=>`<th class="${c.left?'':'r'}"${c.w?` style="--cw:${c.w}"`:''}>${tr(c.h)}</th>`).join('')}
       ${cfg.noBar?'':'<th data-nosort class="bar-cell bar-only" style="width:26%"></th>'}
-    </tr></thead><tbody>${rows.map((p,i)=>`<tr class="p${i+1}">
-      <td><span class="rank-badge">${i+1}</span></td>
+    </tr></thead><tbody>${(()=>{const rks=sharedRanks(rows,p=>p[cfg.key]||0);return rows.map((p,i)=>`<tr class="p${rks[i]}">
+      <td><span class="rank-badge">${rks[i]}</span></td>
       <td><div class="nm-cell">${av(p.name,24)}<span class="player-name">${dispName(p.name)}</span></div></td>
       ${cols.map((c,ci)=>`<td class="${c.left?'lst ':'r mono '}${ci===0?'':'dim'}">${ci===0?'<b>'+c.f(p)+'</b>':(c.left?'<div class="cellwrap">'+c.f(p)+'</div>':c.f(p))}</td>`).join('')}
       ${cfg.noBar?'':`<td class="bar-cell bar-only"><div class="bar ${cfg.color}" style="width:${Math.round((p[cfg.key]||0)/max*100)}%"></div></td>`}
-    </tr>`).join('')}</tbody></table></div>`
+    </tr>`).join('');})()}</tbody></table></div>`
     : `<div class="emptystate">${tr(cfg.zeroMsg)||L('Keine Daten.','No data.')}</div>`;
   return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
@@ -1166,6 +1166,7 @@ const NSHORT={'Matthew':'Matt'}; // nur bei Platznot (mobil)
 const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
 function gLbl(name,m,f){return (LANG!=='en'&&NFEM.has(name))?f:m;} // DE: weibliche Form, EN: neutral
 function nWord(n,sg,pl){return n+'\u00a0'+(n===1?sg:pl);} // Singular/Plural
+function sharedRanks(rows,val){const out=[];rows.forEach((r,i)=>{out.push(i>0&&val(r)===val(rows[i-1])?out[i-1]:i+1);});return out;} // Gleichstand teilt den Platz (1,2,2,4,…)
 function dispFull(n){return NFULL[n]||n;}
 const NF_RE=new RegExp(Object.keys(NFULL).sort((x,y)=>y.length-x.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
 function dispText(str){return String(str).replace(NF_RE,m=>NFULL[m]);} // Namen in Fließtext ersetzen
@@ -1691,9 +1692,9 @@ function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won
   SEASONS.filter(s=>!s.running&&SETTLE[s.id]&&SETTLE[s.id].out).forEach(s=>{const f=seasonFinance(s);f.act.forEach(p=>bal[p.name].paid+=f.fee);f.payouts.forEach(p=>bal[p.name].won+=p.amt);}); // nur komplett abgerechnete Wettbewerbe — laufende/offene würden den Saldo verfälschen
   const rows=Object.entries(bal).map(([name,b])=>({name,...b,net:b.won-b.paid})).filter(r=>r.paid>0).sort((a,b)=>b.net-a.net);
   document.getElementById('balance').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Einsätze','Stakes')}</th><th class="r">${L('Gewinne','Winnings')}</th><th class="r">${L('Bilanz','Balance')}</th></tr></thead>
-    <tbody>${rows.map((r,i)=>`<tr class="${i<3?'p'+(i+1):''}"><td><span class="rank-badge">${i+1}</span></td><td class="player-name">${esc(dispFull(r.name))}</td>
+    <tbody>${(()=>{const rks=sharedRanks(rows,r=>r.net);return rows.map((r,i)=>`<tr class="${rks[i]<=3?'p'+rks[i]:''}"><td><span class="rank-badge">${rks[i]}</span></td><td class="player-name">${esc(dispFull(r.name))}</td>
       <td class="r mono" style="color:var(--ink-2)">${eur(r.paid)}</td><td class="r mono">${eur(r.won)}</td>
-      <td class="r ${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${eur(r.net)}</td></tr>`).join('')}</tbody>`;}
+      <td class="r ${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${eur(r.net)}</td></tr>`).join('');})()}</tbody>`;}
 ['feeBL','feeCUP'].forEach(id=>document.getElementById(id).oninput=renderFinance);
 
 let CUR_SCOPE='gesamt';
