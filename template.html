@@ -209,6 +209,14 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   color:#fff;background:linear-gradient(135deg,#c01926,#8a0f1a);box-sizing:border-box;user-select:none}
 .nm-cell{display:inline-flex;align-items:center;gap:9px;vertical-align:middle;line-height:1.2}
 .blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+#liveMdTable{table-layout:auto;min-width:0}
+#liveMdTable .lmd-h{white-space:nowrap;font-size:10.5px;text-align:center}
+#liveMdTable .lmd-r{font-weight:800;color:var(--brand)}
+#liveMdTable td.lmd-tip{white-space:nowrap;text-align:center;padding:9px 7px}
+#liveMdTable td.lmd-tip sub{font-size:9px;color:var(--ink-2);margin-left:3px;font-weight:700}
+#liveMdTable td.lmd-p4{font-weight:800;color:#0e9f4e}#liveMdTable td.lmd-p4 sub{color:#0e9f4e}
+#liveMdTable td.lmd-p3{font-weight:700;color:#3aa15f}#liveMdTable td.lmd-p3 sub{color:#3aa15f}
+#liveMdTable td.dim{color:var(--ink-2);opacity:.55}
 .rankgrid-pair .rcard[data-key="bonus"]{grid-column:1/-1} /* Bonuspunkte als letzte Karte in voller Breite */
 .live-banner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;background:linear-gradient(180deg,rgba(226,0,26,.09),rgba(226,0,26,.03));
   border:1px solid rgba(226,0,26,.28);border-radius:14px;padding:16px 18px 18px;margin:0 0 18px}
@@ -524,6 +532,13 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="sec-note" id="mainNote">Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.</div>
       <div class="tbl-wrap"><table id="mainTable"></table></div>
       <p class="mini" id="mainFoot" style="margin-top:8px"></p>
+    </section>
+
+    <section class="block" id="liveMdSec" hidden>
+      <div class="eyebrow" data-en="⚡ Live matchday">⚡ Live-Spieltag</div>
+      <h2 class="sec-title" id="liveMdTitle">Spieltag im Detail</h2>
+      <div class="sec-note" data-en="All tips and matchday points at a glance — refreshes every few minutes on match days. Tips appear once a match has kicked off.">Alle Tipps und Spieltagspunkte auf einen Blick — aktualisiert sich an Spieltagen alle paar Minuten. Tipps erscheinen, sobald ein Spiel angepfiffen ist.</div>
+      <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
     </section>
 
     <section class="block gesamt-only">
@@ -1084,6 +1099,22 @@ function rankCardHTML(scope,cfg){
   return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
 }
+function renderLiveMd(scope){
+  const sec=document.getElementById('liveMdSec'); if(!sec)return;
+  const lm=scope!=='gesamt'&&((ADV.liveMd||{})[scope]);
+  if(!lm){ sec.hidden=true; return; }
+  sec.hidden=false;
+  document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+' · '+SMAP[scope].short;
+  const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
+  const res=i=>lm.results[i]?`${lm.results[i].rh}:${lm.results[i].ra}`:'–:–';
+  const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>`<th class="lmd-h">${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span></th>`).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
+  const rks=sharedRanks(lm.rows,r=>r.mdTot);
+  const body=`<tbody>${lm.rows.map((r,i)=>`<tr class="${rks[i]<=3&&r.mdTot>0?'p'+rks[i]:''}">
+    <td><div class="nm-cell"><span class="rank-badge">${rks[i]}</span>${av(r.name,22)}<span class="player-name">${dispName(r.name)}</span></div></td>
+    ${r.tips.map(t=>t?`<td class="mono lmd-tip${t.p>=4?' lmd-p4':(t.p>=3?' lmd-p3':'')}">${t.h}:${t.a}<sub>${t.p||''}</sub></td>`:`<td class="mono lmd-tip dim">–</td>`).join('')}
+    <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
+  document.getElementById('liveMdTable').innerHTML=head+body;
+}
 function renderBonusTips(scope){
   const sec=document.getElementById('bonusTipsSec'); if(!sec)return;
   const bt=scope!=='gesamt'&&((ADV.bonusTips||{})[scope]);
@@ -1565,7 +1596,7 @@ function renderScope(scope){
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):(SMAP[scope].running?L('Zwischenstand dieses Wettbewerbs — die Saison läuft noch. Sortierbar — Kopf anklicken.','Current standings — the season is still running. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.'));
   document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
-  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderBonusTips(scope); applyMobileSticky();
+  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderLiveMd(scope); renderBonusTips(scope); applyMobileSticky();
   document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.toggle('hidden',!gesamt));
 }
 

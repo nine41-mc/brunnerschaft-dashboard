@@ -241,6 +241,7 @@ export async function buildData(config){
   const leaderMd={}, leadStreak={}; // Spieltage als Tabellenführer + längste Führung am Stück
   const worstTip=[]; // größte Abweichung Tipp <-> Ergebnis
   const firstLead=[]; // Blitzstart: Führung nach Spiel 1 und nach Spieltag 1 je Saison
+  const liveMd={}; // laufende Saison: kompletter aktueller Spieltag (alle Tipps + Punkte)
   const megalo={}; // Größenwahn: hohe Tipps (>=5 Tore) ohne Punkte
   const beton={}; // 0:0 getippt: gesamt + wie oft mind. 1 Tor fiel (daneben)
   const pannen={}, pannenMd={}; // Pannenkönig: BL-Spieltage <5 Pkt (nur mit abgegebenen Tipps)
@@ -265,6 +266,11 @@ export async function buildData(config){
     const idxs=[]; for(let i=1;i<=mdMax;i++) idxs.push(i);
     const mds = ARCH[s.id] ? idxs.map(i=>(ARCH[s.id].matchdays||[])[i-1]||null) : await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
     COLLECT[s.id].matchdays = mds;
+    if(s.running){ // Live-Ansicht: aktueller Spieltag im Detail
+      const cur=Math.max(1, s.playedMd||1); const lm=mds[cur-1];
+      if(lm) liveMd[s.id]={ md:cur, fixtures:lm.fixtures, results:lm.results,
+        rows: lm.rows.map(r=>({name:r.name, mdTot:r.mdTot, tips:r.tips.map(t=>t.empty?null:{h:t.h,a:t.a,p:t.pts})})).sort((a,b)=>b.mdTot-a.mdTot) };
+    }
     const ps = METRICS.perSeason[s.id] || (METRICS.perSeason[s.id]={});
     const activeNames = new Set(raw[s.id].g.players.filter(p=>p.total>0).map(p=>p.name));
     const seasonMd=[]; // md -> {name:tot}
@@ -414,7 +420,7 @@ export async function buildData(config){
   const bvbOppByPlayer=Object.fromEntries(Object.entries(bvbOpp).map(([n,m])=>[n,Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([o,c])=>[shortTeam(o),c])]));
   const ADV={ wonDay:wonDayPts, bayern:Object.fromEntries(Object.entries(teamPts).map(([n,t])=>[n,t['FC Bayern München']||0])), bestTeam:bestOf(teamPts), bestCountry:bestOf(countryPts), bestTeam3:bestOf3(teamPts,true), bestCountry3:bestOf3(countryPts,false), bonusCat:bonusCatAll, abOppTop, abOppByPlayer, proBayTips, proBayPts, proBayFail, bayWinAct, teamCols, teamMatrix,
     klassikerPts, klassikerN, bayGoalPred, bayExact, bayernTitle:bayernTitleAll, antiBVB, bvbOppByPlayer, proBVB, schadenPts, doppelmoral,
-    bayMarginSum, judasPts, zauderer, goretzka, bonusTips,
+    bayMarginSum, judasPts, zauderer, goretzka, bonusTips, liveMd,
     bayMaxMargin:Object.fromEntries(Object.entries(bayMaxMargin).map(([n,o])=>[n,{margin:o.margin,tip:o.tip,match:o.fx?shortTeam(o.fx[0])+' – '+shortTeam(o.fx[1]):null,season:o.season}])) };
 
   // ---- LZ ----
