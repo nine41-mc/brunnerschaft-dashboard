@@ -260,7 +260,9 @@ export async function buildData(config){
   // perSeason placed/missing/p4/p3/p2/antiBayern
   for(const s of seasons){
     if(!s.started) continue;
-    const idxs=[]; for(let i=1;i<=s.numMd;i++) idxs.push(i);
+    // Laufende Saison: nur gespielte Spieltage + den nächsten scrapen (schont Kicktipp bei häufigen Live-Refreshes)
+    const mdMax = (s.running && !ARCH[s.id]) ? Math.min(s.numMd, (s.playedMd||0)+1) : s.numMd;
+    const idxs=[]; for(let i=1;i<=mdMax;i++) idxs.push(i);
     const mds = ARCH[s.id] ? idxs.map(i=>(ARCH[s.id].matchdays||[])[i-1]||null) : await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
     COLLECT[s.id].matchdays = mds;
     const ps = METRICS.perSeason[s.id] || (METRICS.perSeason[s.id]={});
