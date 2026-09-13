@@ -36,6 +36,14 @@ async function fetchText(url, tries=3){
   throw new Error('fetch failed: '+url);
 }
 async function fetchDoc(url){ return new JSDOM(await fetchText(url)).window.document; }
+function berlinUtcMs(y,mo,d,h,mi){ // Kicktipp-Zeiten sind Europe/Berlin; Runner läuft in UTC
+  const guess=Date.UTC(y,mo-1,d,h,mi);
+  const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  for(const off of [120,60]){ const t=guess-off*60000;
+    const p=Object.fromEntries(f.formatToParts(new Date(t)).map(x=>[x.type,x.value]));
+    if(+p.year===y&&+p.month===mo&&+p.day===d&&(+p.hour%24)===h&&+p.minute===mi) return t; }
+  return guess-60*60000;
+}
 const base = s => `https://www.kicktipp.de/${s.community}/`;
 const q = s => `tippsaisonId=${s.id}`;
 
@@ -93,9 +101,11 @@ async function scrapeGesamt(s){
 // ---------- Ein Spieltag (Fixtures + Tipps + Punkte) ----------
 async function scrapeMatchday(s, mi){
   const doc = await fetchDoc(base(s)+`tippuebersicht?${q(s)}&spieltagIndex=${mi}`);
-  const sp=doc.querySelector('#spielplanSpiele'); const fixtures=[]; const results=[];
+  const sp=doc.querySelector('#spielplanSpiele'); const fixtures=[]; const results=[]; const kickoffs=[];
   if(sp) for(const tr of [...sp.rows].slice(1)){ const c=[...tr.cells]; if(c.length>=3){ fixtures.push([c[1].textContent.trim(), c[2].textContent.trim()]);
-    const rm=(c[3]?.textContent.trim()||'').match(/^(\d+):(\d+)$/); results.push(rm?{rh:+rm[1],ra:+rm[2]}:null); } }
+    const rm=(c[3]?.textContent.trim()||'').match(/^(\d+):(\d+)$/); results.push(rm?{rh:+rm[1],ra:+rm[2]}:null);
+    const km=(c[0]?.textContent.trim()||'').match(/(\d{2})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
+    kickoffs.push(km?berlinUtcMs(2000+ +km[3],+km[2],+km[1],+km[4],+km[5]):null); } }
   const bayern=fixtures.map(f=>/Bayern München/.test(f[0])?'H':(/Bayern München/.test(f[1])?'A':null));
   const tb=doc.querySelector('#ranking'); if(!tb) return null;
   const rows=[];
@@ -111,7 +121,7 @@ async function scrapeMatchday(s, mi){
     });
     rows.push({name, mdTot, tips});
   }
-  return { fixtures, results, rows };
+  return { fixtures, results, kickoffs, rows };
 }
 
 // ---------- Bonus-Seite (Kategorien + Champion-Treffer) ----------
@@ -271,7 +281,7 @@ export async function buildData(config){
     COLLECT[s.id].matchdays = mds;
     if(s.running){ // Live-Ansicht: aktueller Spieltag im Detail
       const cur=Math.max(1, s.playedMd||1); const lm=mds[cur-1];
-      if(lm) liveMd[s.id]={ md:cur, fixtures:lm.fixtures, results:lm.results,
+      if(lm) liveMd[s.id]={ md:cur, fixtures:lm.fixtures, results:lm.results, ko:lm.kickoffs||[],
         rows: lm.rows.map(r=>({name:r.name, mdTot:r.mdTot, tips:r.tips.map(t=>t.empty?null:{h:t.h,a:t.a,p:t.pts})})).sort((a,b)=>b.mdTot-a.mdTot) };
     }
     const ps = METRICS.perSeason[s.id] || (METRICS.perSeason[s.id]={});

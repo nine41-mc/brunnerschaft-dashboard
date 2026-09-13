@@ -223,6 +223,18 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #bonusTipsTable .bt-ok{color:#0d8a44;font-weight:800}
 #bonusTipsTable .bt-w{color:#c01926;font-weight:650;background:rgba(226,0,26,.09);border-radius:5px;padding:1px 4px}
 #bonusTipsTable .bt-sol{font-size:9.5px;font-weight:800;color:#0d8a44;text-transform:none;letter-spacing:0}
+.live-now{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 12px}
+.live-now-lbl{font-weight:900;color:var(--brand);font-size:13px;letter-spacing:.03em}
+.live-chip{display:inline-flex;align-items:center;background:rgba(226,0,26,.08);border:1px solid rgba(226,0,26,.35);
+  border-radius:999px;padding:5px 13px;font-weight:750;font-size:13.5px;animation:liveGlow 2s infinite}
+@keyframes liveGlow{0%{box-shadow:0 0 0 0 rgba(226,0,26,.35)}70%{box-shadow:0 0 0 9px rgba(226,0,26,0)}100%{box-shadow:0 0 0 0 rgba(226,0,26,0)}}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--brand);display:inline-block;margin-right:7px;flex:0 0 auto;animation:liveBlink 1.2s ease-in-out infinite}
+@keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.25}}
+#liveMdTable th.lmd-live{background:rgba(226,0,26,.10)}
+#liveMdTable th.lmd-live .live-dot{margin-right:4px;vertical-align:1px}
+#liveMdTable th.lmd-live .lmd-r{animation:liveBlink 1.6s ease-in-out infinite}
+#liveMdTable .lmd-livelbl{font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--brand)}
+@media(prefers-reduced-motion:reduce){.live-dot,.live-chip,#liveMdTable th.lmd-live .lmd-r{animation:none}}
 #liveMdTable td.dim{color:var(--ink-2);opacity:.55}
 #liveMdTable tbody td:first-child{max-width:none} /* Namen immer ausschreiben — Tabelle scrollt ohnehin */
 #liveMdTable .nm-cell .player-name{overflow:visible;text-overflow:clip;max-width:none}
@@ -547,6 +559,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="⚡ Live matchday">⚡ Live-Spieltag</div>
       <h2 class="sec-title" id="liveMdTitle">Spieltag im Detail</h2>
       <div class="sec-note" data-en="All tips and matchday points at a glance — refreshes every few minutes on match days. Tips appear once a match has kicked off.">Alle Tipps und Spieltagspunkte auf einen Blick — aktualisiert sich an Spieltagen alle paar Minuten. Tipps erscheinen, sobald ein Spiel angepfiffen ist.</div>
+      <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
     </section>
 
@@ -1116,7 +1129,13 @@ function renderLiveMd(scope){
   document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+' · '+SMAP[scope].short;
   const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
   const res=i=>lm.results[i]?`${lm.results[i].rh}:${lm.results[i].ra}`:'–:–';
-  const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>`<th class="lmd-h">${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span></th>`).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
+  const NOW=Date.now();
+  const st=i=>{ const k=(lm.ko||[])[i]; if(k){ if(NOW<k)return 'up'; if(NOW<k+125*60000)return 'live'; return 'fin'; } return lm.results[i]?'fin':'up'; };
+  const liveIdx=lm.fixtures.map((_,i)=>i).filter(i=>st(i)==='live');
+  document.getElementById('liveNow').innerHTML=liveIdx.length
+    ? `<div class="live-now"><span class="live-now-lbl">🔴 ${L('Jetzt live','Live now')}</span>${liveIdx.map(i=>`<span class="live-chip"><span class="live-dot"></span>${esc(code(lm.fixtures[i][0]))}&nbsp;<b>${res(i)==='–:–'?'0:0':res(i)}</b>&nbsp;${esc(code(lm.fixtures[i][1]))}</span>`).join('')}</div>` : '';
+  const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>{const li=st(i)==='live';
+    return `<th class="lmd-h${li?' lmd-live':''}">${li?'<span class="live-dot"></span>':''}${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span>${li?`<br><span class="lmd-livelbl">LIVE</span>`:''}</th>`;}).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
   const rks=sharedRanks(lm.rows,r=>r.mdTot);
   const body=`<tbody>${lm.rows.map((r,i)=>`<tr class="${rks[i]<=3&&r.mdTot>0?'p'+rks[i]:''}">
     <td><div class="nm-cell"><span class="rank-badge">${rks[i]}</span>${av(r.name,22)}<span class="player-name">${dispName(r.name)}</span></div></td>
@@ -1567,7 +1586,7 @@ function renderPills(){
   document.getElementById('pills').innerHTML=opts.map(o=>`<button class="pill" data-scope="${o.id}" aria-pressed="${o.id===CUR_SCOPE}">${esc(o.label)}${o.id!=='gesamt'?`<span class="t">${o.tag}</span>`:''}</button>`).join('');
   document.querySelectorAll('#pills .pill').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('#pills .pill').forEach(x=>x.setAttribute('aria-pressed',x===b));
-    CUR_SCOPE=b.dataset.scope; renderScope(CUR_SCOPE);
+    CUR_SCOPE=b.dataset.scope; try{sessionStorage.setItem('brun_scope',CUR_SCOPE);}catch(e){} renderScope(CUR_SCOPE);
   });
 }
 function renderScope(scope){
@@ -1624,6 +1643,7 @@ function renderScope(scope){
 
 /* ---------- tabs & theme ---------- */
 document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{
+  try{sessionStorage.setItem('brun_tab',tab.dataset.tab);}catch(e){}
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t===tab));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
@@ -1751,8 +1771,15 @@ function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won
 ['feeBL','feeCUP'].forEach(id=>document.getElementById(id).oninput=renderFinance);
 
 let CUR_SCOPE='gesamt';
+try{const ss=sessionStorage.getItem('brun_scope'); if(ss&&(ss==='gesamt'||SMAP[ss]))CUR_SCOPE=ss;}catch(e){}
 function renderAll(){
   renderScope(CUR_SCOPE);
+  try{const st2=sessionStorage.getItem('brun_tab'); if(st2){const tb=document.querySelector(`.tab[data-tab="${st2}"]`); if(tb&&tb.getAttribute('aria-selected')!=='true')tb.click();}}catch(e){}
+  // Auto-Refresh, solange ein Spiel läuft — die Seite wird ja alle ~5 min neu deployt
+  try{ const lmAll=(typeof ADV!=='undefined'&&ADV.liveMd)||{}; const now=Date.now();
+    const anyLive=Object.values(lmAll).some(x=>((x&&x.ko)||[]).some(k=>k&&now>=k&&now<k+125*60000));
+    if(anyLive) setInterval(()=>{ if(!document.hidden) location.reload(); }, 4*60*1000);
+  }catch(e){}
   renderBonusCat();
   renderBestTeam();
   renderHistory();
