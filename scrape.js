@@ -283,6 +283,18 @@ export async function buildData(config){
       const cur=Math.max(1, s.playedMd||1); const lm=mds[cur-1];
       if(lm) liveMd[s.id]={ md:cur, fixtures:lm.fixtures, results:lm.results, ko:lm.kickoffs||[],
         rows: lm.rows.map(r=>({name:r.name, mdTot:r.mdTot, tips:r.tips.map(t=>t.empty?null:{h:t.h,a:t.a,p:t.pts})})).sort((a,b)=>b.mdTot-a.mdTot) };
+      // Zwischenstand live nachführen: die Gesamtübersicht hinkt bei laufenden Spielen hinterher —
+      // aktueller Spieltag aus der (frischeren) Spieltagsseite ersetzt den Wert aus der Gesamt-Matrix.
+      if(lm){ const ds=DATA.seasons.find(x=>x.id===s.id);
+        if(ds){ const g=raw[s.id].g; const liveTot={}; lm.rows.forEach(r=>liveTot[r.name]=r.mdTot);
+          ds.standings.forEach(st=>{ const gp=g.players.find(pp=>pp.name===st.name); if(!gp) return;
+            const mdOld=gp.md[cur-1]||0; const mdNew=liveTot[st.name]!=null?liveTot[st.name]:mdOld;
+            st.total = st.total - mdOld + mdNew; if(st.total>0) st.active=true;
+          });
+          ds.standings.sort((a,b)=>b.total-a.total);
+          ds.standings.forEach((st,i)=>{ st.pos = (i>0&&st.total===ds.standings[i-1].total) ? ds.standings[i-1].pos : i+1; });
+        }
+      }
     }
     const ps = METRICS.perSeason[s.id] || (METRICS.perSeason[s.id]={});
     const activeNames = new Set(raw[s.id].g.players.filter(p=>p.total>0).map(p=>p.name));
