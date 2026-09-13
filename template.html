@@ -217,6 +217,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #liveMdTable td.lmd-p4{font-weight:800;color:#0e9f4e}#liveMdTable td.lmd-p4 sub{color:#0e9f4e}
 #liveMdTable td.lmd-p3{font-weight:700;color:#3aa15f}#liveMdTable td.lmd-p3 sub{color:#3aa15f}
 #liveMdTable td.dim{color:var(--ink-2);opacity:.55}
+#liveMdTable tbody td:first-child{max-width:none} /* Namen immer ausschreiben — Tabelle scrollt ohnehin */
+#liveMdTable .nm-cell .player-name{overflow:visible;text-overflow:clip;max-width:none}
 .rankgrid-pair .rcard[data-key="bonus"]{grid-column:1/-1} /* Bonuspunkte als letzte Karte in voller Breite */
 .live-banner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;background:linear-gradient(180deg,rgba(226,0,26,.09),rgba(226,0,26,.03));
   border:1px solid rgba(226,0,26,.28);border-radius:14px;padding:16px 18px 18px;margin:0 0 18px}
