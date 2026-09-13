@@ -1,0 +1,32 @@
+name: Live-Loop (Spieltage)
+
+# GitHub führt */5-Schedules oft gar nicht aus. Dieser Loop startet stündlich (zuverlässig)
+# und stößt dann selbst ~55 Minuten lang alle 5 Minuten den Deploy an.
+on:
+  schedule:
+    - cron: '0 18-20 * * 5'   # Fr ~20–23 MESZ
+    - cron: '0 13-18 * * 6'   # Sa ~15–21 MESZ
+    - cron: '0 13-19 * * 0'   # So ~15–22 MESZ
+  workflow_dispatch:           # manuell startbar (z. B. Pokalabende)
+
+permissions:
+  actions: write
+
+concurrency:
+  group: live-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Deploy alle 5 Minuten anstoßen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 11); do
+            gh workflow run deploy.yml --repo "${{ github.repository }}" || true
+            sleep 300
+          done
+          gh workflow run deploy.yml --repo "${{ github.repository }}" || true

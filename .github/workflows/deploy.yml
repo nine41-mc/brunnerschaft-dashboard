@@ -3,12 +3,9 @@ name: Build & Deploy Brunnerschaft-Dashboard
 on:
   schedule:
     - cron: '0 5 * * *'        # täglich morgens (Basis-Refresh)
-    - cron: '*/5 18-20 * * 5'  # Fr alle 5 min, ~20:00–23:00 MESZ (Freitagsspiel live)
-    - cron: '*/5 13-18 * * 6'  # Sa alle 5 min, ~15:00–21:00 MESZ (Konferenz + Topspiel live)
-    - cron: '*/5 13-19 * * 0'  # So alle 5 min, ~15:00–22:00 MESZ (Sonntagsspiele live)
     - cron: '30 17,19 * * 2,3' # Di/Mi abends (Pokal-/Nachholtermine)
-    # Hinweis: GitHub-Cron läuft in UTC (Winterzeit verschiebt alles um +1 h lokal); 5-min-Schedules
-    # feuern erfahrungsgemäß eher alle 5–15 min. concurrency (cancel-in-progress) verhindert Staus.
+    # Die 5-min-Live-Refreshes an Spieltagen übernimmt live-loop.yml — GitHub führt */5-Schedules
+    # unzuverlässig aus, der Loop dispatcht stattdessen selbst. Cron läuft in UTC (Winterzeit: +1 h lokal).
   workflow_dispatch:          # manuell auslösbar
   push:
     branches: [ main ]
