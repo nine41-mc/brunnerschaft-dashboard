@@ -144,7 +144,10 @@ async function scrapeBonus(s){
     const bt=bayernTitle[name]||(bayernTitle[name]={m:0,h:0});
     if(dmCols.some(i=>c[i]&&/^FCB$/i.test(ansText(c[i])))) bt.m++;
     if(hmCols.some(i=>c[i]&&/^FCB$/i.test(ansText(c[i])))) bt.h++;
-    answers.rows.push({ name, vals: answers.cols.map((_,k)=>ansText(c[nameIdx+1+k])||'') });
+    answers.rows.push({ name, vals: answers.cols.map((_,k)=>{ const cell=c[nameIdx+1+k]; if(!cell) return {t:''};
+      const sub=cell.querySelector('sub.p'); const pts=sub?parseInt(sub.textContent,10):null;
+      return { t: ansText(cell)||'', p: pts, w: /(^|\s)f(\s|$)/.test(cell.className||'') }; // w = von Kicktipp als falsch aufgelöst
+    }) });
   }
   return { cats, champCorrect, hmCorrect, bayernTitle, answers };
 }

@@ -214,8 +214,15 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #liveMdTable .lmd-r{font-weight:800;color:var(--brand)}
 #liveMdTable td.lmd-tip{white-space:nowrap;text-align:center;padding:9px 7px}
 #liveMdTable td.lmd-tip sub{font-size:9px;color:var(--ink-2);margin-left:3px;font-weight:700}
-#liveMdTable td.lmd-p4{font-weight:800;color:#0e9f4e}#liveMdTable td.lmd-p4 sub{color:#0e9f4e}
-#liveMdTable td.lmd-p3{font-weight:700;color:#3aa15f}#liveMdTable td.lmd-p3 sub{color:#3aa15f}
+#liveMdTable td.lmd-c4{background:rgba(14,159,78,.16);color:#0d8a44;font-weight:800}#liveMdTable td.lmd-c4 sub{color:#0d8a44}
+#liveMdTable td.lmd-c3{background:rgba(232,140,0,.16);color:#b96f00;font-weight:750}#liveMdTable td.lmd-c3 sub{color:#b96f00}
+#liveMdTable td.lmd-c2{background:rgba(235,190,0,.20);color:#8f7300;font-weight:700}#liveMdTable td.lmd-c2 sub{color:#8f7300}
+#liveMdTable td.lmd-c0{background:rgba(226,0,26,.09);color:#c01926}#liveMdTable td.lmd-c0 sub{color:#c01926}
+#bonusTipsTable .bt-a{white-space:nowrap}
+#bonusTipsTable .bt-a sub{font-size:9px;margin-left:2px;font-weight:800}
+#bonusTipsTable .bt-ok{color:#0d8a44;font-weight:800}
+#bonusTipsTable .bt-w{color:#c01926;font-weight:650;background:rgba(226,0,26,.09);border-radius:5px;padding:1px 4px}
+#bonusTipsTable .bt-sol{font-size:9.5px;font-weight:800;color:#0d8a44;text-transform:none;letter-spacing:0}
 #liveMdTable td.dim{color:var(--ink-2);opacity:.55}
 #liveMdTable tbody td:first-child{max-width:none} /* Namen immer ausschreiben — Tabelle scrollt ohnehin */
 #liveMdTable .nm-cell .player-name{overflow:visible;text-overflow:clip;max-width:none}
@@ -1113,7 +1120,10 @@ function renderLiveMd(scope){
   const rks=sharedRanks(lm.rows,r=>r.mdTot);
   const body=`<tbody>${lm.rows.map((r,i)=>`<tr class="${rks[i]<=3&&r.mdTot>0?'p'+rks[i]:''}">
     <td><div class="nm-cell"><span class="rank-badge">${rks[i]}</span>${av(r.name,22)}<span class="player-name">${dispName(r.name)}</span></div></td>
-    ${r.tips.map(t=>t?`<td class="mono lmd-tip${t.p>=4?' lmd-p4':(t.p>=3?' lmd-p3':'')}">${t.h}:${t.a}<sub>${t.p||''}</sub></td>`:`<td class="mono lmd-tip dim">–</td>`).join('')}
+    ${r.tips.map((t,ti)=>{ if(!t) return `<td class="mono lmd-tip dim">–</td>`;
+      const scored=!!lm.results[ti];
+      const cl=scored?(t.p>=4?' lmd-c4':t.p>=3?' lmd-c3':t.p>=2?' lmd-c2':' lmd-c0'):'';
+      return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
 }
@@ -1122,16 +1132,26 @@ function renderBonusTips(scope){
   const bt=scope!=='gesamt'&&((ADV.bonusTips||{})[scope]);
   if(!bt){ sec.hidden=true; return; }
   sec.hidden=false;
+  const QPFX=['16-18','Tor','DM','HM','Tr'];
   const lbl=h=>{ if(/^16-18/.test(h))return L('Plätze 16–18','Places 16–18');
     if(/^Tor/.test(h))return L('Torschützen&shy;könig','Top scorer');
     if(/^DM/.test(h))return L('Meister','Champion');
     if(/^HM/.test(h))return L('Herbst&shy;meister','Autumn champ');
-    return esc(h.replace(/-+$/,'')); };
+    const pf=QPFX.find(x=>h.startsWith(x)); return esc(pf||h.replace(/-+$/,'')); }; // Lösung (z. B. "TrBMG") gehört nicht ins Label
   // gleiche Fragen (z. B. 3× Plätze 16–18) zu einer Spalte zusammenfassen
   const groups=[]; bt.cols.forEach((h,i)=>{ const l=lbl(h); const g=groups[groups.length-1];
     if(g&&g.label===l)g.idx.push(i); else groups.push({label:l,idx:[i]}); });
-  document.getElementById('bonusTipsTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${groups.map(g=>`<th>${g.label}</th>`).join('')}</tr></thead><tbody>${
-    bt.rows.map(r=>`<tr><td>${nmCell(r.name,24)}</td>${groups.map(g=>`<td class="mono">${g.idx.map(i=>esc(r.vals[i]||'–')).join(', ')}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  // Aufgelöste Fragen: Lösung steckt im Kicktipp-Header hinter dem Fragen-Kürzel (z. B. "TrBMG"), offene enden auf "---"
+  const PFX=['16-18','Tor','DM','HM','Tr'];
+  const solOf=h=>{ if(/-{3}$/.test(h)) return null; const pf=PFX.find(x=>h.startsWith(x)); return pf?h.slice(pf.length):null; };
+  const cell=v=>{ if(!v||typeof v==='string') return esc(v||'–');
+    if(v.w) return `<span class="bt-a bt-w">${esc(v.t||'–')}<sub>0</sub></span>`;
+    if(v.p>0) return `<span class="bt-a bt-ok">${esc(v.t||'–')}<sub>${v.p}</sub></span>`;
+    return `<span class="bt-a">${esc(v.t||'–')}</span>`; };
+  document.getElementById('bonusTipsTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${groups.map(g=>{
+    const sols=g.idx.map(i=>solOf(bt.cols[i])).filter(Boolean);
+    return `<th>${g.label}${sols.length?`<br><span class="bt-sol">✓ ${sols.map(esc).join(' · ')}</span>`:''}</th>`;}).join('')}</tr></thead><tbody>${
+    bt.rows.map(r=>`<tr><td>${nmCell(r.name,24)}</td>${groups.map(g=>`<td class="mono">${g.idx.map(i=>cell(r.vals[i])).join(', ')}</td>`).join('')}</tr>`).join('')}</tbody>`;
 }
 function renderRankGrid(scope){
   const draw=(gridId,pred,scp)=>{
