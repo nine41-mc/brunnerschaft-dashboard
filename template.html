@@ -211,7 +211,7 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .blitz-who{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 #liveMdTable{table-layout:auto;min-width:0}
 #liveMdTable .lmd-h{white-space:nowrap;font-size:10.5px;text-align:center}
-#liveMdTable .lmd-r{font-weight:800;color:var(--brand)}
+#liveMdTable .lmd-r{font-weight:800;color:var(--ink)} /* Endstände in normaler Textfarbe — rot pulsiert nur live */
 #liveMdTable td.lmd-tip{white-space:nowrap;text-align:center;padding:9px 7px}
 #liveMdTable td.lmd-tip sub{font-size:9px;color:var(--ink-2);margin-left:3px;font-weight:700}
 #liveMdTable td.lmd-c4{background:rgba(14,159,78,.16);color:#0d8a44;font-weight:800}#liveMdTable td.lmd-c4 sub{color:#0d8a44}
@@ -232,7 +232,7 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 @keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.25}}
 #liveMdTable th.lmd-live{background:rgba(226,0,26,.10)}
 #liveMdTable th.lmd-live .live-dot{margin-right:4px;vertical-align:1px}
-#liveMdTable th.lmd-live .lmd-r{animation:liveBlink 1.6s ease-in-out infinite}
+#liveMdTable th.lmd-live .lmd-r{color:var(--brand);animation:liveBlink 1.6s ease-in-out infinite}
 #liveMdTable .lmd-livelbl{font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--brand)}
 @media(prefers-reduced-motion:reduce){.live-dot,.live-chip,#liveMdTable th.lmd-live .lmd-r{animation:none}}
 #liveMdTable td.dim{color:var(--ink-2);opacity:.55}
