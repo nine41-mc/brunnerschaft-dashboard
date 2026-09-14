@@ -197,7 +197,7 @@ td.dim{color:var(--ink-2);font-weight:400;font-size:13px}
 td.sortcol{font-weight:750;color:var(--ink)}
 tbody tr:hover{background:var(--surface-2)}
 td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
-.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;flex:0 0 auto;
   font-weight:800;font-size:12.5px;background:var(--surface-2);color:var(--ink-2)}
 tr.p1 .rank-badge{background:var(--gold);color:#3a2c00}
 tr.p2 .rank-badge{background:var(--silver);color:#1c2029}
@@ -243,8 +243,9 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #ptr.loading .ptr-ic{animation:ptrSpin .8s linear infinite}
 @keyframes ptrSpin{to{transform:rotate(360deg)}}
 #liveMdTable td.dim{color:var(--ink-2);opacity:.55}
-#liveMdTable tbody td:first-child{max-width:none} /* Namen immer ausschreiben — Tabelle scrollt ohnehin */
-#liveMdTable .nm-cell .player-name{overflow:visible;text-overflow:clip;max-width:none}
+#liveMdTable thead th:first-child,#liveMdTable tbody td:first-child{min-width:158px;max-width:none;text-align:left} /* feste, großzügige Namensspalte — kein Umbruch, Tabelle scrollt ohnehin */
+#liveMdTable .nm-cell{flex-wrap:nowrap;white-space:nowrap;max-width:none} /* mobile Breitenkappung gilt hier nicht — Spalte ist fest & scrollbar */
+#liveMdTable .nm-cell .player-name{overflow:visible;text-overflow:clip;max-width:none;white-space:nowrap}
 .rankgrid-pair .rcard[data-key="bonus"]{grid-column:1/-1} /* Bonuspunkte als letzte Karte in voller Breite */
 .live-banner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;background:linear-gradient(180deg,rgba(226,0,26,.09),rgba(226,0,26,.03));
   border:1px solid rgba(226,0,26,.28);border-radius:14px;padding:16px 18px 18px;margin:0 0 18px}
@@ -256,7 +257,11 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   box-shadow:0 2px 10px -3px rgba(226,0,26,.45);transition:transform .12s ease,box-shadow .12s ease}
 .lb-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px -3px rgba(226,0,26,.55)}
 .lb-btn:active{transform:translateY(0);opacity:.9}
-@media(max-width:560px){.lb-btn{width:100%}}
+.lb-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.lb-btn.lb-btn2{background:var(--surface);color:var(--brand);border:1.5px solid rgba(226,0,26,.5);box-shadow:none}
+.lb-btn.lb-btn2:hover{background:var(--brand);color:#fff}
+.lb-btn .lb-dot{background:currentColor;width:9px;height:9px;margin-right:9px}
+@media(max-width:560px){.lb-btns{width:100%;flex-direction:column}.lb-btn{width:100%}}
 /* ---------- iOS-Feinschliff (Apple HIG) ---------- */
 *{-webkit-tap-highlight-color:transparent} /* eigener :active-State statt grauem iOS-Blitz */
 html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--hdrH,58px) + var(--tabsH,46px) + 10px)} /* Sprungziele landen nicht unter den sticky Leisten */
@@ -1478,18 +1483,26 @@ function renderHeart(){
     <div class="heart-foot">${L('Ebenfalls stark &amp; noch ohne Titel:','Also strong &amp; still title-less:')} ${others.join(' · ')} · ${L('Kriterium: meiste Gesamtpunkte ohne je einen Wettbewerb gewonnen zu haben.','Criterion: most total points without ever winning a competition.')}</div>
   </div>`;
 }
-function gotoScope(id){
+function gotoScope(id,target){
   const b=document.querySelector(`#pills .pill[data-scope="${id}"]`); if(b)b.click();
-  const fb=document.querySelector('.filterbar'); if(fb&&fb.scrollIntoView)fb.scrollIntoView({behavior:'smooth',block:'start'});
+  const t=target&&document.querySelector(target);
+  const el=t?(t.closest('section')||t):document.querySelector('.filterbar');
+  if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function renderLiveBanner(){
   const el=document.getElementById('liveBanner'); if(!el)return;
   const live=DISPLAY_ORDER.map(id=>SMAP[id]).find(x=>x.running&&x.standings.some(p=>p.total>0));
   if(!live){el.innerHTML='';return;}
   const yr=live.short.replace(/^BL\s*/,'');
+  const lmData=(typeof ADV!=='undefined'&&ADV.liveMd||{})[live.id];
+  const nowB=Date.now();
+  const anyLiveB=!!lmData&&((lmData.ko)||[]).some(k=>k&&nowB>=k&&nowB<k+125*60000);
   el.innerHTML=`<div class="live-banner"><div class="lb-head"><span class="live-tag">⏳ ${L('Läuft','Live')}</span>
     <span class="lb-txt">${live.type==='BL'?L('Die aktuelle BL-Saison '+yr+' ist in vollem Gange.','The current BL season '+yr+' is in full swing.'):L('Der Wettbewerb '+esc(live.short)+' ist in vollem Gange.','The competition '+esc(live.short)+' is in full swing.')}</span></div>
-    <button class="lb-btn" onclick="gotoScope('${live.id}')">${L('Aktueller Stand','Current standings')} ›</button></div>`;
+    <div class="lb-btns">
+      <button class="lb-btn" onclick="gotoScope('${live.id}','#mainTable')">${L('Aktueller Zwischenstand','Current standings')} ›</button>
+      ${lmData?`<button class="lb-btn lb-btn2" onclick="gotoScope('${live.id}','#liveMdSec')">${anyLiveB?'<span class="live-dot lb-dot"></span>':'⚡ '}${L('Live-Spieltag','Live matchday')} ›</button>`:''}
+    </div></div>`;
 }
 function renderBlitz(){
   const rows=(typeof STATS18!=='undefined'&&STATS18.firstLead)||[];
