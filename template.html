@@ -1144,7 +1144,13 @@ function renderLiveMd(scope){
   sec.hidden=false;
   const selEl=document.getElementById('liveMdSel');
   if(selEl.dataset.scope!==scope){ selEl.dataset.scope=scope; LIVEMD_SEL=data.cur;
-    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):'')}</option>`).join('');
+    const dmF=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'numeric',month:'numeric'});
+    const dm=k=>{const pr=dmF.formatToParts(new Date(k));const g=t=>+pr.find(x=>x.type===t).value;return {d:g('day'),m:g('month')};};
+    const rng=m=>{const ks=(m.ko||[]).filter(Boolean); if(!ks.length)return '';
+      const a=dm(Math.min(...ks)),b=dm(Math.max(...ks));
+      const txt=(a.d===b.d&&a.m===b.m)?`${a.d}.${a.m}.`:(a.m===b.m?`${a.d}.–${b.d}.${a.m}.`:`${a.d}.${a.m}.–${b.d}.${b.m}.`);
+      return ' · '+txt;};
+    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${rng(m)}${m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):'')}</option>`).join('');
     selEl.value=String(data.cur);
     selEl.onchange=()=>{ LIVEMD_SEL=+selEl.value; renderLiveMd(scope); };
   }
