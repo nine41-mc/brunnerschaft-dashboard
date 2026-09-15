@@ -1143,15 +1143,19 @@ function renderLiveMd(scope){
   if(!data||!data.mds||!data.mds.length){ sec.hidden=true; return; }
   sec.hidden=false;
   const selEl=document.getElementById('liveMdSel');
-  if(selEl.dataset.scope!==scope){ selEl.dataset.scope=scope; LIVEMD_SEL=data.cur;
+  if(selEl.dataset.scope!==scope){ selEl.dataset.scope=scope;
+    const nowSel=Date.now();
+    const liveEntry=data.mds.find(m=>(m.ko||[]).some(k=>k&&nowSel>=k&&nowSel<k+125*60000));
+    const liveNo=liveEntry?liveEntry.md:null;
+    LIVEMD_SEL=liveNo||data.cur; // läuft gerade ein Spiel, springt der Default auf dessen Spieltag
     const dmF=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'numeric',month:'numeric'});
     const dm=k=>{const pr=dmF.formatToParts(new Date(k));const g=t=>+pr.find(x=>x.type===t).value;return {d:g('day'),m:g('month')};};
     const rng=m=>{const ks=(m.ko||[]).filter(Boolean); if(!ks.length)return '';
       const a=dm(Math.min(...ks)),b=dm(Math.max(...ks));
       const txt=(a.d===b.d&&a.m===b.m)?`${a.d}.${a.m}.`:(a.m===b.m?`${a.d}.–${b.d}.${a.m}.`:`${a.d}.${a.m}.–${b.d}.${b.m}.`);
       return ' · '+txt;};
-    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${rng(m)}${m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):'')}</option>`).join('');
-    selEl.value=String(data.cur);
+    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${rng(m)}${m.md===liveNo?' · 🔴 LIVE':(m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):''))}</option>`).join('');
+    selEl.value=String(LIVEMD_SEL);
     selEl.onchange=()=>{ LIVEMD_SEL=+selEl.value; renderLiveMd(scope); };
   }
   const sel=data.mds.find(m=>m.md===LIVEMD_SEL)||data.mds.find(m=>m.md===data.cur)||data.mds[data.mds.length-1];
@@ -1522,7 +1526,7 @@ function renderLiveBanner(){
     <span class="lb-txt">${live.type==='BL'?L('Die aktuelle BL-Saison '+yr+' ist in vollem Gange.','The current BL season '+yr+' is in full swing.'):L('Der Wettbewerb '+esc(live.short)+' ist in vollem Gange.','The competition '+esc(live.short)+' is in full swing.')}</span></div>
     <div class="lb-btns">
       <button class="lb-btn" onclick="gotoScope('${live.id}','#mainTable')">${L('Aktueller Zwischenstand','Current standings')} ›</button>
-      ${lmData?`<button class="lb-btn lb-btn2" onclick="gotoScope('${live.id}','#liveMdSec')">${anyLiveB?'<span class="live-dot lb-dot"></span>':'⚡ '}${L('Live-Spieltag','Live matchday')} ›</button>`:''}
+      ${lmData?`<button class="lb-btn lb-btn2" onclick="gotoScope('${live.id}','#liveMdSec')">${anyLiveB?'<span class="live-dot lb-dot"></span>'+L('Live-Spieltag','Live matchday'):'⚡ '+L('Letzter Spieltag','Latest matchday')} ›</button>`:''}
     </div></div>`;
 }
 function renderBlitz(){
