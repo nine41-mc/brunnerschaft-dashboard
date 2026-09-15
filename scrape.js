@@ -279,12 +279,17 @@ export async function buildData(config){
     const idxs=[]; for(let i=1;i<=mdMax;i++) idxs.push(i);
     const mds = ARCH[s.id] ? idxs.map(i=>(ARCH[s.id].matchdays||[])[i-1]||null) : await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
     COLLECT[s.id].matchdays = mds;
-    if(s.running){ // Live-Ansicht: aktueller Spieltag im Detail
-      const cur=Math.max(1, s.playedMd||1); const lm=mds[cur-1];
-      if(lm) liveMd[s.id]={ md:cur, fixtures:lm.fixtures, results:lm.results, ko:lm.kickoffs||[],
-        rows: lm.rows.map(r=>({name:r.name, mdTot:r.mdTot, tips:r.tips.map(t=>t.empty?null:{h:t.h,a:t.a,p:t.pts})})).sort((a,b)=>b.mdTot-a.mdTot) };
+    if(s.running){ // Spieltags-Browser: alle gescrapten Spieltage (gespielte + nächster) kompakt einbetten
+      const cur=Math.max(1, s.playedMd||1);
+      const mdsAll=[];
+      mds.forEach((m,k)=>{ if(!m||!m.fixtures.length) return; const mi=idxs[k];
+        mdsAll.push({ md:mi, fixtures:m.fixtures, results:m.results, ko:m.kickoffs||[],
+          rows: m.rows.map(r=>({n:r.name, t:r.mdTot, tips:r.tips.map(t=>t.empty?0:[t.h,t.a,t.pts])})) });
+      });
+      if(mdsAll.length) liveMd[s.id]={ cur, mds:mdsAll };
       // Zwischenstand live nachführen: die Gesamtübersicht hinkt bei laufenden Spielen hinterher —
       // aktueller Spieltag aus der (frischeren) Spieltagsseite ersetzt den Wert aus der Gesamt-Matrix.
+      const lm=mds[cur-1];
       if(lm){ const ds=DATA.seasons.find(x=>x.id===s.id);
         if(ds){ const g=raw[s.id].g; const liveTot={}; lm.rows.forEach(r=>liveTot[r.name]=r.mdTot);
           ds.standings.forEach(st=>{ const gp=g.players.find(pp=>pp.name===st.name); if(!gp) return;

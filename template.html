@@ -257,6 +257,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   box-shadow:0 2px 10px -3px rgba(226,0,26,.45);transition:transform .12s ease,box-shadow .12s ease}
 .lb-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px -3px rgba(226,0,26,.55)}
 .lb-btn:active{transform:translateY(0);opacity:.9}
+.lmd-bar{margin:0 0 12px}
+.lmd-bar select{font-family:inherit;font-size:16px;font-weight:650;padding:9px 12px;min-height:44px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);min-width:210px}
 .lb-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .lb-btn.lb-btn2{background:var(--surface);color:var(--brand);border:1.5px solid rgba(226,0,26,.5);box-shadow:none}
 .lb-btn.lb-btn2:hover{background:var(--brand);color:#fff}
@@ -568,9 +570,10 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     </section>
 
     <section class="block" id="liveMdSec" hidden>
-      <div class="eyebrow" data-en="⚡ Live matchday">⚡ Live-Spieltag</div>
+      <div class="eyebrow" data-en="⚡ Matchdays">⚡ Spieltage im Überblick</div>
       <h2 class="sec-title" id="liveMdTitle">Spieltag im Detail</h2>
-      <div class="sec-note" data-en="All tips and matchday points at a glance — refreshes every few minutes on match days. Tips appear once a match has kicked off.">Alle Tipps und Spieltagspunkte auf einen Blick — aktualisiert sich an Spieltagen alle paar Minuten. Tipps erscheinen, sobald ein Spiel angepfiffen ist.</div>
+      <div class="sec-note" data-en="All tips and matchday points — pick a matchday below. Tips appear once a match has kicked off; running matchdays go live automatically.">Alle Tipps und Spieltagspunkte — Spieltag unten wählbar. Tipps erscheinen ab Anpfiff; laufende Spieltage schalten automatisch auf Live.</div>
+      <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
     </section>
@@ -1133,15 +1136,26 @@ function rankCardHTML(scope,cfg){
   return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
 }
+let LIVEMD_SEL=null;
 function renderLiveMd(scope){
   const sec=document.getElementById('liveMdSec'); if(!sec)return;
-  const lm=scope!=='gesamt'&&((ADV.liveMd||{})[scope]);
-  if(!lm){ sec.hidden=true; return; }
+  const data=scope!=='gesamt'&&((ADV.liveMd||{})[scope]);
+  if(!data||!data.mds||!data.mds.length){ sec.hidden=true; return; }
   sec.hidden=false;
-  document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+' · '+SMAP[scope].short;
+  const selEl=document.getElementById('liveMdSel');
+  if(selEl.dataset.scope!==scope){ selEl.dataset.scope=scope; LIVEMD_SEL=data.cur;
+    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):'')}</option>`).join('');
+    selEl.value=String(data.cur);
+    selEl.onchange=()=>{ LIVEMD_SEL=+selEl.value; renderLiveMd(scope); };
+  }
+  const sel=data.mds.find(m=>m.md===LIVEMD_SEL)||data.mds.find(m=>m.md===data.cur)||data.mds[data.mds.length-1];
+  const lm={ md:sel.md, fixtures:sel.fixtures, results:sel.results, ko:sel.ko,
+    rows:[...sel.rows].map(r=>({name:r.n, mdTot:r.t, tips:r.tips.map(t=>t?{h:t[0],a:t[1],p:t[2]}:null)})).sort((a,b)=>b.mdTot-a.mdTot) };
+  document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+' · '+SMAP[scope].short+(sel.md>data.cur?L(' · steht bevor',' · upcoming'):'');
   const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
-  const res=i=>lm.results[i]?`${lm.results[i].rh}:${lm.results[i].ra}`:'–:–';
   const NOW=Date.now();
+  const koFmt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  const res=i=>lm.results[i]?`${lm.results[i].rh}:${lm.results[i].ra}`:((lm.ko||[])[i]&&(lm.ko[i]>NOW)?koFmt.format(new Date(lm.ko[i])).replace(',',''):'–:–');
   const st=i=>{ const k=(lm.ko||[])[i]; if(k){ if(NOW<k)return 'up'; if(NOW<k+125*60000)return 'live'; return 'fin'; } return lm.results[i]?'fin':'up'; };
   const liveIdx=lm.fixtures.map((_,i)=>i).filter(i=>st(i)==='live');
   document.getElementById('liveNow').innerHTML=liveIdx.length
@@ -1149,8 +1163,9 @@ function renderLiveMd(scope){
   const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>{const li=st(i)==='live';
     return `<th class="lmd-h${li?' lmd-live':''}">${li?'<span class="live-dot"></span>':''}${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span>${li?`<br><span class="lmd-livelbl">LIVE</span>`:''}</th>`;}).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
   const rks=sharedRanks(lm.rows,r=>r.mdTot);
-  const body=`<tbody>${lm.rows.map((r,i)=>`<tr class="${rks[i]<=3&&r.mdTot>0?'p'+rks[i]:''}">
-    <td><div class="nm-cell"><span class="rank-badge">${rks[i]}</span>${av(r.name,22)}<span class="player-name">${dispName(r.name)}</span></div></td>
+  const hasPts=lm.rows.some(r=>r.mdTot>0);
+  const body=`<tbody>${lm.rows.map((r,i)=>`<tr class="${hasPts&&rks[i]<=3&&r.mdTot>0?'p'+rks[i]:''}">
+    <td><div class="nm-cell"><span class="rank-badge">${hasPts?rks[i]:'–'}</span>${av(r.name,22)}<span class="player-name">${dispName(r.name)}</span></div></td>
     ${r.tips.map((t,ti)=>{ if(!t) return `<td class="mono lmd-tip dim">–</td>`;
       const scored=!!lm.results[ti];
       const cl=scored?(t.p>=4?' lmd-c4':t.p>=3?' lmd-c3':t.p>=2?' lmd-c2':' lmd-c0'):'';
@@ -1496,7 +1511,7 @@ function renderLiveBanner(){
   const yr=live.short.replace(/^BL\s*/,'');
   const lmData=(typeof ADV!=='undefined'&&ADV.liveMd||{})[live.id];
   const nowB=Date.now();
-  const anyLiveB=!!lmData&&((lmData.ko)||[]).some(k=>k&&nowB>=k&&nowB<k+125*60000);
+  const anyLiveB=!!lmData&&((lmData.mds)||[]).some(m=>(m.ko||[]).some(k=>k&&nowB>=k&&nowB<k+125*60000));
   el.innerHTML=`<div class="live-banner"><div class="lb-head"><span class="live-tag">⏳ ${L('Läuft','Live')}</span>
     <span class="lb-txt">${live.type==='BL'?L('Die aktuelle BL-Saison '+yr+' ist in vollem Gange.','The current BL season '+yr+' is in full swing.'):L('Der Wettbewerb '+esc(live.short)+' ist in vollem Gange.','The competition '+esc(live.short)+' is in full swing.')}</span></div>
     <div class="lb-btns">
@@ -1797,7 +1812,7 @@ function renderAll(){
   try{const st2=sessionStorage.getItem('brun_tab'); if(st2){const tb=document.querySelector(`.tab[data-tab="${st2}"]`); if(tb&&tb.getAttribute('aria-selected')!=='true')tb.click();}}catch(e){}
   // Auto-Refresh, solange ein Spiel läuft — die Seite wird ja alle ~5 min neu deployt
   try{ const lmAll=(typeof ADV!=='undefined'&&ADV.liveMd)||{}; const now=Date.now();
-    const anyLive=Object.values(lmAll).some(x=>((x&&x.ko)||[]).some(k=>k&&now>=k&&now<k+125*60000));
+    const anyLive=Object.values(lmAll).some(x=>((x&&x.mds)||[]).some(m=>(m.ko||[]).some(k=>k&&now>=k&&now<k+125*60000)));
     if(anyLive) setInterval(()=>{ if(!document.hidden) location.reload(); }, 4*60*1000);
   }catch(e){}
   // Pull-to-Refresh (Touch): am Seitenanfang nach unten ziehen -> neu laden (Scope/Tab bleiben erhalten)
