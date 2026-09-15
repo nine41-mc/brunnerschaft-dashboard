@@ -1174,7 +1174,7 @@ function renderLiveMd(scope){
   const sel=data.mds.find(m=>m.md===LIVEMD_SEL)||data.mds.find(m=>m.md===data.cur)||data.mds[data.mds.length-1];
   const lm={ md:sel.md, fixtures:sel.fixtures, results:sel.results, ko:sel.ko,
     rows:[...sel.rows].map(r=>({name:r.n, mdTot:r.t, tips:r.tips.map(t=>t?{h:t[0],a:t[1],p:t[2]}:null)})).sort((a,b)=>b.mdTot-a.mdTot) };
-  document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+' · '+SMAP[scope].short+(sel.md>data.cur?L(' · steht bevor',' · upcoming'):'');
+  document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+(sel.md>data.cur?L(' · steht bevor',' · upcoming'):'');
   const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
   const NOW=Date.now();
   const koFmt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
