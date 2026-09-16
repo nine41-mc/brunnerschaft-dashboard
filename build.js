@@ -71,5 +71,6 @@ function replaceConst(html, name, valueLiteral){
   // Artifact-Variante: claude.ai wickelt selbst in <!doctype html>-Skelett -> eigene Doctype/HTML-Tags entfernen
   fs.writeFileSync(path.join(outDir,'artifact.html'), html.replace(/^<!doctype html>\s*<html[^>]*>\s*/i,''));
   fs.writeFileSync(path.join(outDir,'.nojekyll'), '');
+  try{ fs.copyFileSync(p('sw.js'), path.join(outDir,'sw.js')); }catch(e){} // Service Worker mit ausliefern
   console.log(`▶ Geschrieben: dist/index.html (${(html.length/1024).toFixed(0)} KB) · Stand ${data.DATA.generated}`);
 })().catch(e=>{ console.error('BUILD FEHLER:', e); process.exit(1); });

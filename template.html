@@ -270,7 +270,21 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   box-shadow:0 2px 10px -3px rgba(226,0,26,.45);transition:transform .12s ease,box-shadow .12s ease}
 .lb-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px -3px rgba(226,0,26,.55)}
 .lb-btn:active{transform:translateY(0);opacity:.9}
-.lmd-bar{margin:0 0 12px}
+.lmd-bar{margin:0 0 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.share-btn{font-family:var(--ff);font-size:14px;font-weight:750;min-height:44px;padding:9px 16px;border-radius:9px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink);cursor:pointer}
+.share-btn:active{opacity:.6}
+.race-modes{display:flex;gap:8px;margin:0 0 10px}
+.race-legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
+.race-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff);font-size:12.5px;font-weight:700;
+  padding:5px 11px 5px 6px;border-radius:999px;border:1.5px solid var(--c,var(--line-2));background:var(--surface);color:var(--ink);cursor:pointer}
+.race-chip.off{opacity:.35;border-color:var(--line-2);filter:grayscale(1)}
+.race-chip .av{width:20px;height:20px}
+.race-card{padding:14px 10px 8px}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+.confetti span{position:absolute;top:-30px;animation:confFall linear forwards}
+@keyframes confFall{to{transform:translateY(105vh) rotate(540deg)}}
+@media(prefers-reduced-motion:reduce){.confetti{display:none}}
 .lmd-bar select{font-family:inherit;font-size:16px;font-weight:650;padding:9px 12px;min-height:44px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);min-width:210px}
 .lb-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .lb-btn.lb-btn2{background:var(--surface);color:var(--brand);border:1.5px solid rgba(226,0,26,.5);box-shadow:none}
@@ -586,9 +600,25 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="⚡ Matchdays">⚡ Spieltage im Überblick</div>
       <h2 class="sec-title" id="liveMdTitle">Spieltag im Detail</h2>
       <div class="sec-note" data-en="All tips and matchday points — pick a matchday below. Tips appear once a match has kicked off; running matchdays go live automatically.">Alle Tipps und Spieltagspunkte — Spieltag unten wählbar. Tipps erscheinen ab Anpfiff; laufende Spieltage schalten automatisch auf Live.</div>
-      <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select></div>
+      <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><button id="shareMd" class="share-btn" data-en="📤 Share">📤 Teilen</button></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
+    </section>
+
+    <section class="block" id="raceSec" hidden>
+      <div class="eyebrow" data-en="📈 Season race">📈 Saisonverlauf</div>
+      <h2 class="sec-title" data-en="The race">Das Rennen</h2>
+      <div class="sec-note" data-en="Cumulative matchday points resp. position after each matchday. Tap a name to show/hide a line.">Kumulierte Spieltagspunkte bzw. Platzierung nach jedem Spieltag. Tipper antippen zum Ein-/Ausblenden.</div>
+      <div class="race-modes"><button class="pill" data-rmode="pts" aria-pressed="true">Punkte</button><button class="pill" data-rmode="rank" aria-pressed="false" data-en="Position">Platzierung</button></div>
+      <div class="race-legend" id="raceLegend"></div>
+      <div class="card race-card"><div id="raceChart"></div></div>
+    </section>
+
+    <section class="block" id="projSec" hidden>
+      <div class="eyebrow" data-en="🔮 Projection">🔮 Hochrechnung</div>
+      <h2 class="sec-title" data-en="Title projection">Die Titel-Hochrechnung</h2>
+      <div class="sec-note" id="projNote"></div>
+      <div class="tbl-wrap"><table id="projTable"></table></div>
     </section>
 
     <section class="block gesamt-only">
@@ -1027,6 +1057,7 @@ let sortState={scope:null,k:'points',dir:-1};
 function renderMainTable(scope){
   const tbl=document.getElementById('mainTable');
   const gesamt=scope==='gesamt';
+  const FORM_BADGES=(!gesamt&&SMAP[scope].running&&typeof formMap==='function')?formMap(scope):null;
   if(sortState.scope!==scope){ sortState={scope,k:'points',dir:-1}; }
   const cols = gesamt ? [
     {k:'name',t:L('Tipper','Player')},{k:'played',t:L('Teiln.','Entries'),r:1},{k:'points',t:L('Punkte','Points'),r:1,bar:1},
@@ -1035,7 +1066,7 @@ function renderMainTable(scope){
     {k:'mdWins',t:L('ST-Siege','MD wins'),r:1},{k:'placed',t:L('Tipps','Tips'),r:1},{k:'missing',t:L('Vergessen','Missed'),r:1,f:p=>p.missing||'–'},
   ] : [
     {k:'name',t:L('Tipper','Player')},{k:'points',t:L('Punkte','Points'),r:1,bar:1},{k:'bonus',t:'Bonus',r:1},
-    {k:'avgMd',t:L('Ø/ST','Ø/MD'),r:1,f:p=>dec(p.avgMd)},{k:'mdWins',t:L('ST-Siege','MD wins'),r:1},
+    {k:'avgMd',t:L('Ø/ST','Ø/MD'),r:1,f:p=>dec(p.avgMd)+(FORM_BADGES&&FORM_BADGES[p.name]?' '+FORM_BADGES[p.name]:'')},{k:'mdWins',t:L('ST-Siege','MD wins'),r:1},
     {k:'p4',t:L('4er','4s'),r:1},{k:'p3',t:L('3er','3s'),r:1},{k:'missing',t:L('Verg.','Miss.'),r:1,f:p=>p.missing||'–'},
   ];
   if(scope!=='gesamt'&&SMAP[scope].type==='BL') cols.push({k:'antiBayern',t:'vs 🐻',r:1,f:p=>p.antiBayern||'–'});
@@ -1149,6 +1180,96 @@ function rankCardHTML(scope,cfg){
   return `<div class="card rcard${cfg.full?' rfull':''}" data-key="${cfg.key}"><div class="rhead"><div class="reye">${tr(cfg.eye)}</div>
     <h3>${tr(cfg.title)}</h3><div class="rnote">${tr(cfg.note)}</div></div>${body}</div>`;
 }
+/* ---------- Saisonverlauf, Hochrechnung, Formkurve (laufende Saison) ---------- */
+const RACE_COL=['#e2001a','#0066b2','#0e9f4e','#e08a00','#7b52c7','#00a3a3','#c7527b','#5b8def','#8f7300','#d9531e','#4a7c59','#556'];
+let RACE_MODE='pts'; const RACE_HIDDEN=new Set();
+function raceData(scope){ // kumulierte Spieltagspunkte je Tipper (nur gewertete Spieltage)
+  const data=(ADV.liveMd||{})[scope]; if(!data) return null;
+  const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
+  if(played.length<2) return null;
+  const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))];
+  const cum={}; names.forEach(n=>cum[n]=[]);
+  played.forEach((m,k)=>{ const t={}; m.rows.forEach(r=>t[r.n]=r.t);
+    names.forEach(n=>cum[n].push((k?cum[n][k-1]:0)+(t[n]||0))); });
+  // Platzierung je Spieltag (Wettkampf-Ranking)
+  const rank={}; names.forEach(n=>rank[n]=[]);
+  played.forEach((m,k)=>{ const order=[...names].sort((a,b)=>cum[b][k]-cum[a][k]);
+    order.forEach((n,i)=>{ rank[n][k]=(i>0&&cum[n][k]===cum[order[i-1]][k])?rank[order[i-1]][k]:i+1; }); });
+  return { mdNos:played.map(m=>m.md), names, cum, rank };
+}
+function renderRace(scope){
+  const sec=document.getElementById('raceSec'); if(!sec)return;
+  const rd=scope!=='gesamt'&&SMAP[scope].running?raceData(scope):null;
+  if(!rd){ sec.hidden=true; return; }
+  sec.hidden=false;
+  const {mdNos,names,cum,rank}=rd; const n=mdNos.length;
+  const colOf={}; names.forEach((nm,i)=>colOf[nm]=RACE_COL[i%RACE_COL.length]);
+  // Legende
+  document.getElementById('raceLegend').innerHTML=names.map(nm=>`<button class="race-chip${RACE_HIDDEN.has(nm)?' off':''}" data-n="${esc(nm)}" style="--c:${colOf[nm]}">${av(nm,20)}<span>${dispName(nm)}</span></button>`).join('');
+  document.querySelectorAll('.race-chip').forEach(c=>c.onclick=()=>{ const nm=c.dataset.n;
+    RACE_HIDDEN.has(nm)?RACE_HIDDEN.delete(nm):RACE_HIDDEN.add(nm); renderRace(scope); });
+  document.querySelectorAll('[data-rmode]').forEach(b=>{ b.setAttribute('aria-pressed',b.dataset.rmode===RACE_MODE);
+    b.onclick=()=>{ RACE_MODE=b.dataset.rmode; renderRace(scope); }; });
+  // SVG
+  const W=700,H=330,PL=38,PR=46,PT=14,PB=30;
+  const xOf=k=>PL+(n===1?0:k*(W-PL-PR)/(n-1));
+  let yOf,yTicks;
+  if(RACE_MODE==='rank'){ const lo=1,hi=names.length;
+    yOf=v=>PT+(v-lo)*(H-PT-PB)/(hi-lo); yTicks=names.map((_,i)=>i+1);
+  } else { const max=Math.max(...names.map(nm=>cum[nm][n-1]||0),1);
+    const step=max>120?40:(max>60?20:10); const top=Math.ceil(max/step)*step;
+    yOf=v=>H-PB-(v/top)*(H-PT-PB);
+    yTicks=[]; for(let v=0;v<=top;v+=step)yTicks.push(v);
+  }
+  const grid=yTicks.map(v=>`<line x1="${PL}" y1="${yOf(v)}" x2="${W-PR}" y2="${yOf(v)}" stroke="var(--line)" stroke-width="1"/><text x="${PL-6}" y="${yOf(v)+4}" text-anchor="end" font-size="10" fill="var(--ink-2)">${v}</text>`).join('');
+  const xlab=mdNos.map((md,k)=>`<text x="${xOf(k)}" y="${H-PB+16}" text-anchor="middle" font-size="10" fill="var(--ink-2)">${md}.</text>`).join('');
+  const defs=[],lines=[];
+  names.forEach(nm=>{ if(RACE_HIDDEN.has(nm))return;
+    const vals=RACE_MODE==='rank'?rank[nm]:cum[nm];
+    const pts=vals.map((v,k)=>`${xOf(k).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+    lines.push(`<polyline points="${pts}" fill="none" stroke="${colOf[nm]}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>`);
+    const lx=xOf(n-1),ly=yOf(vals[n-1]);
+    const id='rc'+nm.replace(/[^a-z0-9]/gi,'');
+    if(MEMOJI[nm]){ defs.push(`<clipPath id="${id}"><circle cx="${lx+14}" cy="${ly}" r="9"/></clipPath>`);
+      lines.push(`<image href="${MEMOJI[nm]}" x="${lx+5}" y="${ly-9}" width="18" height="18" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/>`);
+      lines.push(`<circle cx="${lx+14}" cy="${ly}" r="9" fill="none" stroke="${colOf[nm]}" stroke-width="1.5"/>`); }
+    else lines.push(`<circle cx="${lx}" cy="${ly}" r="4" fill="${colOf[nm]}"/>`);
+  });
+  document.getElementById('raceChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Saisonverlauf"><defs>${defs.join('')}</defs>${grid}${xlab}${lines.join('')}</svg>`;
+}
+function renderProj(scope){
+  const sec=document.getElementById('projSec'); if(!sec)return;
+  const s2=SMAP[scope];
+  if(scope==='gesamt'||!s2.running||!(s2.playedMd>=2)){ sec.hidden=true; return; }
+  sec.hidden=false;
+  const played=s2.playedMd, total=s2.numMd||34, rest=total-played;
+  const act=s2.standings.filter(p=>p.active);
+  const rows=act.map(p=>({name:p.name,pts:p.total,avg:p.total/played,proj:Math.round(p.total/played*total)}));
+  const best=Math.max(...rows.map(r=>r.proj));
+  rows.forEach(r=>{ r.need=rest>0?(best-r.pts)/rest:0; });
+  rows.sort((a,b)=>b.proj-a.proj);
+  document.getElementById('projNote').innerHTML=L(`Lineare Fortschreibung des Schnitts auf alle ${total} Spieltage — nach ${played} Spieltagen natürlich reine Kaffeesatzleserei. ☕`,`Linear projection of the average over all ${total} matchdays — after ${played} matchdays, pure crystal-ball territory. ☕`);
+  const rks=sharedRanks(rows,r=>r.proj);
+  document.getElementById('projTable').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Punkte','Points')}</th><th class="r">Ø/ST</th><th class="r">${L('Prognose','Forecast')} (${total} ST)</th><th class="r">${L('Nötig für P1','Needed for 1st')}</th></tr></thead><tbody>${
+    rows.map((r,i)=>`<tr class="${rks[i]<=3?'p'+rks[i]:''}"><td><span class="rank-badge">${rks[i]}</span></td>
+      <td><div class="nm-cell">${av(r.name,24)}<span class="player-name">${dispName(r.name)}</span></div></td>
+      <td class="r mono">${r.pts}</td><td class="r mono">${dec(r.avg)}</td><td class="r mono"><b>${r.proj}</b></td>
+      <td class="r mono">${r.proj>=best?'👑':(r.need>36?'🙏':('Ø '+dec(r.need)))}</td></tr>`).join('')}</tbody>`;
+}
+function formMap(scope){ // 🔥/❄️: letzte Spieltage vs. Saisonschnitt
+  const data=(ADV.liveMd||{})[scope]; if(!data) return null;
+  const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
+  if(played.length<3) return null;
+  const win=Math.max(2,Math.min(3,played.length-1));
+  const out={}; const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))];
+  names.forEach(nm=>{ const vals=played.map(m=>{const r=m.rows.find(x=>x.n===nm);return r?r.t:0;});
+    const all=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const lastArr=vals.slice(-win); const last=lastArr.reduce((a,b)=>a+b,0)/lastArr.length;
+    if(all<=0)return;
+    if(last>=all*1.2) out[nm]='🔥'; else if(last<=all*0.8) out[nm]='❄️';
+  });
+  return out;
+}
 let LIVEMD_SEL=null;
 function renderLiveMd(scope){
   const sec=document.getElementById('liveMdSec'); if(!sec)return;
@@ -1195,6 +1316,45 @@ function renderLiveMd(scope){
       return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
+  // 📤 Teilen: Spieltags-Zusammenfassung via Web-Share (Fallback: Zwischenablage)
+  const shareBtn=document.getElementById('shareMd');
+  if(shareBtn) shareBtn.onclick=async()=>{
+    const winTxt=hasPts?lm.rows.filter((r,i)=>rks[i]===1).map(r=>dispFull(r.name)).join(' & ')+' ('+lm.rows[0].mdTot+' P)':'—';
+    const top=SMAP[scope].standings.filter(x=>x.active).slice(0,3).map((x,i)=>`${x.pos}. ${dispFull(x.name)} ${x.total}`).join(' · ');
+    const txt=`⚽ ${SMAP[scope].short} · ${lm.md}. ${L('Spieltag','Matchday')}\n🏆 ${L('Spieltagssieger','Matchday winner')}: ${winTxt}\n📊 ${L('Zwischenstand','Standings')}: ${top}\n${location.origin+location.pathname}`;
+    try{ if(navigator.share){ await navigator.share({title:'Brunnerschaft',text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
+    try{ await navigator.clipboard.writeText(txt); shareBtn.textContent='✓ '+L('Kopiert!','Copied!'); setTimeout(()=>{shareBtn.innerHTML='📤 '+L('Teilen','Share');},1800); }catch(e){}
+  };
+  // 🎉 Konfetti: neuer 4er im Live-Spiel bzw. Spieltagssieger nach Abpfiff (je einmal)
+  try{ if(!matchMedia('(prefers-reduced-motion:reduce)').matches && sel.md===data.cur){
+    const liveNowAny=lm.fixtures.some((_,i)=>st(i)==='live');
+    const p4now=lm.rows.reduce((a,r)=>a+r.tips.filter((t,ti)=>t&&lm.results[ti]&&t.p>=4).length,0);
+    const k4='brun_p4_'+scope+'_'+lm.md;
+    if(liveNowAny){ const prev=+(localStorage.getItem(k4)||p4now);
+      if(p4now>prev) confettiRain(70);
+      localStorage.setItem(k4,String(p4now));
+    }
+    const allDone=lm.results.length&&lm.results.every(Boolean)&&!liveNowAny;
+    const lastKo=Math.max(...(lm.ko||[]).filter(Boolean),0);
+    if(allDone&&hasPts&&lastKo&&Date.now()-lastKo<26*3600*1000){
+      const kw='brun_win_'+scope+'_'+lm.md;
+      if(!localStorage.getItem(kw)){ confettiRain(110); localStorage.setItem(kw,'1'); }
+    }
+  }}catch(e){}
+}
+function confettiRain(n){
+  try{
+    const wrap=document.createElement('div'); wrap.className='confetti'; document.body.appendChild(wrap);
+    const em=['🎉','⚽','🍺','🎊','⭐'];
+    for(let i=0;i<n;i++){ const sp=document.createElement('span');
+      sp.textContent=em[Math.floor(Math.random()*em.length)];
+      sp.style.left=Math.random()*100+'vw';
+      sp.style.animationDuration=(2.2+Math.random()*1.8)+'s';
+      sp.style.animationDelay=(Math.random()*0.9)+'s';
+      sp.style.fontSize=(13+Math.random()*14)+'px';
+      wrap.appendChild(sp); }
+    setTimeout(()=>wrap.remove(),5200);
+  }catch(e){}
 }
 function renderBonusTips(scope){
   const sec=document.getElementById('bonusTipsSec'); if(!sec)return;
@@ -1693,9 +1853,9 @@ function renderScope(scope){
   document.getElementById('mainEye').textContent=gesamt?L('Die ewige Bestenliste','The all-time leaderboard'):(SMAP[scope].running?L('Zwischenstand','Current standings'):L('Endstand','Final standings'));
   document.getElementById('mainTitle').textContent=gesamt?L('Ewige Tabelle','All-Time Table'):(SMAP[scope].running?L('Zwischenstand ','Current standings ')+SMAP[scope].short+(SMAP[scope].playedMd?L(' · nach '+SMAP[scope].playedMd+'. Spieltag',' · after MD '+SMAP[scope].playedMd):''):L('Abschlusstabelle ','Final table ')+SMAP[scope].short);
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):(SMAP[scope].running?L('Zwischenstand dieses Wettbewerbs — die Saison läuft noch. Sortierbar — Kopf anklicken.','Current standings — the season is still running. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.'));
-  document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'');
+  document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'')+(SMAP[scope].running?L(' · 🔥/❄️ = Formkurve (letzte Spieltage vs. Saisonschnitt)',' · 🔥/❄️ = form (recent matchdays vs. season average)'):'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
-  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderLiveMd(scope); renderBonusTips(scope); applyMobileSticky();
+  renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderLiveMd(scope); renderRace(scope); renderProj(scope); renderBonusTips(scope); applyMobileSticky();
   document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.toggle('hidden',!gesamt));
 }
 
@@ -1838,6 +1998,8 @@ function renderAll(){
     const anyLive=Object.values(lmAll).some(x=>((x&&x.mds)||[]).some(m=>(m.ko||[]).some(k=>k&&now>=k&&now<k+125*60000)));
     if(anyLive) setInterval(()=>{ if(!document.hidden) location.reload(); }, 4*60*1000);
   }catch(e){}
+  // Service Worker: sofortiger Start aus dem Cache, netz-zuerst mit Fallback (Offline im Stadion!)
+  try{ if('serviceWorker' in navigator && /github\.io$|^localhost$/.test(location.hostname)) navigator.serviceWorker.register('sw.js'); }catch(e){}
   // Pull-to-Refresh (Touch): am Seitenanfang nach unten ziehen -> neu laden (Scope/Tab bleiben erhalten).
   // Drei zufällig wechselnde Animationen: springende Bälle, Bier, das ausgetrunken wird, drehende Bayern-Raute.
   try{ if('ontouchstart' in window){
