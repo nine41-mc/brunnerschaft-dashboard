@@ -2039,6 +2039,7 @@ let CUR_SCOPE='gesamt';
 try{const ss=sessionStorage.getItem('brun_scope'); if(ss&&(ss==='gesamt'||SMAP[ss]))CUR_SCOPE=ss;}catch(e){}
 function renderAll(){
   renderScope(CUR_SCOPE);
+  if(!window.__brunOnce){ window.__brunOnce=true; // Einmal-Init: läuft NICHT erneut beim Sprachwechsel (sonst doppelte PTR-Leisten/Timer/Listener)
   try{const st2=sessionStorage.getItem('brun_tab'); if(st2){const tb=document.querySelector(`.tab[data-tab="${st2}"]`); if(tb&&tb.getAttribute('aria-selected')!=='true')tb.click();}}catch(e){}
   // Auto-Refresh, solange ein Spiel läuft — die Seite wird ja alle ~5 min neu deployt
   try{ const lmAll=(typeof ADV!=='undefined'&&ADV.liveMd)||{}; const now=Date.now();
@@ -2088,6 +2089,7 @@ function renderAll(){
       startY=null; active=false; pull=0;
     },{passive:true});
   }}catch(e){}
+  } // Ende Einmal-Init
   renderBonusCat();
   renderBestTeam();
   renderHistory();
