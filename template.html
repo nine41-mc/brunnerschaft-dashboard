@@ -315,6 +315,7 @@ main{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} /* Home-Indica
 .pill:active{transform:scale(.97)}
 .theme-btn:active,.lang-switch button:active{opacity:.6}
 .push-bell{margin-left:6px}
+@media(max-width:720px){ .brandmark{flex:1 1 100%} .push-bell{margin-left:auto} } /* Glocke rechtsbündig — exakt über dem Theme-Button in Zeile 2 */
 /* Unsichtbare 44pt-Hit-Areas — Optik unverändert */
 .theme-btn,.lang-switch button{position:relative}
 .theme-btn::after{content:"";position:absolute;inset:-6px;border-radius:50%}
