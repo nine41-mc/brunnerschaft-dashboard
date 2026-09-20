@@ -33,6 +33,8 @@ jobs:
         with:
           node-version: '20'
       - run: npm ci
+      - name: Push-Zustand des Live-Stands sichern (für Ereignis-Vergleich)
+        run: curl -sf "https://nine41-mc.github.io/brunnerschaft-dashboard/push-state.json?cb=$(date +%s)" -o old-state.json || echo 'null' > old-state.json
       - name: Build (scrape + render)
         env:
           BRUN_FIN_PASSWORD: ${{ secrets.BRUN_FIN_PASSWORD }}
@@ -44,3 +46,9 @@ jobs:
           path: dist
       - id: deploy
         uses: actions/deploy-pages@v5
+      - name: Push-Benachrichtigungen senden
+        if: ${{ vars.PUSH_URL != '' }}
+        env:
+          PUSH_URL: ${{ vars.PUSH_URL }}
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+        run: node notify.js old-state.json || true

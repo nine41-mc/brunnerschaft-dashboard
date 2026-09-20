@@ -558,7 +558,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <button type="button" data-lang="de" aria-pressed="true" title="Deutsch">🇩🇪</button>
       <button type="button" data-lang="en" aria-pressed="false" title="English">🇬🇧</button>
     </div>
-    <button class="theme-btn" id="themeBtn" type="button" aria-label="Design wechseln">
+    <button class="theme-btn" id="pushBtn" hidden aria-label="Benachrichtigungen">🔔</button><button class="theme-btn" id="themeBtn" type="button" aria-label="Design wechseln">
       <span id="themeIcon">🌙</span>
     </button>
   </div>
@@ -1584,6 +1584,8 @@ function renderBestTeam(){
 const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben','Messi':'Elias','LuLu':'Luisa'}; // Anzeigenamen (überall)
 const NSHORT={'Matthew':'Matt'}; // nur bei Platznot (mobil)
 const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
+const PUSH_URL=''; // Cloudflare-Worker-URL — leer = Push-Glocke ausgeblendet
+const VAPID_PUB='BI2wQK54-pZ40rn2QzC99mi0ZfoQN4orGWQP6S8N8AlGYv2m5f3c0ppCYF_zCUZVnNPAvoSg71-dpbGvzLSHSvM';
 function gLbl(name,m,f){return (LANG!=='en'&&NFEM.has(name))?f:m;} // DE: weibliche Form, EN: neutral
 function nWord(n,sg,pl){return n+'\u00a0'+(n===1?sg:pl);} // Singular/Plural
 function sharedRanks(rows,val){const out=[];rows.forEach((r,i)=>{out.push(i>0&&val(r)===val(rows[i-1])?out[i-1]:i+1);});return out;} // Gleichstand teilt den Platz (1,2,2,4,…)
@@ -2147,6 +2149,28 @@ function renderAll(){
   }catch(e){}
   // Service Worker: sofortiger Start aus dem Cache, netz-zuerst mit Fallback (Offline im Stadion!)
   try{ if('serviceWorker' in navigator && /github\.io$|^localhost$/.test(location.hostname)) navigator.serviceWorker.register('sw.js'); }catch(e){}
+  // 🔔 Push-Abo (nur mit konfiguriertem Worker; iOS: erst als Homescreen-App möglich)
+  try{ if(PUSH_URL && 'serviceWorker' in navigator && 'PushManager' in window && /github\.io$/.test(location.hostname)){
+    const btn=document.getElementById('pushBtn');
+    const b64uToU8=s2=>{s2=s2.replace(/-/g,'+').replace(/_/g,'/');while(s2.length%4)s2+='=';return Uint8Array.from(atob(s2),c=>c.charCodeAt(0));};
+    const paint=on=>{btn.textContent=on?'🔔':'🔕';btn.style.opacity=on?'1':'.75';btn.title=on?L('Benachrichtigungen aktiv — tippen zum Abschalten','Notifications on — tap to disable'):L('Benachrichtigungen aktivieren','Enable notifications');};
+    navigator.serviceWorker.ready.then(async reg=>{
+      btn.hidden=false; const sub=await reg.pushManager.getSubscription(); paint(!!sub);
+      btn.onclick=async()=>{
+        try{
+          const cur=await reg.pushManager.getSubscription();
+          if(cur){ await fetch(PUSH_URL+'/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:cur.endpoint})}).catch(()=>{});
+            await cur.unsubscribe(); paint(false); return; }
+          const perm=await Notification.requestPermission();
+          if(perm!=='granted'){ alert(L('Benachrichtigungen sind blockiert. Auf iOS: Seite zum Homescreen hinzufügen und dort erlauben.','Notifications are blocked. On iOS: add the page to your home screen and allow there.')); return; }
+          const sub2=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uToU8(VAPID_PUB)});
+          const r=await fetch(PUSH_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub2.toJSON()})});
+          if(!r.ok) throw new Error('subscribe '+r.status);
+          paint(true);
+        }catch(e){ alert(L('Konnte Benachrichtigungen nicht aktivieren: ','Could not enable notifications: ')+e.message); }
+      };
+    });
+  }}catch(e){}
   // Pull-to-Refresh (Touch): am Seitenanfang nach unten ziehen -> neu laden (Scope/Tab bleiben erhalten).
   // Drei zufällig wechselnde Animationen: springende Bälle, Bier, das ausgetrunken wird, drehende Bayern-Raute.
   try{ if('ontouchstart' in window){

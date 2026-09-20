@@ -1,0 +1,13 @@
+name = "brunnerschaft-push"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+account_id = "94ecf1a532fd478f390323d7f5756be8"
+
+# KV-Namespace für die Push-Abos — die ID trägt setup-push.sh automatisch ein
+[[kv_namespaces]]
+binding = "SUBS"
+id = "KV_ID_PLACEHOLDER"
+
+# Freitags-Tipp-Erinnerung: 15:00 UTC = 17:00 MESZ (Winter: 16:00 — bewusst simpel gehalten)
+[triggers]
+crons = ["0 15 * * 5"]

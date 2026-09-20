@@ -27,3 +27,18 @@ self.addEventListener('fetch', e => {
     }
   })());
 });
+
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data.json(); } catch (err) { d = { title: 'Brunnerschaft', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Brunnerschaft', {
+    body: d.body || '', tag: d.tag || 'brun', icon: 'icon.png', badge: 'icon.png',
+    data: { url: d.url || './' },
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ('focus' in c) { c.navigate(e.notification.data.url); return c.focus(); } }
+    return clients.openWindow(e.notification.data.url);
+  }));
+});

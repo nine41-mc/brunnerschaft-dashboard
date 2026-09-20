@@ -72,5 +72,27 @@ function replaceConst(html, name, valueLiteral){
   fs.writeFileSync(path.join(outDir,'artifact.html'), html.replace(/^<!doctype html>\s*<html[^>]*>\s*/i,''));
   fs.writeFileSync(path.join(outDir,'.nojekyll'), '');
   try{ fs.copyFileSync(p('sw.js'), path.join(outDir,'sw.js')); }catch(e){} // Service Worker mit ausliefern
+  // Push-Ereignis-Zustand: wird vom Vor-Deploy geholt und mit dem neuen Build verglichen (notify.js)
+  try{
+    const live=data.ADV.liveMd||{}; const rid=Object.keys(live)[0]; let st=null;
+    if(rid){ const lm=live[rid]; const md=lm.mds.find(m=>m.md===lm.cur);
+      const season=data.DATA.seasons.find(x=>x.id===rid); const act=season.standings.filter(x=>x.active);
+      const now=Date.now(); const anyLive=(md.ko||[]).some(k=>k&&now>=k&&now<k+125*60000);
+      const p4={}; md.rows.forEach(r=>{p4[r.n]=r.tips.filter((t,i)=>t&&md.results[i]&&t[2]>=4).length;});
+      const mdDone=md.results.length>0&&md.results.every(Boolean);
+      const win=[...md.rows].sort((a,b)=>b.t-a.t)[0];
+      const solved=((data.ADV.bonusTips||{})[rid]||{cols:[]}).cols.filter(h=>!/-{3}$/.test(h)).length;
+      st={ id:rid, md:lm.cur, anyLive, p4, mdDone,
+        winner:win?win.n:null, winnerPts:win?win.t:0,
+        leader:act[0].name, leaderPts:act[0].total, second:act[1]?act[1].name:null, secondPts:act[1]?act[1].total:0,
+        top3:act.slice(0,3).map(x=>x.pos+'. '+x.name+' '+x.total).join(' · '), bonusSolved:solved };
+    }
+    fs.writeFileSync(path.join(outDir,'push-state.json'), JSON.stringify(st));
+  }catch(e){ console.warn('push-state:', e.message); }
+  // App-Icon als Datei (für Push-Notifications): aus dem eingebetteten apple-touch-icon extrahieren
+  try{
+    const m=html.match(/rel="apple-touch-icon" href="data:image\/png;base64,([^"]+)"/);
+    if(m) fs.writeFileSync(path.join(outDir,'icon.png'), Buffer.from(m[1],'base64'));
+  }catch(e){}
   console.log(`▶ Geschrieben: dist/index.html (${(html.length/1024).toFixed(0)} KB) · Stand ${data.DATA.generated}`);
 })().catch(e=>{ console.error('BUILD FEHLER:', e); process.exit(1); });
