@@ -97,10 +97,25 @@ async function submit(tips) {
   });
   params.set('submitbutton', 'Tipps speichern');
   const action = new URL(form.getAttribute('action') || `${BASE}tippabgabe`, BASE).href;
+  // Diagnose (ohne Geheimnisse): was schicken wir wohin?
+  const tipFields = [...params.keys()].filter(k => /heimTipp|gastTipp/.test(k));
+  console.log(`Formular: action=${action} · ${rows.length} Spielzeilen · ${tipFields.length} Tippfelder (z. B. ${tipFields[0] || '—'})`);
   const r3 = await fetch(action, { method: 'POST', redirect: 'manual',
     headers: { ...UA, Cookie: cook(), 'Content-Type': 'application/x-www-form-urlencoded' }, body: params });
-  console.log('Abgabe-Antwort:', r3.status);
-  return r3.status < 400;
+  grab(r3);
+  console.log('Abgabe-Antwort:', r3.status, '→', r3.headers.get('location') || '(kein Redirect)');
+  // Echte Verifikation: Formular neu laden und prüfen, ob die Werte gespeichert wurden
+  const r4 = await fetch(`${BASE}tippabgabe?tippsaisonId=${SEASON}`, { headers: { ...UA, Cookie: cook() } });
+  const doc2 = new JSDOM(await r4.text()).window.document;
+  const saved = [...doc2.querySelectorAll('input[name$="heimTipp"]')].map((inp, i) => {
+    const gast = doc2.querySelector(`input[name="${inp.name.replace('heimTipp', 'gastTipp')}"]`);
+    return `${inp.value || '–'}:${gast ? gast.value || '–' : '–'}`;
+  });
+  console.log('Gespeicherte Tipps laut Formular:', saved.join('  ') || '(keine Felder gefunden)');
+  const want = tips.map(t => `${t.th}:${t.ta}`);
+  const ok = want.every(w => saved.includes(w));
+  console.log(ok ? '✅ Verifikation OK — Tipps sind gespeichert.' : '❌ Verifikation FEHLGESCHLAGEN — Tipps nicht (vollständig) gespeichert!');
+  return ok;
 }
 
 // ---------- Hauptlauf ----------
