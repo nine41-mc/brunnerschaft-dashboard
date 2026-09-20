@@ -1,0 +1,29 @@
+name: 🤖 RoboBrunner tippt
+
+# Tippt den nächsten offenen Spieltag automatisch — Do abends + Fr vormittags (Sicherheitsnetz;
+# Kicktipp überschreibt identische Tipps einfach). Ohne Bot-Secrets beendet sich der Lauf harmlos.
+on:
+  schedule:
+    - cron: '0 16 * * 4'   # Do ~18:00 MESZ
+    - cron: '0 9 * * 5'    # Fr ~11:00 MESZ (Netz, falls Do verworfen wurde)
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Nur anzeigen, nicht abgeben'
+        type: boolean
+        default: false
+
+jobs:
+  tip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Tippen
+        env:
+          KICKTIPP_BOT_EMAIL: ${{ secrets.KICKTIPP_BOT_EMAIL }}
+          KICKTIPP_BOT_PASSWORD: ${{ secrets.KICKTIPP_BOT_PASSWORD }}
+        run: node robo.js ${{ inputs.dry && '--dry' || '' }}
