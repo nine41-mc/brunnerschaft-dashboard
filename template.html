@@ -1077,6 +1077,19 @@ function av(name,s){const src=MEMOJI[name];s=s||26;if(src)return `<img class="av
 function setGenDate(){const el=document.getElementById('genDate'); if(el)el.textContent=new Date(DATA.generated).toLocaleDateString(LANG==='en'?'en-GB':'de-DE',{day:'2-digit',month:'long',year:'numeric'});}
 
 /* ---------- scope data ---------- */
+function botMet(scope,name){ // Zwischenstands-Zahlen für Bots — isoliert berechnet, fließt nirgendwo sonst ein
+  const data=(ADV.liveMd||{})[scope]; if(!data) return {};
+  const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
+  let mdSum=0,mdCount=0,mdWins=0,p4=0,p3=0,placed=0,missing=0;
+  played.forEach(m=>{ const r=m.rows.find(x=>x.n===name); if(!r) return;
+    mdSum+=r.t; mdCount++;
+    const max=Math.max(...m.rows.map(x=>x.t));
+    if(r.t===max&&max>0) mdWins++;
+    r.tips.forEach((t,i)=>{ if(!m.results[i]) return; if(!t){missing++;return;} placed++;
+      if(t[2]>=4)p4++; else if(t[2]===3)p3++; });
+  });
+  return { mdSum, mdCount, mdWins, avgMd: mdCount?Math.round(mdSum/mdCount*100)/100:0, p4, p3, placed, missing };
+}
 function scopePlayers(scope){
   if(scope==='gesamt'){
     return PLAYERS.map(p=>{const g=METRICS.gesamt[p.name];
@@ -1102,7 +1115,7 @@ function scopePlayers(scope){
         loser:LZ.loser[p.name]||0,zero:LZ.zero[p.name]||0},g);});
   }
   const s=SMAP[scope]; const met=METRICS.perSeason[scope]; const bs=BONUS_SEASON[scope]||{};
-  return s.standings.filter(x=>x.active).map(st=>Object.assign({name:st.name,points:st.total,pos:st.pos,bonus:bs[st.name]||0},met[st.name]));
+  return s.standings.filter(x=>x.active).map(st=>Object.assign({name:st.name,points:st.total,pos:st.pos,bonus:bs[st.name]||0},TBOTS.has(st.name)?botMet(scope,st.name):met[st.name]));
 }
 function scopeIsBL(scope){ return scope==='gesamt' || SMAP[scope].type==='BL'; }
 
@@ -1282,7 +1295,7 @@ const CARD_TAB={zero:'kessel',loser:'kessel',placed:'kessel',leaderMd:'kessel',u
   arroganz:'bayern',goretzka:'bayern'};
 RANK_CARDS.forEach(c=>c.tab=CARD_TAB[c.key]||'stats');
 function rankCardHTML(scope,cfg){
-  const arr=scopePlayers(scope);
+  const arr=scopePlayers(scope).filter(p=>!TBOTS.has(p.name)); // Bots bleiben Statistik-frei
   const rows=[...arr].filter(p=>cfg.showZero||((p[cfg.key]||0)>0)).sort((a,b)=>(b[cfg.key]||0)-(a[cfg.key]||0));
   const max=Math.max(...arr.map(p=>p[cfg.key]||0),1);
   // Spalten: entweder cfg.cols (erste = Hauptwert, fett) oder eine einzelne Wertspalte
