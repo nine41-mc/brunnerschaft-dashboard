@@ -651,7 +651,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="⚡ Matchdays">⚡ Spieltage im Überblick</div>
       <h2 class="sec-title" id="liveMdTitle">Spieltag im Detail</h2>
       <div class="sec-note" data-en="All tips and matchday points — pick a matchday below. Tips appear once a match has kicked off; running matchdays go live automatically.">Alle Tipps und Spieltagspunkte — Spieltag unten wählbar. Tipps erscheinen ab Anpfiff; laufende Spieltage schalten automatisch auf Live.</div>
-      <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><a id="tipNow" class="tip-btn" href="https://www.kicktipp.de/brunnerschaft/tippabgabe" target="_blank" rel="noopener" data-en="🖊️ Tip now">🖊️ Jetzt tippen</a><button id="lmdRefresh2" class="share-btn lmd-refresh2" aria-label="Aktualisieren">⟳</button><button id="shareMd" class="share-btn" aria-label="Teilen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 6.5 12 2.5l4 4"/><path d="M5.5 10.5v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-8.5"/></svg></button></div>
+      <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><button id="lmdRefresh2" class="share-btn lmd-refresh2" aria-label="Aktualisieren"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 2.5v4.6h-4.6"/></svg></button><button id="shareMd" class="share-btn" aria-label="Teilen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 6.5 12 2.5l4 4"/><path d="M5.5 10.5v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-8.5"/></svg></button></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
       <p class="mini" id="liveMdFoot"></p>
@@ -830,6 +830,14 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
           <div class="sec-note" data-en="Top after matchday 1 — the ‘presumptive tipping champion for the next 10 years’.">Ganz oben nach dem 1. Spieltag — der gefühlte Tippsieger für die nächsten 10 Jahre.</div>
           <div class="tbl-wrap"><table id="blitzMdTable"></table></div></div>
       </div>
+    </section>
+
+    <section class="block" data-panel="kessel" id="lazySec">
+      <div class="eyebrow" data-en="🥱 The lazy benchmark">🥱 Der ewige 1:1-Tipper</div>
+      <h2 class="sec-title" data-en="What if you just always tipped 1:1?">Was wäre, wenn man stur jedes Spiel 1:1 tippt?</h2>
+      <div class="sec-note" data-en="4 points per actual 1:1, 3 per any other draw (correct goal difference), 0 otherwise. No bonus points for lazy people — so the comparison uses pure tip points.">4 Punkte je echtem 1:1, 3 je sonstigem Remis (richtige Tordifferenz), sonst nix. Bonuspunkte gibt's fürs Faulenzen keine — verglichen wird darum mit den reinen Tipp-Punkten der Runde.</div>
+      <div class="tbl-wrap"><table id="lazyTable"></table></div>
+      <p class="mini" id="lazyFoot"></p>
     </section>
 
     <section class="block" data-panel="kessel">
@@ -1116,7 +1124,7 @@ function gesamtTiles(){
   ];
 }
 function seasonTiles(scope){
-  const arr=scopePlayers(scope); const s=SMAP[scope];
+  const arr=scopePlayers(scope).filter(p=>!TBOTS.has(p.name)); const s=SMAP[scope];
   const byAll=k=>{const mx=Math.max(...arr.map(p=>p[k]||0));return arr.filter(p=>(p[k]||0)===mx);}; // alle Führenden (Gleichstand!)
   const by=k=>byAll(k)[0];
   const winners=byAll('points');
@@ -1293,7 +1301,7 @@ function raceData(scope){ // kumulierte Spieltagspunkte je Tipper (nur gewertete
   const data=(ADV.liveMd||{})[scope]; if(!data) return null;
   const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
   if(played.length<2) return null;
-  const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))];
+  const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))].filter(n=>!TBOTS.has(n));
   const cum={}; names.forEach(n=>cum[n]=[]);
   played.forEach((m,k)=>{ const t={}; m.rows.forEach(r=>t[r.n]=r.t);
     names.forEach(n=>cum[n].push((k?cum[n][k-1]:0)+(t[n]||0))); });
@@ -1409,7 +1417,7 @@ function renderOracle(scope){
   if(!data||!s2.running||!(s2.playedMd>=2)){ sec.hidden=true; return; }
   sec.hidden=false;
   const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
-  const names=s2.standings.filter(x=>x.active).map(x=>x.name);
+  const names=s2.standings.filter(x=>x.active&&!TBOTS.has(x.name)).map(x=>x.name);
   const totals={}; s2.standings.forEach(x=>totals[x.name]=x.total);
   const rest=(s2.numMd||34)-played.length;
   // Spieltagswerte je Tipper + Shrinkage Richtung Gruppenschnitt (frühe Saison = wenig Daten)
@@ -1469,7 +1477,7 @@ function formMap(scope){ // 🔥/❄️: letzte Spieltage vs. Saisonschnitt
   const played=data.mds.filter(m=>m.md<=data.cur&&m.rows.some(r=>r.t>0));
   if(played.length<3) return null;
   const win=Math.max(2,Math.min(3,played.length-1));
-  const out={}; const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))];
+  const out={}; const names=[...new Set(played.flatMap(m=>m.rows.map(r=>r.n)))].filter(n=>!TBOTS.has(n));
   names.forEach(nm=>{ const vals=played.map(m=>{const r=m.rows.find(x=>x.n===nm);return r?r.t:0;});
     const all=vals.reduce((a,b)=>a+b,0)/vals.length;
     const lastArr=vals.slice(-win); const last=lastArr.reduce((a,b)=>a+b,0)/lastArr.length;
@@ -1504,8 +1512,7 @@ function renderLiveMd(scope){
   const lm={ md:sel.md, fixtures:sel.fixtures, results:sel.results, ko:sel.ko,
     rows:[...sel.rows].map(r=>({name:r.n, mdTot:r.t, tips:r.tips.map(t=>t?{h:t[0],a:t[1],p:t[2]}:null)})).sort((a,b)=>b.mdTot-a.mdTot) };
   document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+(sel.md>data.cur?L(' · steht bevor',' · upcoming'):'');
-  const tipA=document.getElementById('tipNow');
-  if(tipA) tipA.hidden = !((lm.ko||[]).filter(Boolean).length && lm.ko.filter(Boolean).every(k=>k>Date.now())); // nur beim komplett zukünftigen Spieltag
+
   const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
   const NOW=Date.now();
   const koFmt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
@@ -1513,9 +1520,9 @@ function renderLiveMd(scope){
   const st=i=>{ const k=(lm.ko||[])[i]; if(k){ if(NOW<k)return 'up'; if(NOW<k+125*60000)return 'live'; return 'fin'; } return lm.results[i]?'fin':'up'; };
   const liveIdx=lm.fixtures.map((_,i)=>i).filter(i=>st(i)==='live');
   document.getElementById('liveNow').innerHTML=liveIdx.length
-    ? `<div class="live-now"><span class="live-now-lbl">🔴 ${L('Jetzt live','Live now')}</span>${liveIdx.map(i=>`<span class="live-chip"><span class="live-dot"></span>${esc(code(lm.fixtures[i][0]))}&nbsp;<b>${res(i)==='–:–'?'0:0':res(i)}</b>&nbsp;${esc(code(lm.fixtures[i][1]))}</span>`).join('')}<button class="lmd-refresh" id="lmdRefresh" aria-label="Aktualisieren">⟳</button></div>` : '';
-  const rBtn=document.getElementById('lmdRefresh')||document.getElementById('lmdRefresh2');
-  document.querySelectorAll('#lmdRefresh,#lmdRefresh2').forEach(b=>b.onclick=()=>{ b.classList.add('spin'); location.reload(); });
+    ? `<div class="live-now"><span class="live-now-lbl">🔴 ${L('Jetzt live','Live now')}</span>${liveIdx.map(i=>`<span class="live-chip"><span class="live-dot"></span>${esc(code(lm.fixtures[i][0]))}&nbsp;<b>${res(i)==='–:–'?'0:0':res(i)}</b>&nbsp;${esc(code(lm.fixtures[i][1]))}</span>`).join('')}</div>` : '';
+  const rB=document.getElementById('lmdRefresh2');
+  if(rB) rB.onclick=()=>{ rB.classList.add('spin'); location.reload(); };
   const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>{const li=st(i)==='live';
     return `<th class="lmd-h${li?' lmd-live':''}">${li?'<span class="live-dot"></span>':''}${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span>${li?`<br><span class="lmd-livelbl">LIVE</span>`:''}</th>`;}).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
   const rks=sharedRanks(lm.rows,r=>r.mdTot);
@@ -1659,6 +1666,7 @@ function renderBestTeam(){
 const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben','Messi':'Elias','LuLu':'Luisa'}; // Anzeigenamen (überall)
 const NSHORT={'Matthew':'Matt','RoboSepp':'Robo'}; // nur bei Platznot (mobil)
 const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
+const TBOTS=new Set(['RoboSepp']); // Bots: nur Zwischenstand, Hochrechnung, Spieltags-Browser
 const PUSH_URL='https://brunnerschaft-push.brunnerschaft.workers.dev'; // Cloudflare-Worker für Web Push
 const VAPID_PUB='BI2wQK54-pZ40rn2QzC99mi0ZfoQN4orGWQP6S8N8AlGYv2m5f3c0ppCYF_zCUZVnNPAvoSg71-dpbGvzLSHSvM';
 function gLbl(name,m,f){return (LANG!=='en'&&NFEM.has(name))?f:m;} // DE: weibliche Form, EN: neutral
@@ -1933,6 +1941,27 @@ function renderLiveBanner(){
       <button class="lb-btn" onclick="gotoScope('${live.id}','#mainTable')">${L('Aktueller Zwischenstand','Current standings')} ›</button>
       ${lmData?`<button class="lb-btn lb-btn2" onclick="gotoScope('${live.id}','#liveMdSec')">${anyLiveB?'<span class="live-dot lb-dot"></span>'+L('Live-Spieltag','Live matchday'):'⚡ '+L('Letzter Spieltag','Latest matchday')} ›</button>`:''}
     </div></div>`;
+}
+function renderLazy(){
+  const L11=(typeof ADV!=='undefined'&&ADV.lazy11)||{};
+  const sec=document.getElementById('lazySec'); if(!sec)return;
+  const rows=DISPLAY_ORDER.filter(id=>L11[id]&&SMAP[id].type==='BL'&&SMAP[id].standings.some(p=>p.active)).map(id=>{
+    const s2=SMAP[id], z=L11[id];
+    const act=s2.standings.filter(p=>p.active&&!TBOTS.has(p.name));
+    const tipPts=act.map(p=>({n:p.name, t:p.total-((BONUS_SEASON[id]||{})[p.name]||0)}));
+    const better=tipPts.filter(x=>x.t>z.pts).length;
+    return { short:s2.short, running:!!s2.running, ...z, platz:better+1, feld:act.length+1 };
+  });
+  if(!rows.length){ sec.style.display='none'; return; }
+  document.getElementById('lazyTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th class="r">1:1<span class="mhide"> ${L('exakt','exact')}</span></th><th class="r"><span class="mhide">${L('sonst.','other')} </span>${L('Remis','draws')}</th><th class="r">${L('Punkte','Points')}</th><th class="r">${L('Wäre Platz','Would rank')}</th></tr></thead><tbody>${
+    rows.map(r=>`<tr><td class="player-name">${esc(r.short)}${r.running?' <span class="mini">· live</span>':''}</td>
+      <td class="r mono">${r.x11}</td><td class="r mono">${r.xdraw}</td><td class="r mono"><b>${r.pts}</b></td>
+      <td class="r mono">${r.platz}.<span class="mini"> ${L('von','of')} ${r.feld}</span>${r.platz>=r.feld?' 🎪':''}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('lazyFoot').textContent='😏 '+spruch('lazy',[
+    L('Null Aufwand, null Ruhm — aber selten Letzter. Das ist die eigentliche Frechheit.','Zero effort, zero glory — but rarely last. That\u2019s the real insult.'),
+    L('Der 1:1-Tipper vergisst nie einen Tipp. Nur zu leben.','The 1:1 tipper never forgets a tip. Only to live.'),
+    L('Faul, aber konsequent — mehr Konstanz-König geht eigentlich nicht.','Lazy but consistent — the true consistency king.'),
+  ]);
 }
 function renderBlitz(){
   const rows=(typeof STATS18!=='undefined'&&STATS18.firstLead)||[];
@@ -2380,6 +2409,7 @@ function renderAll(){
   renderHeart();
   renderLiveBanner();
   renderTipReminder();
+  renderLazy();
   renderBlitz();
   renderSpread();
   renderH2H();

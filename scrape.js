@@ -23,7 +23,8 @@ function saveArchive(id, data){
 const UA = { headers: { 'User-Agent': 'BrunnerschaftDashboard/1.0 (+github pages build)' } };
 const NAME_MAP = { 'Toblerone': 'Tobias' };
 const norm = n => NAME_MAP[n] || n;
-const CORE = new Set(['CH7','Maxsen','Manurinho','Tobias','Billy','Matthew','Lutz_Brunner7b','BigBen','Maxjun.','Marie','Messi','LuLu','RoboSepp']); // + RoboSepp, der Bot-Tipper (ab 4. Spieltag 26/27)
+const CORE = new Set(['CH7','Maxsen','Manurinho','Tobias','Billy','Matthew','Lutz_Brunner7b','BigBen','Maxjun.','Marie','Messi','LuLu']);
+const BOTS = new Set(['RoboSepp']); // Bot-Tipper: erscheint in Zwischenstand/Hochrechnung/Spieltags-Browser, fließt aber in KEINE Statistik ein
 const r2 = x => Math.round(x*100)/100;
 const toInt = t => { const m=(t||'').replace(/[^\d-]/g,''); return m===''||m==='-'?null:parseInt(m,10); };
 
@@ -111,7 +112,7 @@ async function scrapeMatchday(s, mi){
   const rows=[];
   for(const tr of [...tb.rows].slice(1)){
     const c=[...tr.cells]; const nm=c[2]?.textContent.trim(); if(!nm) continue;
-    const name=norm(nm); if(!CORE.has(name)) continue;
+    const name=norm(nm); if(!CORE.has(name)&&!BOTS.has(name)) continue;
     let mdTot=0; const tips=[];
     [...tr.querySelectorAll('td.ereignis')].forEach((cell,idx)=>{
       const cl=cell.cloneNode(true); cl.querySelectorAll('sub').forEach(x=>x.remove());
@@ -201,7 +202,7 @@ export async function buildData(config){
     const standings=g.players.map(p=>({pos:p.pos,name:p.name,total:p.total,active:p.total>0}));
     DATA.seasons.push({ id:s.id, name:s.name, short:s.short, type:s.type, numMd:s.numMd, running:s.running||undefined, playedMd:s.playedMd||0, standings });
   }
-  const names=new Set(); DATA.seasons.forEach(s=>s.standings.forEach(p=>{if(p.active)names.add(p.name);}));
+  const names=new Set(); DATA.seasons.forEach(s=>s.standings.forEach(p=>{if(p.active&&!BOTS.has(p.name))names.add(p.name);}));
   for(const name of names){
     let played=0,totalPts=0,champ=0,champBL=0,lastCnt=0,podium=0,bestFinish=99; const positions={};
     DATA.seasons.forEach(s=>{
@@ -255,6 +256,7 @@ export async function buildData(config){
   const worstTip=[]; // größte Abweichung Tipp <-> Ergebnis
   const firstLead=[]; // Blitzstart: Führung nach Spiel 1 und nach Spieltag 1 je Saison
   const liveMd={}; // laufende Saison: kompletter aktueller Spieltag (alle Tipps + Punkte)
+  const lazy11={}; // Faulpelz-Benchmark: was ein sturer 1:1-Dauertipp je Saison geholt hätte
   const megalo={}; // Größenwahn: hohe Tipps (>=5 Tore) ohne Punkte
   const beton={}; // 0:0 getippt: gesamt + wie oft mind. 1 Tor fiel (daneben)
   const pannen={}, pannenMd={}; // Pannenkönig: BL-Spieltage <5 Pkt (nur mit abgegebenen Tipps)
@@ -279,6 +281,12 @@ export async function buildData(config){
     const idxs=[]; for(let i=1;i<=mdMax;i++) idxs.push(i);
     const mds = ARCH[s.id] ? idxs.map(i=>(ARCH[s.id].matchdays||[])[i-1]||null) : await batched(idxs, mi=>scrapeMatchday(s, mi), 6);
     COLLECT[s.id].matchdays = mds;
+    { // Faulpelz-Benchmark: 1:1 auf jedes gewertete Spiel
+      let x11=0,xdraw=0,games=0;
+      mds.forEach(m=>{ if(!m)return; (m.results||[]).forEach(r=>{ if(!r)return; games++;
+        if(r.rh===r.ra){ if(r.rh===1)x11++; else xdraw++; } }); });
+      if(games) lazy11[s.id]={ pts:4*x11+3*xdraw, x11, xdraw, games };
+    }
     if(s.running){ // Spieltags-Browser: alle gescrapten Spieltage (gespielte + nächster) kompakt einbetten
       const cur=Math.max(1, s.playedMd||1);
       const mdsAll=[];
@@ -311,13 +319,13 @@ export async function buildData(config){
       if(mi===1){ // Blitzstart: Wer führte nach dem 1. Spiel und nach dem 1. Spieltag?
         const fl={id:s.id,short:s.short};
         if(md.results[0]){
-          let mx=-1,who=[]; md.rows.forEach(r=>{ if(!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
+          let mx=-1,who=[]; md.rows.forEach(r=>{ if(BOTS.has(r.name)||!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
             const pt=(r.tips[0]&&!r.tips[0].empty)?(r.tips[0].pts||0):0;
             if(pt>mx){mx=pt;who=[r.name];} else if(pt===mx) who.push(r.name); });
           fl.game={pts:mx,names:mx>0?who:[],fx:md.fixtures[0],res:md.results[0]};
         }
         if(md.results.length&&md.results.every(r=>r)){
-          let mx=-1,who=[]; md.rows.forEach(r=>{ if(!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
+          let mx=-1,who=[]; md.rows.forEach(r=>{ if(BOTS.has(r.name)||!raw[s.id].g.players.some(p=>p.name===r.name&&p.total>0))return;
             if(r.mdTot>mx){mx=r.mdTot;who=[r.name];} else if(r.mdTot===mx) who.push(r.name); });
           fl.md={pts:mx,names:mx>0?who:[]};
         }
@@ -326,10 +334,10 @@ export async function buildData(config){
       const pmap={}; const dayTips=md.fixtures.map(()=>[]);
       // Gruppen-Konsens je Spiel (Mehrheits-Tendenz der Runde) für "Außenseiter"
       const matchTend=md.fixtures.map(()=>({H:0,D:0,A:0}));
-      md.rows.forEach(r=>{ if(!activeNames.has(r.name)) return; r.tips.forEach((t,idx)=>{ if(!t.empty&&idx<matchTend.length) matchTend[idx][tend(t)]++; }); });
+      md.rows.forEach(r=>{ if(!activeNames.has(r.name)||BOTS.has(r.name)) return; r.tips.forEach((t,idx)=>{ if(!t.empty&&idx<matchTend.length) matchTend[idx][tend(t)]++; }); });
       const consensus=matchTend.map(m=>{ const e=Object.entries(m).sort((a,b)=>b[1]-a[1]); return e[0][1]>e[1][1]?e[0][0]:null; });
       md.rows.forEach(r=>{
-        const name=r.name; if(!activeNames.has(name)) return; // nur tatsächlich teilnehmende Tipper dieser Saison
+        const name=r.name; if(!activeNames.has(name)||BOTS.has(name)) return; // Bots zählen in keine Statistik
         pmap[name]=r.mdTot;
         const pp=ps[name]||(ps[name]={});
         if(r.mdTot>(pp.maxMd||0)){ pp.maxMd=r.mdTot; pp.maxMdAt=mi; } // bester einzelner Spieltag dieser Saison
@@ -450,7 +458,7 @@ export async function buildData(config){
   const bvbOppByPlayer=Object.fromEntries(Object.entries(bvbOpp).map(([n,m])=>[n,Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([o,c])=>[shortTeam(o),c])]));
   const ADV={ wonDay:wonDayPts, bayern:Object.fromEntries(Object.entries(teamPts).map(([n,t])=>[n,t['FC Bayern München']||0])), bestTeam:bestOf(teamPts), bestCountry:bestOf(countryPts), bestTeam3:bestOf3(teamPts,true), bestCountry3:bestOf3(countryPts,false), bonusCat:bonusCatAll, abOppTop, abOppByPlayer, proBayTips, proBayPts, proBayFail, bayWinAct, teamCols, teamMatrix,
     klassikerPts, klassikerN, bayGoalPred, bayExact, bayernTitle:bayernTitleAll, antiBVB, bvbOppByPlayer, proBVB, schadenPts, doppelmoral,
-    bayMarginSum, judasPts, zauderer, goretzka, bonusTips, liveMd,
+    bayMarginSum, judasPts, zauderer, goretzka, bonusTips, liveMd, lazy11,
     bayMaxMargin:Object.fromEntries(Object.entries(bayMaxMargin).map(([n,o])=>[n,{margin:o.margin,tip:o.tip,match:o.fx?shortTeam(o.fx[0])+' – '+shortTeam(o.fx[1]):null,season:o.season}])) };
 
   // ---- LZ ----
