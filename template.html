@@ -1584,7 +1584,7 @@ function renderBestTeam(){
 const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben','Messi':'Elias','LuLu':'Luisa'}; // Anzeigenamen (überall)
 const NSHORT={'Matthew':'Matt'}; // nur bei Platznot (mobil)
 const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
-const PUSH_URL=''; // Cloudflare-Worker-URL — leer = Push-Glocke ausgeblendet
+const PUSH_URL='https://brunnerschaft-push.brunnerschaft.workers.dev'; // Cloudflare-Worker für Web Push
 const VAPID_PUB='BI2wQK54-pZ40rn2QzC99mi0ZfoQN4orGWQP6S8N8AlGYv2m5f3c0ppCYF_zCUZVnNPAvoSg71-dpbGvzLSHSvM';
 function gLbl(name,m,f){return (LANG!=='en'&&NFEM.has(name))?f:m;} // DE: weibliche Form, EN: neutral
 function nWord(n,sg,pl){return n+'\u00a0'+(n===1?sg:pl);} // Singular/Plural
