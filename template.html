@@ -314,6 +314,7 @@ main{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} /* Home-Indica
 .pill:active,.tab:active,.season summary:active{opacity:.6}
 .pill:active{transform:scale(.97)}
 .theme-btn:active,.lang-switch button:active{opacity:.6}
+.push-bell{margin-left:6px}
 /* Unsichtbare 44pt-Hit-Areas — Optik unverändert */
 .theme-btn,.lang-switch button{position:relative}
 .theme-btn::after{content:"";position:absolute;inset:-6px;border-radius:50%}
@@ -551,6 +552,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <span class="logo-k">kicktipp</span>
       <span class="brandtext">Brunnerschaft</span>
       <span class="brandemoji" aria-hidden="true">⚽🍺</span>
+      <button class="theme-btn push-bell" id="pushBtn" hidden aria-label="Benachrichtigungen">🔔</button>
     </div>
     <span class="sub-badge" data-en="Guys'-Night Edition">Männerrunde-Edition</span>
     <span class="spacer"></span>
@@ -558,7 +560,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <button type="button" data-lang="de" aria-pressed="true" title="Deutsch">🇩🇪</button>
       <button type="button" data-lang="en" aria-pressed="false" title="English">🇬🇧</button>
     </div>
-    <button class="theme-btn" id="pushBtn" hidden aria-label="Benachrichtigungen">🔔</button><button class="theme-btn" id="themeBtn" type="button" aria-label="Design wechseln">
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Design wechseln">
       <span id="themeIcon">🌙</span>
     </button>
   </div>
