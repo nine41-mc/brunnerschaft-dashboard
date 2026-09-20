@@ -1,13 +1,193 @@
 {
  "season": "5422358",
- "md": 4,
- "generatedAt": "2026-09-20T17:13:32.502Z",
- "tips": [
-  {
-   "h": "SC Paderborn 07",
-   "a": "1899 Hoffenheim",
-   "tipp": "1:1",
-   "grund": "Paderborn hält daheim, Hoffenheim zittert auswärts – Unentschieden ist die sichere Wette."
+ "mds": {
+  "1": {
+   "generatedAt": "2026-09-20T19:10:41.087Z",
+   "tips": [
+    {
+     "h": "FC Bayern München",
+     "a": "VfB Stuttgart",
+     "tipp": "2:2",
+     "grund": "Bayern und Stuttgart spielen sich gegenseitig müde – Unentschieden für die Seele."
+    },
+    {
+     "h": "1. FC Köln",
+     "a": "1899 Hoffenheim",
+     "tipp": "1:1",
+     "grund": "Köln und Hoffenheim sind sich zu ähnlich, um sich zu schlagen."
+    },
+    {
+     "h": "SV Elversberg",
+     "a": "Bayer 04 Leverkusen",
+     "tipp": "2:1",
+     "grund": "Elversberg hat zuhause Mut, aber Leverkusen ist zu clever – knapp!"
+    },
+    {
+     "h": "FSV Mainz 05",
+     "a": "SC Paderborn 07",
+     "tipp": "2:1",
+     "grund": "Mainz zerlegt Paderborn daheim, aber nicht zu deutlich."
+    },
+    {
+     "h": "1. FC Union Berlin",
+     "a": "Eintracht Frankfurt",
+     "tipp": "1:1",
+     "grund": "Union und Frankfurt riechen sich gegenseitig – stilles Remis."
+    },
+    {
+     "h": "RB Leipzig",
+     "a": "Bor. Mönchengladbach",
+     "tipp": "2:1",
+     "grund": "Leipzig dominiert, aber Gladbach nervt – Leipzig gewinnt knapp."
+    },
+    {
+     "h": "Borussia Dortmund",
+     "a": "Hamburger SV",
+     "tipp": "1:1",
+     "grund": "BVB gegen HSV ist wie Bayern gegen Fünftligisten – aber Dortmund ist müde."
+    },
+    {
+     "h": "SC Freiburg",
+     "a": "Werder Bremen",
+     "tipp": "1:1",
+     "grund": "Freiburg und Bremen spielen beide defensiv – langweilig und gerecht."
+    },
+    {
+     "h": "FC Augsburg",
+     "a": "FC Schalke 04",
+     "tipp": "2:1",
+     "grund": "Augsburg zerlegt Schalke daheim – die Königsblauen sind noch nicht wach."
+    }
+   ]
+  },
+  "2": {
+   "generatedAt": "2026-09-20T19:10:45.720Z",
+   "tips": [
+    {
+     "h": "VfB Stuttgart",
+     "a": "1. FC Köln",
+     "tipp": "3:1",
+     "grund": "Stuttgart walzt den Effzeh einfach platt – Köln hat noch nicht mal warm trainiert."
+    },
+    {
+     "h": "Werder Bremen",
+     "a": "RB Leipzig",
+     "tipp": "2:1",
+     "grund": "Leipzig-Angst in Bremen? Nö, die Hanseaten beißen und gewinnen daheim!"
+    },
+    {
+     "h": "Bor. Mönchengladbach",
+     "a": "SV Elversberg",
+     "tipp": "2:1",
+     "grund": "Elversberg ist niedlich, aber gegen Gladbach? Schachschach, 2:1 für die Fohlen!"
+    },
+    {
+     "h": "Bayer 04 Leverkusen",
+     "a": "1. FC Union Berlin",
+     "tipp": "3:1",
+     "grund": "Leverkusen zu Hause – Union muss sich warm anziehen, das wird eng!"
+    },
+    {
+     "h": "SC Paderborn 07",
+     "a": "SC Freiburg",
+     "tipp": "2:1",
+     "grund": "Paderborn spielt zuhause mit Nachdruck, Freiburg kriegt die Rechnung präsentiert."
+    },
+    {
+     "h": "1899 Hoffenheim",
+     "a": "Borussia Dortmund",
+     "tipp": "3:1",
+     "grund": "Dortmund in Hoffenheim? RoboSepp riechts: Heimvorteil schlägt Champions-League-Müdigkeit!"
+    },
+    {
+     "h": "FC Schalke 04",
+     "a": "FC Bayern München",
+     "tipp": "3:2",
+     "grund": "Schalke gegen Bayern – ein Klassiker mit Wahnsinn! 3:2, weil Hoffnung stirbt zuletzt."
+    },
+    {
+     "h": "Hamburger SV",
+     "a": "FSV Mainz 05",
+     "tipp": "1:0",
+     "grund": "Hamburg zuhause, Mainz auswärts – das riecht nach Hanseaten-Gejubel im Millerntor!"
+    },
+    {
+     "h": "Eintracht Frankfurt",
+     "a": "FC Augsburg",
+     "tipp": "3:1",
+     "grund": "Frankfurt feuert aus allen Rohren, Augsburg guckt zu – 3:1 für die Adler!"
+    }
+   ]
+  },
+  "3": {
+   "generatedAt": "2026-09-20T19:10:50.028Z",
+   "tips": [
+    {
+     "h": "1. FC Union Berlin",
+     "a": "FC Schalke 04",
+     "tipp": "2:1",
+     "grund": "Union hat die Schalker Achterbahn schon oft zum Entgleisen gebracht, diesmal auch."
+    },
+    {
+     "h": "FC Augsburg",
+     "a": "Bayer 04 Leverkusen",
+     "tipp": "3:2",
+     "grund": "Augsburg spielt zuhause mutig, aber Leverkusen ist einfach zu abgebrüht dafür."
+    },
+    {
+     "h": "Borussia Dortmund",
+     "a": "SC Paderborn 07",
+     "tipp": "2:1",
+     "grund": "Dortmund walzt Paderborn platt, aber nicht ohne Gegenwehr – das ist Bayern-Manier."
+    },
+    {
+     "h": "SC Freiburg",
+     "a": "Bor. Mönchengladbach",
+     "tipp": "3:1",
+     "grund": "Freiburg beißt zuhause, Gladbach hat noch nicht richtig wach werden können."
+    },
+    {
+     "h": "FSV Mainz 05",
+     "a": "Eintracht Frankfurt",
+     "tipp": "3:1",
+     "grund": "Mainz ist im heimischen Bruchweg eine Bestie, Frankfurt kriegt hier Prügel."
+    },
+    {
+     "h": "1899 Hoffenheim",
+     "a": "VfB Stuttgart",
+     "tipp": "3:2",
+     "grund": "Hoffenheim mit Heimvorteil und Spielwitz – Stuttgart kann da nicht mithalten."
+    },
+    {
+     "h": "1. FC Köln",
+     "a": "Werder Bremen",
+     "tipp": "3:2",
+     "grund": "Köln ist zuhause tückisch, Bremen noch nicht im Rhythmus – Rheinisches Schachspiel."
+    },
+    {
+     "h": "RB Leipzig",
+     "a": "Hamburger SV",
+     "tipp": "3:1",
+     "grund": "Leipzig walzt jeden platt, der nicht Bayern heißt – HSV ist da leichte Beute."
+    },
+    {
+     "h": "SV Elversberg",
+     "a": "FC Bayern München",
+     "tipp": "3:2",
+     "grund": "Elversberg kämpft wie wild, Bayern lässt sich Zeit – aber am Ende siegt die Klasse."
+    }
+   ]
+  },
+  "4": {
+   "generatedAt": "2026-09-20T17:13:32.502Z",
+   "tips": [
+    {
+     "h": "SC Paderborn 07",
+     "a": "1899 Hoffenheim",
+     "tipp": "1:1",
+     "grund": "Paderborn hält daheim, Hoffenheim zittert auswärts – Unentschieden ist die sichere Wette."
+    }
+   ]
   }
- ]
+ }
 }
