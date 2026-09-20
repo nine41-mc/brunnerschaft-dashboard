@@ -37,7 +37,10 @@ function buildModel(results) {
     teams[g.a].gf += g.ra; teams[g.a].gc += g.rh; teams[g.a].n++;
     gh += g.rh; ga += g.ra; n++;
   }
-  const avgH = n ? gh / n : 1.6, avgA = n ? ga / n : 1.3, avg = (avgH + avgA) / 2;
+  // Liga-Basiswerte an den langjährigen Bundesliga-Schnitt ankern (~1,65 heim / ~1,30 auswärts):
+  // die torreiche Frühsaison (Ø 2,44 Heimtore nach 4 Spieltagen!) hatte den Bot zu 3:1-Serien verführt.
+  const PW = 30, PH = 1.65, PA = 1.30;
+  const avgH = (gh + PH * PW) / (n + PW), avgA = (ga + PA * PW) / (n + PW), avg = (avgH + avgA) / 2;
   const K = 4; // Shrinkage: frühe Saison nicht überinterpretieren
   const att = t => { const x = teams[t]; return x ? ((x.gf / Math.max(1, x.n)) * x.n + avg * K) / (x.n + K) / avg : 1; };
   const def = t => { const x = teams[t]; return x ? ((x.gc / Math.max(1, x.n)) * x.n + avg * K) / (x.n + K) / avg : 1; };
