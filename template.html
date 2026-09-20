@@ -227,11 +227,19 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .lmd-refresh{width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(226,0,26,.4);background:var(--surface);color:var(--brand);
   font-size:17px;font-weight:800;cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
 .lmd-refresh2{font-size:19px;font-weight:800}
-.robo-say{margin:14px 0 4px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid #7b52c7;border-radius:12px;padding:12px 15px}
-.rs-head{font-weight:850;font-size:14px;margin-bottom:7px}
-.rs-row{display:flex;gap:11px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.rs-m{flex:0 0 auto;font-size:13px;min-width:110px}
-.rs-q{flex:1;min-width:200px;font-size:13.5px;font-style:italic;color:var(--ink-2)}
+.robo-say{margin:14px 0 4px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid #7b52c7;border-radius:12px;padding:12px 15px 10px}
+.rs-head{font-weight:850;font-size:14px;margin-bottom:9px}
+.rs-carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
+.rs-carousel::-webkit-scrollbar{display:none}
+.rs-card{flex:0 0 100%;scroll-snap-align:center;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 15px;min-height:86px}
+.rs-c-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.rs-c-match{font-weight:850;font-size:14.5px}
+.rs-c-tip{font-weight:900;font-size:16px;color:#7b52c7}
+.rs-c-res{font-size:12px;font-weight:800;padding:2px 8px;border-radius:7px;margin-left:auto}
+.rs-c-quote{font-size:13.5px;font-style:italic;color:var(--ink-2);line-height:1.45}
+.rs-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.rs-dot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--line-2);cursor:pointer;transition:transform .15s,background .15s}
+.rs-dot.on{background:#7b52c7;transform:scale(1.35)}
 .lmd-refresh.spin,.lmd-refresh2.spin{animation:ptrSpin .8s linear infinite}
 .lmd-refresh:active,.lmd-refresh2:active{opacity:.6}
 .live-now-lbl{font-weight:900;color:var(--brand);font-size:13px;letter-spacing:.03em}
@@ -280,7 +288,14 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   box-shadow:0 2px 10px -3px rgba(226,0,26,.45);transition:transform .12s ease,box-shadow .12s ease}
 .lb-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px -3px rgba(226,0,26,.55)}
 .lb-btn:active{transform:translateY(0);opacity:.9}
-.lmd-bar{margin:0 0 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.lmd-bar{margin:0 0 12px;display:flex;gap:10px;flex-wrap:nowrap;align-items:stretch}
+.lmd-bar select{flex:1 1 auto;min-width:0;height:46px;min-height:0;text-overflow:ellipsis}
+.lmd-bar .share-btn{flex:0 0 46px;height:46px;min-height:0}
+@media(max-width:720px){
+  #projTable{table-layout:fixed;min-width:0;width:100%}
+  #projTable th:nth-child(1){width:30px}
+  #projTable th:nth-child(2){width:33%}
+}
 .share-btn{font-family:var(--ff);display:inline-flex;align-items:center;justify-content:center;width:46px;min-height:44px;padding:0;border-radius:9px;
   border:1px solid var(--line-2);background:var(--surface);color:var(--brand);cursor:pointer}
 .tip-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 16px;border-radius:9px;
@@ -314,7 +329,7 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .confetti span{position:absolute;top:-30px;animation:confFall linear forwards}
 @keyframes confFall{to{transform:translateY(105vh) rotate(540deg)}}
 @media(prefers-reduced-motion:reduce){.confetti{display:none}}
-.lmd-bar select{font-family:inherit;font-size:16px;font-weight:650;padding:9px 12px;min-height:44px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);min-width:210px}
+.lmd-bar select{font-family:inherit;font-size:16px;font-weight:650;padding:9px 12px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink)}
 .lb-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .lb-btn.lb-btn2{background:var(--surface);color:var(--brand);border:1.5px solid rgba(226,0,26,.5);box-shadow:none}
 .lb-btn.lb-btn2:hover{background:var(--brand);color:#fff}
@@ -1412,7 +1427,7 @@ function renderProj(scope){
   rows.sort((a,b)=>b.proj-a.proj);
   document.getElementById('projNote').innerHTML=L(`Lineare Fortschreibung des Schnitts auf alle ${total} Spieltage — nach ${played} Spieltagen natürlich reine Kaffeesatzleserei. ☕`,`Linear projection of the average over all ${total} matchdays — after ${played} matchdays, pure crystal-ball territory. ☕`);
   const rks=sharedRanks(rows,r=>r.proj);
-  document.getElementById('projTable').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Prognose','Forecast')} (${total} ST)</th><th class="r">Ø/ST</th><th class="r">${L('Nötig für P1','Needed for 1st')}</th></tr></thead><tbody>${
+  document.getElementById('projTable').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Prognose','Forecast')}<span class="mhide"> (${total} ST)</span></th><th class="r">Ø/ST</th><th class="r"><span class="mhide">${L('Nötig für','Needed for')} </span>P1</th></tr></thead><tbody>${
     rows.map((r,i)=>`<tr class="${rks[i]<=3?'p'+rks[i]:''}"><td><span class="rank-badge">${rks[i]}</span></td>
       <td><div class="nm-cell">${av(r.name,24)}<span class="player-name">${dispName(r.name)}</span></div></td>
       <td class="r mono"><b>${r.proj}</b></td><td class="r mono">${dec(r.avg)}</td>
@@ -1555,14 +1570,27 @@ function renderLiveMd(scope){
       return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
-  // 🤖 RoboSepps Begründungen zum gewählten Spieltag
+  // 🤖 RoboSepps Begründungen: Karussell mit einer Kachel pro Spiel + Paginierungspunkte
   const roboEl=document.getElementById('roboSay');
   const RT=(typeof ADV!=='undefined'&&ADV.roboTips)||null;
   if(roboEl){
-    if(RT&&RT.season===scope&&RT.md===sel.md&&(RT.tips||[]).some(t=>t.grund)){
-      const codeR=n=>{for(const k in TSHORT){if(n.includes(k))return TSHORT[k];}const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n);return w.slice(0,3).toUpperCase();};
-      roboEl.innerHTML=`<div class="robo-say"><div class="rs-head">🤖 ${L('RoboSepp begründet seine Tipps','RoboSepp explains his tips')}</div>${
-        RT.tips.filter(t=>t.grund).map(t=>`<div class="rs-row"><span class="rs-m mono">${esc(codeR(t.h))}–${esc(codeR(t.a))} <b>${esc(t.tipp)}</b></span><span class="rs-q">„${esc(t.grund)}"</span></div>`).join('')}</div>`;
+    const rtTips=(RT&&RT.season===scope&&RT.md===sel.md)?(RT.tips||[]).filter(t=>t.grund):[];
+    if(rtTips.length){
+      const botRow=lm.rows.find(r=>r.name==='RoboSepp');
+      const cards=rtTips.map(t=>{
+        const fi=lm.fixtures.findIndex(f=>f[0]===t.h&&f[1]===t.a);
+        const r2=fi>-1?lm.results[fi]:null;
+        const bp=(fi>-1&&botRow&&botRow.tips[fi])?botRow.tips[fi].p:null;
+        const resHtml=r2?`<span class="rs-c-res ${bp>=4?'lmd-c4':bp>=3?'lmd-c3':bp>=2?'lmd-c2':'lmd-c0'}">${r2.rh}:${r2.ra} · ${bp||0}P</span>`:'';
+        return `<div class="rs-card"><div class="rs-c-top"><span class="rs-c-match">${esc(code(t.h))} – ${esc(code(t.a))}</span><span class="rs-c-tip mono">${esc(t.tipp)}</span>${resHtml}</div><div class="rs-c-quote">„${esc(t.grund)}"</div></div>`;
+      });
+      roboEl.innerHTML=`<div class="robo-say"><div class="rs-head">🤖 ${L('RoboSepp begründet seine Tipps','RoboSepp explains his tips')}</div>
+        <div class="rs-carousel" id="rsCar">${cards.join('')}</div>
+        <div class="rs-dots" id="rsDots">${cards.map((_,i)=>`<button class="rs-dot${i===0?' on':''}" data-i="${i}" aria-label="Karte ${i+1}"></button>`).join('')}</div></div>`;
+      const car=document.getElementById('rsCar'), dots=[...document.querySelectorAll('#rsDots .rs-dot')];
+      const setDot=i=>dots.forEach((d2,k)=>d2.classList.toggle('on',k===i));
+      car.addEventListener('scroll',()=>{ const w=car.clientWidth||1; setDot(Math.min(dots.length-1,Math.round(car.scrollLeft/w))); },{passive:true});
+      dots.forEach(d2=>d2.onclick=()=>{ const w=car.clientWidth||1; car.scrollTo({left:(+d2.dataset.i)*w,behavior:'smooth'}); });
     } else roboEl.innerHTML='';
   }
   document.getElementById('liveMdFoot').textContent='😏 '+spruch('livemd',[
