@@ -1539,7 +1539,7 @@ function renderLiveMd(scope){
       const a=dm(Math.min(...ks)),b=dm(Math.max(...ks));
       const txt=(a.d===b.d&&a.m===b.m)?`${a.d}.${a.m}.`:(a.m===b.m?`${a.d}.–${b.d}.${a.m}.`:`${a.d}.${a.m}.–${b.d}.${b.m}.`);
       return ' · '+txt;};
-    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('Spieltag','Matchday')}${rng(m)}${m.md===liveNo?' · 🔴 LIVE':(m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):''))}</option>`).join('');
+    selEl.innerHTML=data.mds.map(m=>`<option value="${m.md}">${m.md}. ${L('ST','MD')}${rng(m)}${m.md===liveNo?' · LIVE':(m.md===data.cur?L(' · aktuell',' · current'):(m.md>data.cur?L(' · nächster',' · next'):''))}</option>`).join('');
     selEl.value=String(LIVEMD_SEL);
     selEl.onchange=()=>{ LIVEMD_SEL=+selEl.value; renderLiveMd(scope); };
   }
