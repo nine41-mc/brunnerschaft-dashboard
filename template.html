@@ -281,6 +281,12 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .tip-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 16px;border-radius:9px;
   border:1.5px solid rgba(226,0,26,.5);background:var(--surface);color:var(--brand);font-weight:750;font-size:14px;text-decoration:none}
 .tip-btn:active{opacity:.6}
+.tip-reminder{display:flex;align-items:center;gap:13px;flex-wrap:wrap;background:var(--surface);border:1.5px solid rgba(226,0,26,.35);
+  border-left:5px solid var(--brand);border-radius:12px;padding:13px 16px;margin:0 0 14px;box-shadow:0 2px 10px -6px rgba(0,0,0,.15)}
+.tip-reminder .tr-ic{font-size:23px;flex:0 0 auto}
+.tip-reminder .tr-tx{flex:1;min-width:200px;font-size:14px;line-height:1.45}
+.tip-reminder .tr-btn{min-width:0;padding:10px 20px;font-size:14.5px;text-decoration:none}
+@media(max-width:560px){.tip-reminder .tr-btn{width:100%}}
 .share-btn:active{opacity:.6}
 .race-modes{display:flex;gap:8px;margin:0 0 10px}
 .race-legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
@@ -607,6 +613,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
 <main>
   <!-- ============ STATISTIKEN ============ -->
   <div class="panel active" id="panel-stats" role="tabpanel">
+    <div id="tipReminder"></div>
     <div id="liveBanner"></div>
     <div class="eyebrow" data-en="Since 2021 · 8 competitions · 9 players">Seit 2021 · 8 Wettbewerbe · 9 Tipper</div>
     <h1 style="font-size:30px;font-weight:850;letter-spacing:-.9px" data-en="The Big Review">Der große Rückblick</h1>
@@ -1497,6 +1504,8 @@ function renderLiveMd(scope){
   const lm={ md:sel.md, fixtures:sel.fixtures, results:sel.results, ko:sel.ko,
     rows:[...sel.rows].map(r=>({name:r.n, mdTot:r.t, tips:r.tips.map(t=>t?{h:t[0],a:t[1],p:t[2]}:null)})).sort((a,b)=>b.mdTot-a.mdTot) };
   document.getElementById('liveMdTitle').textContent=L(lm.md+'. Spieltag im Detail','Matchday '+lm.md+' in detail')+(sel.md>data.cur?L(' · steht bevor',' · upcoming'):'');
+  const tipA=document.getElementById('tipNow');
+  if(tipA) tipA.hidden = !((lm.ko||[]).filter(Boolean).length && lm.ko.filter(Boolean).every(k=>k>Date.now())); // nur beim komplett zukünftigen Spieltag
   const code=n=>{ for(const k in TSHORT){ if(n.includes(k)) return TSHORT[k]; } const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n); return w.slice(0,3).toUpperCase(); };
   const NOW=Date.now();
   const koFmt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
@@ -1892,6 +1901,23 @@ function gotoScope(id,target){
   const t=target&&document.querySelector(target);
   const el=t?(t.closest('section')||t):document.querySelector('.filterbar');
   if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderTipReminder(){
+  const el=document.getElementById('tipReminder'); if(!el)return;
+  el.innerHTML='';
+  try{
+    const lmAll=(typeof ADV!=='undefined'&&ADV.liveMd)||{}; const rid=Object.keys(lmAll)[0]; if(!rid)return;
+    const data=lmAll[rid]; const now=Date.now();
+    // nächster Spieltag = erster, dessen sämtliche Anstöße noch in der Zukunft liegen
+    const nxt=data.mds.find(m=>(m.ko||[]).filter(Boolean).length&&(m.ko||[]).filter(Boolean).every(k=>k>now));
+    if(!nxt)return;
+    const firstKo=Math.min(...nxt.ko.filter(Boolean));
+    if(now<firstKo-4*24*3600*1000)return; // erst ab 4 Tage vorher nerven
+    const koTxt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(firstKo)).replace(',','');
+    el.innerHTML=`<div class="tip-reminder"><span class="tr-ic">🖊️</span>
+      <span class="tr-tx"><b>${L('Nicht vergessen zu tippen!','Don\u2019t forget to tip!')}</b> ${L(`Der ${nxt.md}. Spieltag startet ${koTxt}. Du willst ja im Rennen bleiben — und kein Fest ausrichten. 🎪`,`Matchday ${nxt.md} kicks off ${koTxt}. Stay in the race — and out of party-hosting duty. 🎪`)}</span>
+      <a class="lb-btn tr-btn" href="https://www.kicktipp.de/brunnerschaft/tippabgabe" target="_blank" rel="noopener">${L('Jetzt tippen','Tip now')} ›</a></div>`;
+  }catch(e){}
 }
 function renderLiveBanner(){
   const el=document.getElementById('liveBanner'); if(!el)return;
@@ -2351,6 +2377,7 @@ function renderAll(){
   renderGroupStats();
   renderHeart();
   renderLiveBanner();
+  renderTipReminder();
   renderBlitz();
   renderSpread();
   renderH2H();
