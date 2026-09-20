@@ -1,13 +1,16 @@
 name: Live-Loop (Spieltage)
 
-# GitHub führt */5-Schedules oft gar nicht aus. Dieser Loop startet stündlich (zuverlässig)
-# und stößt dann selbst ~55 Minuten lang alle 5 Minuten den Deploy an.
+# GitHub führt Schedules unzuverlässig aus (an Spieltagen wurden ganze Stunden verschluckt).
+# Darum: (a) Trigger versetzt zur vollen Stunde (:07/:37 — Minute 0 wird am häufigsten verworfen),
+# (b) jeder Lauf deployt bis zum ENDE des Spielfensters — ein einziger erfolgreicher Trigger
+# deckt damit den ganzen Nachmittag ab. Parallel gestartete Läufe warten in der Queue und
+# beenden sich sofort, wenn das Fenster vorbei ist.
 on:
   schedule:
-    - cron: '0 18-20 * * 5'   # Fr ~20–23 MESZ
-    - cron: '0 13-18 * * 6'   # Sa ~15–21 MESZ
-    - cron: '0 13-19 * * 0'   # So ~15–22 MESZ
-  workflow_dispatch:           # manuell startbar (z. B. Pokalabende)
+    - cron: '7,37 18-20 * * 5'  # Fr ~20–23 MESZ
+    - cron: '7,37 13-18 * * 6'  # Sa ~15–21 MESZ
+    - cron: '7,37 13-19 * * 0'  # So ~15–22 MESZ
+  workflow_dispatch:             # manuell startbar (Pokalabende: läuft dann mind. 1 Stunde)
 
 permissions:
   actions: write
@@ -19,13 +22,27 @@ concurrency:
 jobs:
   loop:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 350
     steps:
-      - name: Deploy alle 5 Minuten anstoßen
+      - name: Deploy alle 5 Minuten bis zum Fenster-Ende
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for i in $(seq 1 11); do
+          # Fenster-Ende (UTC) je Wochentag; außerhalb (manueller Start) mind. 1 Stunde laufen
+          DOW=$(date -u +%u)   # 1=Mo … 5=Fr 6=Sa 7=So
+          case "$DOW" in
+            5) END=$(date -u -d "today 21:10" +%s) ;;
+            6) END=$(date -u -d "today 19:10" +%s) ;;
+            7) END=$(date -u -d "today 19:40" +%s) ;;
+            *) END=0 ;;
+          esac
+          NOW=$(date -u +%s)
+          MIN_END=$((NOW + 3600))
+          [ "$END" -lt "$NOW" ] && END=$MIN_END   # außerhalb des Fensters: 1h Fallback
+          HARD_END=$((NOW + 340*60))              # Job-Limit nicht reißen
+          [ "$END" -gt "$HARD_END" ] && END=$HARD_END
+          echo "Loop bis $(date -u -d @$END +%H:%M) UTC"
+          while [ "$(date -u +%s)" -lt "$END" ]; do
             gh workflow run deploy.yml --repo "${{ github.repository }}" || true
             sleep 300
           done

@@ -4,7 +4,9 @@ on:
   schedule:
     - cron: '0 5 * * *'        # täglich morgens (Basis-Refresh)
     - cron: '30 17,19 * * 2,3' # Di/Mi abends (Pokal-/Nachholtermine)
-    # Die 5-min-Live-Refreshes an Spieltagen übernimmt live-loop.yml — GitHub führt */5-Schedules
+    - cron: '22 13-19 * * 6,0'  # Sa/So stündlich :22 als Direkt-Backup, falls alle Loop-Trigger verworfen werden
+    - cron: '22 18-21 * * 5'    # Fr abends Direkt-Backup
+    # Die 5-min-Live-Refreshes an Spieltagen übernimmt live-loop.yml — GitHub führt Schedules
     # unzuverlässig aus, der Loop dispatcht stattdessen selbst. Cron läuft in UTC (Winterzeit: +1 h lokal).
   workflow_dispatch:          # manuell auslösbar
   push:
