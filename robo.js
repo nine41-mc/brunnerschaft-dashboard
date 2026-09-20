@@ -92,14 +92,54 @@ async function llmRefine(tips, model, mdNo) {
     });
   } catch (e) { console.warn('LLM-Veredelung fehlgeschlagen (' + e.message + ') — Statistik-Tipps bleiben.'); return tips; }
 }
+function loadFile() {
+  let j = null; try { j = JSON.parse(fs.readFileSync(TIPS_FILE, 'utf8')); } catch (e) {}
+  if (!j || j.season !== SEASON) return { season: SEASON, mds: {} };
+  if (j.md && j.tips && !j.mds) j = { season: SEASON, mds: { [j.md]: { generatedAt: j.generatedAt, tips: j.tips } } }; // Alt-Format migrieren
+  j.mds = j.mds || {};
+  return j;
+}
 function loadStoredTips(mdNo) {
-  try { const j = JSON.parse(fs.readFileSync(TIPS_FILE, 'utf8'));
-    if (j.season === SEASON && j.md === mdNo && Array.isArray(j.tips) && j.tips.length) return j.tips; } catch (e) {}
-  return null;
+  const e = loadFile().mds[mdNo];
+  return (e && Array.isArray(e.tips) && e.tips.length) ? e.tips : null;
 }
 function storeTips(mdNo, tips) {
-  try { fs.writeFileSync(TIPS_FILE, JSON.stringify({ season: SEASON, md: mdNo, generatedAt: new Date().toISOString(),
-    tips: tips.map(t => ({ h: t.h, a: t.a, tipp: t.th + ':' + t.ta, grund: t.grund || null })) }, null, 1)); } catch (e) {}
+  try { const j = loadFile();
+    j.mds[mdNo] = { generatedAt: new Date().toISOString(),
+      tips: tips.map(t => ({ h: t.h, a: t.a, tipp: (t.tipp != null ? t.tipp : t.th + ':' + t.ta), grund: t.grund || null })) };
+    fs.writeFileSync(TIPS_FILE, JSON.stringify(j, null, 1)); } catch (e) {}
+}
+
+// ---------- Backfill: Begründungen für bereits getippte Spieltage nachziehen ----------
+async function botTipsFromPage(mi) {
+  const { doc } = await fetchDoc(`${BASE}tippuebersicht?tippsaisonId=${SEASON}&spieltagIndex=${mi}`);
+  const games = [];
+  const sp = doc.querySelector('#spielplanSpiele');
+  for (const tr of [...sp.rows].slice(1)) { const c = [...tr.cells];
+    if (c.length >= 3) games.push({ h: c[1].textContent.trim(), a: c[2].textContent.trim() }); }
+  const row = [...doc.querySelectorAll('#ranking tr')].find(tr => /RoboSepp/.test(tr.textContent));
+  if (!row) return null;
+  const tips = [...row.querySelectorAll('td.ereignis')].map(cell => {
+    const cl = cell.cloneNode(true); cl.querySelectorAll('sub').forEach(x => x.remove());
+    const m = cl.textContent.trim().match(/^(\d+):(\d+)$/); return m ? m[1] + ':' + m[2] : null;
+  });
+  return games.map((g, i) => ({ ...g, tipp: tips[i] })).filter(g => g.tipp);
+}
+async function llmReasons(games, mdNo) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) { console.log('Kein ANTHROPIC_API_KEY — Backfill braucht ihn.'); return null; }
+  const lines = games.map(g => `${g.h} – ${g.a} | RoboSepps Tipp: ${g.tipp}`).join('\n');
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Das sind deine bereits abgegebenen Tipps zum ${mdNo}. Bundesliga-Spieltag:\n\n${lines}\n\nSchreibe zu JEDEM Spiel GENAU EINEN frechen, kurzen Begründungssatz auf Deutsch (max. 90 Zeichen, Augenzwinkern erlaubt, nie beleidigend). WICHTIG: Du schreibst aus der Sicht VOR dem Spieltag — du kennst keine Ergebnisse, keine Rückschau, kein "hätte/wäre".\n\nAntworte NUR mit einem JSON-Array in derselben Reihenfolge: [{"grund":"..."}]`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }] }) });
+    if (!r.ok) throw new Error('API ' + r.status);
+    const txt = (await r.json()).content?.[0]?.text || '';
+    const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
+    return games.map((g, i) => ({ ...g, grund: String(arr[i]?.grund || '').slice(0, 120) || null }));
+  } catch (e) { console.warn(`Backfill ST ${mdNo}: LLM fehlgeschlagen (${e.message}).`); return null; }
 }
 
 // ---------- Kicktipp-Login + Abgabe ----------
@@ -157,6 +197,22 @@ async function submit(tips) {
 
 // ---------- Hauptlauf ----------
 (async () => {
+  // Backfill: --backfill A-B erzeugt Begründungen zu bereits abgegebenen Tipps (aus Vor-Spieltags-Sicht)
+  const bfArg = process.argv.indexOf('--backfill');
+  if (bfArg > -1) {
+    const [a, b] = String(process.argv[bfArg + 1] || '').split('-').map(Number);
+    for (let mi = a; mi <= (b || a); mi++) {
+      if (loadStoredTips(mi)?.some(t => t.grund)) { console.log(`ST ${mi}: Begründungen schon da.`); continue; }
+      const games = await botTipsFromPage(mi);
+      if (!games || !games.length) { console.log(`ST ${mi}: keine RoboSepp-Tipps gefunden.`); continue; }
+      const withReasons = await llmReasons(games, mi);
+      if (withReasons) { storeTips(mi, withReasons);
+        console.log(`ST ${mi}: ${withReasons.length} Begründungen erzeugt.`);
+        withReasons.slice(0, 2).forEach(g => console.log(`   ${g.h} – ${g.a} ${g.tipp} — „${g.grund}“`));
+      }
+    }
+    process.exit(0);
+  }
   // Zeitmaschine: --md N tippt Spieltag N nur mit dem Wissen VOR diesem Spieltag (für faire Nachträge)
   const mdArg = process.argv.indexOf('--md');
   const forceMd = mdArg > -1 ? +process.argv[mdArg + 1] : 0;

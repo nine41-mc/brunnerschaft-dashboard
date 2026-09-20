@@ -12,6 +12,10 @@ on:
         description: 'Nur anzeigen, nicht abgeben'
         type: boolean
         default: false
+      backfill:
+        description: 'Begründungen nachziehen (z. B. 1-4), keine Abgabe'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -30,7 +34,9 @@ jobs:
           KICKTIPP_BOT_EMAIL: ${{ secrets.KICKTIPP_BOT_EMAIL }}
           KICKTIPP_BOT_PASSWORD: ${{ secrets.KICKTIPP_BOT_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node robo.js ${{ inputs.dry && '--dry' || '' }}
+        run: |
+          if [ -n "${{ inputs.backfill }}" ]; then node robo.js --backfill "${{ inputs.backfill }}";
+          else node robo.js ${{ inputs.dry && '--dry' || '' }}; fi
       - name: Tipps + Begründungen ins Repo (erscheinen im Dashboard)
         run: |
           if [ -n "$(git status --porcelain robo-tips.json)" ]; then

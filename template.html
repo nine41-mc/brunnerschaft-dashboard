@@ -1574,7 +1574,8 @@ function renderLiveMd(scope){
   const roboEl=document.getElementById('roboSay');
   const RT=(typeof ADV!=='undefined'&&ADV.roboTips)||null;
   if(roboEl){
-    const rtTips=(RT&&RT.season===scope&&RT.md===sel.md)?(RT.tips||[]).filter(t=>t.grund):[];
+    const rtEntry=RT&&RT.season===scope?((RT.mds||{})[sel.md]||((RT.md===sel.md)?RT:null)):null;
+    const rtTips=rtEntry?((rtEntry.tips||[]).filter(t=>t.grund)):[];
     if(rtTips.length){
       const botRow=lm.rows.find(r=>r.name==='RoboSepp');
       const cards=rtTips.map(t=>{
