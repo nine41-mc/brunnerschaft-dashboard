@@ -26,7 +26,7 @@ async function vapidHeaders(endpoint, env) {
     { kty: 'EC', crv: 'P-256', d, x, y, ext: true, key_ops: ['sign'] },
     { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
   const enc = o => bytesToB64u(te.encode(JSON.stringify(o)));
-  const input = enc({ typ: 'JWT', alg: 'ES256' }) + '.' + enc({ aud, exp, sub: 'mailto:kasse@brunnerschaft.example' });
+  const input = enc({ typ: 'JWT', alg: 'ES256' }) + '.' + enc({ aud, exp, sub: 'mailto:manuel.cramer@nine41.io' /* VAPID-Betreiberkontakt — geht nur an die Push-Dienste */ });
   const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, te.encode(input)); // WebCrypto liefert r||s (raw) — genau was JWS braucht
   const jwt = input + '.' + bytesToB64u(sig);
   return { Authorization: `vapid t=${jwt}, k=${env.VAPID_PUBLIC}` };
