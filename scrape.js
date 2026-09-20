@@ -23,7 +23,7 @@ function saveArchive(id, data){
 const UA = { headers: { 'User-Agent': 'BrunnerschaftDashboard/1.0 (+github pages build)' } };
 const NAME_MAP = { 'Toblerone': 'Tobias' };
 const norm = n => NAME_MAP[n] || n;
-const CORE = new Set(['CH7','Maxsen','Manurinho','Tobias','Billy','Matthew','Lutz_Brunner7b','BigBen','Maxjun.','Marie','Messi','LuLu']); // Marie, Messi (=Elias) & LuLu (=Luisa) ab BL 26/27
+const CORE = new Set(['CH7','Maxsen','Manurinho','Tobias','Billy','Matthew','Lutz_Brunner7b','BigBen','Maxjun.','Marie','Messi','LuLu','RoboSepp']); // + RoboSepp, der Bot-Tipper (ab 4. Spieltag 26/27)
 const r2 = x => Math.round(x*100)/100;
 const toInt = t => { const m=(t||'').replace(/[^\d-]/g,''); return m===''||m==='-'?null:parseInt(m,10); };
 
