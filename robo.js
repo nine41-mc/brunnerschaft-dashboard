@@ -102,18 +102,21 @@ async function submit(tips) {
 
 // ---------- Hauptlauf ----------
 (async () => {
-  // gespielte Spieltage sammeln + nächsten (ohne Ergebnisse) finden
+  // Zeitmaschine: --md N tippt Spieltag N nur mit dem Wissen VOR diesem Spieltag (für faire Nachträge)
+  const mdArg = process.argv.indexOf('--md');
+  const forceMd = mdArg > -1 ? +process.argv[mdArg + 1] : 0;
   const results = []; let next = null, nextNo = 0;
   for (let mi = 1; mi <= 34; mi++) {
     const g = await matchday(mi); if (!g || !g.length) break;
+    if (forceMd && mi === forceMd) { next = g; nextNo = mi; break; } // Modell kennt nur mi < N
     const done = g.filter(x => x.rh != null);
     results.push(...done);
-    if (done.length < g.length) { next = g; nextNo = mi; break; }
+    if (!forceMd && done.length < g.length) { next = g; nextNo = mi; break; }
   }
   if (!next) { console.log('Kein offener Spieltag gefunden.'); process.exit(0); }
   const model = buildModel(results);
   const rng = rngFor(SEASON + '-' + nextNo);
-  const tips = next.filter(g => g.rh == null).map(g => { const [th, ta] = predict(model, g, rng); return { ...g, th, ta }; });
+  const tips = (forceMd ? next : next.filter(g => g.rh == null)).map(g => { const [th, ta] = predict(model, g, rng); return { ...g, th, ta }; });
   console.log(`🤖 RoboBrunner tippt den ${nextNo}. Spieltag (Modell aus ${results.length} Ergebnissen):`);
   for (const t of tips) console.log(`   ${t.h} – ${t.a}:  ${t.th}:${t.ta}`);
   if (DRY) { console.log('(Dry-Run — nichts abgegeben)'); process.exit(0); }
