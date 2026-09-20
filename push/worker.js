@@ -74,7 +74,10 @@ async function broadcast(env, msg) {
   let ok = 0, gone = 0, fail = 0;
   for (const k of list.keys) {
     const raw = await env.SUBS.get(k.name); if (!raw) continue;
-    const sub = JSON.parse(raw);
+    const rec = JSON.parse(raw);
+    const sub = rec.subscription || rec;            // alte Einträge = rohes Abo
+    const cats = rec.cats || {};
+    if (msg.channel && cats[msg.channel] === false) continue; // Kanal abbestellt
     try {
       const r = await sendPush(sub, JSON.stringify(msg), env);
       if (r.status === 404 || r.status === 410) { await env.SUBS.delete(k.name); gone++; }
@@ -100,7 +103,8 @@ export default {
       const body = await req.json().catch(() => null);
       const sub = body && body.subscription;
       if (!sub || !sub.endpoint || !sub.keys) return json({ error: 'bad subscription' }, 400);
-      await env.SUBS.put(await subKey(sub.endpoint), JSON.stringify(sub));
+      const cats = (body.cats && typeof body.cats === 'object') ? body.cats : {};
+      await env.SUBS.put(await subKey(sub.endpoint), JSON.stringify({ subscription: sub, cats }));
       return json({ ok: true });
     }
     if (url.pathname === '/unsubscribe') {
@@ -113,7 +117,7 @@ export default {
       if (req.headers.get('Authorization') !== `Bearer ${env.NOTIFY_SECRET}`) return json({ error: 'unauthorized' }, 401);
       const msg = await req.json().catch(() => null);
       if (!msg || !msg.title) return json({ error: 'bad message' }, 400);
-      return json(await broadcast(env, { title: msg.title, body: msg.body || '', tag: msg.tag || 'brun', url: msg.url || 'https://nine41-mc.github.io/brunnerschaft-dashboard/' }));
+      return json(await broadcast(env, { title: msg.title, body: msg.body || '', tag: msg.tag || 'brun', channel: msg.channel || null, url: msg.url || 'https://nine41-mc.github.io/brunnerschaft-dashboard/' }));
     }
     return json({ error: 'not found' }, 404);
   },
@@ -123,7 +127,7 @@ export default {
     await broadcast(env, {
       title: '🖊️ Bald rollt der Ball!',
       body: 'Heute Abend startet der Spieltag. Schon getippt?',
-      tag: 'brun-remind',
+      tag: 'brun-remind', channel: 'remind',
       url: 'https://www.kicktipp.de/brunnerschaft/tippabgabe',
     });
   },

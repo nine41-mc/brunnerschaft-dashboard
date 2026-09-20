@@ -21,23 +21,23 @@ const events = [];
 // 🎯 Neue Volltreffer (nur während Live-Spielen desselben Spieltags)
 if (neu.anyLive && oldSt.md === neu.md) {
   const hits = Object.keys(neu.p4).filter(n => (neu.p4[n] || 0) > (oldSt.p4?.[n] || 0)).map(nm);
-  if (hits.length === 1) events.push({ title: '🎯 Volltreffer!', body: `${hits[0]} trifft ein Ergebnis exakt — +4 Punkte`, tag: 'brun-p4' });
-  else if (hits.length > 1) events.push({ title: `🎯 ${hits.length}× Volltreffer!`, body: `${hits.join(', ')} treffen exakt — je +4 Punkte`, tag: 'brun-p4' });
+  if (hits.length === 1) events.push({ title: '🎯 Volltreffer!', body: `${hits[0]} trifft ein Ergebnis exakt — +4 Punkte`, tag: 'brun-p4', channel: 'p4' });
+  else if (hits.length > 1) events.push({ title: `🎯 ${hits.length}× Volltreffer!`, body: `${hits.join(', ')} treffen exakt — je +4 Punkte`, tag: 'brun-p4', channel: 'p4' });
 }
 
 // 👑 Führungswechsel
 if (oldSt.leader && neu.leader && oldSt.leader !== neu.leader) {
-  events.push({ title: '👑 Führungswechsel!', body: `${nm(neu.leader)} überholt ${nm(oldSt.leader)} — ${neu.leaderPts}:${neu.secondPts}`, tag: 'brun-lead' });
+  events.push({ title: '👑 Führungswechsel!', body: `${nm(neu.leader)} überholt ${nm(oldSt.leader)} — ${neu.leaderPts}:${neu.secondPts}`, tag: 'brun-lead', channel: 'lead' });
 }
 
 // 🏁 Spieltag beendet
 if (oldSt.md === neu.md && !oldSt.mdDone && neu.mdDone) {
-  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `Sieger: ${nm(neu.winner)} (${neu.winnerPts} P) 🎉\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done' });
+  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `Sieger: ${nm(neu.winner)} (${neu.winnerPts} P) 🎉\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done', channel: 'done' });
 }
 
 // ⭐ Bonusfrage aufgelöst
 if ((neu.bonusSolved || 0) > (oldSt.bonusSolved || 0)) {
-  events.push({ title: '⭐ Bonusfrage entschieden!', body: 'Kicktipp hat eine Saisonfrage aufgelöst — schau ins Dashboard.', tag: 'brun-bonus' });
+  events.push({ title: '⭐ Bonusfrage entschieden!', body: 'Kicktipp hat eine Saisonfrage aufgelöst — schau ins Dashboard.', tag: 'brun-bonus', channel: 'bonus' });
 }
 
 if (!events.length) { console.log('Keine Ereignisse.'); process.exit(0); }

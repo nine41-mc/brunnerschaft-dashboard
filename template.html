@@ -315,6 +315,28 @@ main{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} /* Home-Indica
 .pill:active{transform:scale(.97)}
 .theme-btn:active,.lang-switch button:active{opacity:.6}
 .push-bell{margin-left:6px}
+#pushOverlay{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px}
+#pushOverlay[hidden]{display:none}
+.po-card{background:var(--surface);border-radius:18px;max-width:420px;width:100%;padding:24px 22px;box-shadow:0 18px 60px -10px rgba(0,0,0,.4)}
+.po-head{font-size:22px;font-weight:850;letter-spacing:-.4px}
+.po-sub{color:var(--ink-2);font-size:14px;margin:4px 0 14px}
+.po-row{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.po-row .ic{font-size:19px;flex:0 0 26px;text-align:center}
+.po-row b{display:block;font-size:14.5px}
+.po-row span{font-size:12.5px;color:var(--ink-2)}
+.po-btns{display:flex;gap:10px;margin-top:16px}
+.po-btns .lb-btn{flex:1;min-width:0;font-size:14.5px;padding:11px 10px}
+.cat-row{display:flex;align-items:center;gap:12px;padding:11px 2px;border-top:1px solid var(--line)}
+.cat-row:first-child{border-top:0}
+.cat-row .ic{font-size:19px;flex:0 0 26px;text-align:center}
+.cat-row .tx{flex:1;min-width:0}
+.cat-row .tx b{display:block;font-size:14.5px}
+.cat-row .tx span{font-size:12.5px;color:var(--ink-2)}
+.swtch{position:relative;width:50px;height:30px;flex:0 0 auto;appearance:none;background:var(--line-2);border-radius:999px;cursor:pointer;transition:background .18s;border:0}
+.swtch:checked{background:#34c759}
+.swtch::after{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .18s}
+.swtch:checked::after{left:22px}
+.swtch:disabled{opacity:.4;cursor:default}
 @media(max-width:720px){ .brandmark{flex:1 1 100%} .push-bell{margin-left:auto} } /* Glocke rechtsbündig — exakt über dem Theme-Button in Zeile 2 */
 /* Unsichtbare 44pt-Hit-Areas — Optik unverändert */
 .theme-btn,.lang-switch button{position:relative}
@@ -573,6 +595,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     <button class="tab" role="tab" aria-selected="false" data-tab="kessel"><span class="tab-lbl"><span class="t-de">🎨 Ein Kessel Buntes</span><span class="t-en">🎨 Mixed Bag</span></span></button>
     <button class="tab" role="tab" aria-selected="false" data-tab="bayern"><svg class="bayern-ic" viewBox="0 0 32 32" width="16" height="16" aria-hidden="true"><clipPath id="bcInner"><circle cx="16" cy="16" r="9"/></clipPath><circle cx="16" cy="16" r="15.5" fill="#DC052D"/><circle cx="16" cy="16" r="9" fill="#fff"/><g clip-path="url(#bcInner)"><g transform="rotate(45 16 16)"><rect x="4" y="2" width="4" height="28" fill="#0066B2"/><rect x="12" y="2" width="4" height="28" fill="#0066B2"/><rect x="20" y="2" width="4" height="28" fill="#0066B2"/></g></g></svg><span class="tab-lbl"><span class="t-de">MIA SAN MIA</span><span class="t-en">MIA SAN MIA</span></span></button>
     <button class="tab" role="tab" aria-selected="false" data-tab="fin"><span class="tab-lbl"><span class="t-de">💶 Auswertungen</span><span class="t-en">💶 Finances</span></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="settings"><span class="tab-lbl"><span class="t-de">⚙️ Einstellungen</span><span class="t-en">⚙️ Settings</span></span></button>
   </div>
 </nav>
 
@@ -937,7 +960,38 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div id="finAll"></div>
     </section>
   </div>
+  <!-- ============ EINSTELLUNGEN ============ -->
+  <div class="panel" id="panel-settings" role="tabpanel">
+    <div class="eyebrow" data-en="⚙️ Settings">⚙️ Einstellungen</div>
+    <h1 style="font-size:30px;font-weight:850;letter-spacing:-.9px" data-en="Your profile">Dein Profil</h1>
+    <p class="lead" data-en="Notifications for this device — each member sets this up on their own phone.">Benachrichtigungen für dieses Gerät — jeder Tipper stellt das auf dem eigenen Handy ein.</p>
+
+    <section class="block">
+      <div class="eyebrow" data-en="🔔 Push notifications">🔔 Push-Benachrichtigungen</div>
+      <h2 class="sec-title" data-en="What's allowed to buzz?">Was darf brummen?</h2>
+      <div class="sec-note" id="pushMasterNote"></div>
+      <div class="card" style="padding:16px">
+        <button class="lb-btn" id="pushMasterBtn" style="min-width:260px"></button>
+        <div id="pushCats" style="margin-top:16px"></div>
+        <p class="mini" id="pushSavedNote" style="margin:10px 0 0;min-height:16px"></p>
+      </div>
+      <p class="mini" data-en="iOS note: pushes only work in the home-screen app (Safari → Share → 'Add to Home Screen').">iOS-Hinweis: Pushes funktionieren nur in der Homescreen-App (Safari → Teilen → „Zum Home-Bildschirm").</p>
+    </section>
+  </div>
 </main>
+
+<!-- Aktivierungs-Overlay: zeigt nach dem Abo, was ab jetzt brummt -->
+<div id="pushOverlay" hidden>
+  <div class="po-card">
+    <div class="po-head">🔔 <span data-en="You're in!">Du bist dabei!</span></div>
+    <div class="po-sub" data-en="This device will now get:">Dieses Gerät bekommt ab jetzt:</div>
+    <div id="poList"></div>
+    <div class="po-btns">
+      <button class="lb-btn lb-btn2" id="poSettings" data-en="⚙️ Customize">⚙️ Anpassen</button>
+      <button class="lb-btn" id="poClose" data-en="Got it!">Alles klar! 🍺</button>
+    </div>
+  </div>
+</div>
 
 <footer data-en="⚽🍺 <b>Brunnerschaft</b> · Data read live from Kicktipp · Updated <span id=&quot;genDate&quot;></span> · Built for the guys' night with lots of ❤️ by Manu 🍺">⚽🍺 <b>Brunnerschaft</b> · Daten live aus Kicktipp ausgelesen · Stand <span id="genDate"></span> · Gebaut für die Männerrunde mit viel ❤️ von Manu 🍺</footer>
 
@@ -2152,25 +2206,74 @@ function renderAll(){
   }catch(e){}
   // Service Worker: sofortiger Start aus dem Cache, netz-zuerst mit Fallback (Offline im Stadion!)
   try{ if('serviceWorker' in navigator && /github\.io$|^localhost$/.test(location.hostname)) navigator.serviceWorker.register('sw.js'); }catch(e){}
-  // 🔔 Push-Abo (nur mit konfiguriertem Worker; iOS: erst als Homescreen-App möglich)
+  // 🔔 Push-Abo: Glocke, Aktivierungs-Overlay und Einstellungsseite teilen sich diesen Kern
   try{ if(PUSH_URL && 'serviceWorker' in navigator && 'PushManager' in window && /github\.io$/.test(location.hostname)){
-    const btn=document.getElementById('pushBtn');
+    const PUSH_CATS=[
+      {id:'p4',   ic:'🎯', t:{de:'Volltreffer',en:'Bullseyes'},          d:{de:'Wenn jemand live ein Ergebnis exakt trifft (+4 Punkte).',en:'When someone hits a result exactly, live (+4 points).'}},
+      {id:'lead', ic:'👑', t:{de:'Führungswechsel',en:'Lead changes'},   d:{de:'Wenn die Spitze des Zwischenstands wechselt.',en:'When the top of the standings changes.'}},
+      {id:'done', ic:'🏁', t:{de:'Spieltag-Ergebnis',en:'Matchday result'},d:{de:'Sieger + Top 3, sobald der Spieltag durch ist.',en:'Winner + top 3 once the matchday is done.'}},
+      {id:'bonus',ic:'⭐', t:{de:'Bonus-Auflösungen',en:'Bonus results'}, d:{de:'Wenn Kicktipp eine Saisonfrage entscheidet.',en:'When Kicktipp settles a season question.'}},
+      {id:'remind',ic:'🖊️',t:{de:'Tipp-Erinnerung',en:'Tip reminder'},   d:{de:'Freitags um 17 Uhr: Schon getippt?',en:'Fridays at 5 pm: tipped yet?'}},
+    ];
+    const bell=document.getElementById('pushBtn');
     const b64uToU8=s2=>{s2=s2.replace(/-/g,'+').replace(/_/g,'/');while(s2.length%4)s2+='=';return Uint8Array.from(atob(s2),c=>c.charCodeAt(0));};
-    const paint=on=>{btn.textContent=on?'🔔':'🔕';btn.style.opacity=on?'1':'.75';btn.title=on?L('Benachrichtigungen aktiv — tippen zum Abschalten','Notifications on — tap to disable'):L('Benachrichtigungen aktivieren','Enable notifications');};
+    const getCats=()=>{ try{const c=JSON.parse(localStorage.getItem('brun_push_cats')||'{}');const o={};PUSH_CATS.forEach(x=>o[x.id]=c[x.id]!==false);return o;}catch(e){const o={};PUSH_CATS.forEach(x=>o[x.id]=true);return o;} };
+    const setCats=c=>{ try{localStorage.setItem('brun_push_cats',JSON.stringify(c));}catch(e){} };
+    let REG=null;
+    const getSub=async()=>REG?await REG.pushManager.getSubscription():null;
+    const pushSync=async sub=>fetch(PUSH_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON(),cats:getCats()})});
+    async function pushOn(){
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted') throw new Error(L('Benachrichtigungen sind blockiert. Auf iOS: Seite als Homescreen-App öffnen und dort erlauben.','Notifications blocked. On iOS: open as home-screen app and allow there.'));
+      const sub=await REG.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uToU8(VAPID_PUB)});
+      const r=await pushSync(sub); if(!r.ok) throw new Error('subscribe '+r.status);
+      return sub;
+    }
+    async function pushOff(){
+      const cur=await getSub(); if(!cur) return;
+      await fetch(PUSH_URL+'/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:cur.endpoint})}).catch(()=>{});
+      await cur.unsubscribe();
+    }
+    const gotoSettings=()=>{ const tb=document.querySelector('.tab[data-tab="settings"]'); if(tb)tb.click(); };
+    // Overlay
+    const overlay=document.getElementById('pushOverlay');
+    function showOverlay(){
+      document.getElementById('poList').innerHTML=PUSH_CATS.map(c=>`<div class="po-row"><span class="ic">${c.ic}</span><div><b>${tr(c.t)}</b><span>${tr(c.d)}</span></div></div>`).join('');
+      overlay.hidden=false;
+      document.getElementById('poClose').onclick=()=>overlay.hidden=true;
+      document.getElementById('poSettings').onclick=()=>{overlay.hidden=true;gotoSettings();};
+      overlay.onclick=e=>{ if(e.target===overlay)overlay.hidden=true; };
+    }
+    // Einstellungsseite
+    async function renderPushSettings(){
+      const sub=await getSub(); const on=!!sub; const cats=getCats();
+      const mBtn=document.getElementById('pushMasterBtn'); if(!mBtn)return;
+      mBtn.textContent=on?L('🔕 Benachrichtigungen abschalten','🔕 Disable notifications'):L('🔔 Benachrichtigungen aktivieren','🔔 Enable notifications');
+      mBtn.className=on?'lb-btn lb-btn2':'lb-btn';
+      document.getElementById('pushMasterNote').textContent=on
+        ? L('Aktiv auf diesem Gerät. Kanäle einzeln wählbar:','Active on this device. Pick your channels:')
+        : L('Noch nicht aktiv auf diesem Gerät.','Not active on this device yet.');
+      document.getElementById('pushCats').innerHTML=PUSH_CATS.map(c=>`<label class="cat-row"><span class="ic">${c.ic}</span><span class="tx"><b>${tr(c.t)}</b><span>${tr(c.d)}</span></span><input type="checkbox" class="swtch" data-cat="${c.id}" ${cats[c.id]?'checked':''} ${on?'':'disabled'}></label>`).join('');
+      document.querySelectorAll('#pushCats .swtch').forEach(sw=>sw.onchange=async()=>{
+        const c=getCats(); c[sw.dataset.cat]=sw.checked; setCats(c);
+        const note=document.getElementById('pushSavedNote');
+        try{ const s3=await getSub(); if(s3){ await pushSync(s3); note.textContent='✓ '+L('Gespeichert','Saved'); setTimeout(()=>note.textContent='',1600);} }
+        catch(e){ note.textContent=L('Speichern fehlgeschlagen','Save failed'); }
+      });
+      mBtn.onclick=async()=>{ mBtn.disabled=true;
+        try{ if(await getSub()){ await pushOff(); } else { await pushOn(); showOverlay(); } paintBell(); renderPushSettings(); }
+        catch(e){ alert(e.message); }
+        mBtn.disabled=false; };
+    }
+    const paintBell=async()=>{ const on=!!(await getSub());
+      bell.textContent=on?'🔔':'🔕'; bell.style.opacity=on?'1':'.75';
+      bell.title=on?L('Benachrichtigungen aktiv — Einstellungen öffnen','Notifications on — open settings'):L('Benachrichtigungen aktivieren','Enable notifications'); };
     navigator.serviceWorker.ready.then(async reg=>{
-      btn.hidden=false; const sub=await reg.pushManager.getSubscription(); paint(!!sub);
-      btn.onclick=async()=>{
-        try{
-          const cur=await reg.pushManager.getSubscription();
-          if(cur){ await fetch(PUSH_URL+'/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:cur.endpoint})}).catch(()=>{});
-            await cur.unsubscribe(); paint(false); return; }
-          const perm=await Notification.requestPermission();
-          if(perm!=='granted'){ alert(L('Benachrichtigungen sind blockiert. Auf iOS: Seite zum Homescreen hinzufügen und dort erlauben.','Notifications are blocked. On iOS: add the page to your home screen and allow there.')); return; }
-          const sub2=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uToU8(VAPID_PUB)});
-          const r=await fetch(PUSH_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub2.toJSON()})});
-          if(!r.ok) throw new Error('subscribe '+r.status);
-          paint(true);
-        }catch(e){ alert(L('Konnte Benachrichtigungen nicht aktivieren: ','Could not enable notifications: ')+e.message); }
+      REG=reg; bell.hidden=false; paintBell(); renderPushSettings();
+      bell.onclick=async()=>{
+        try{ if(await getSub()){ gotoSettings(); return; }
+          await pushOn(); paintBell(); renderPushSettings(); showOverlay();
+        }catch(e){ alert(e.message); }
       };
     });
   }}catch(e){}
