@@ -202,13 +202,17 @@ async function submit(tips) {
   if (bfArg > -1) {
     const [a, b] = String(process.argv[bfArg + 1] || '').split('-').map(Number);
     for (let mi = a; mi <= (b || a); mi++) {
-      if (loadStoredTips(mi)?.some(t => t.grund)) { console.log(`ST ${mi}: Begründungen schon da.`); continue; }
+      const stored = loadStoredTips(mi) || [];
       const games = await botTipsFromPage(mi);
       if (!games || !games.length) { console.log(`ST ${mi}: keine RoboSepp-Tipps gefunden.`); continue; }
-      const withReasons = await llmReasons(games, mi);
-      if (withReasons) { storeTips(mi, withReasons);
-        console.log(`ST ${mi}: ${withReasons.length} Begründungen erzeugt.`);
-        withReasons.slice(0, 2).forEach(g => console.log(`   ${g.h} – ${g.a} ${g.tipp} — „${g.grund}“`));
+      const hasG = g => stored.find(t => t.h === g.h && t.a === g.a && t.grund);
+      const missing = games.filter(g => !hasG(g));
+      if (!missing.length) { console.log(`ST ${mi}: Begründungen komplett.`); continue; }
+      const withReasons = await llmReasons(missing, mi);
+      if (withReasons) {
+        const merged = games.map(g => hasG(g) || withReasons.find(w => w.h === g.h && w.a === g.a) || g);
+        storeTips(mi, merged);
+        console.log(`ST ${mi}: ${withReasons.length} Begründungen ergänzt (${merged.filter(t=>t.grund).length}/${games.length} komplett).`);
       }
     }
     process.exit(0);
