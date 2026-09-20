@@ -616,6 +616,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><a id="tipNow" class="tip-btn" href="https://www.kicktipp.de/brunnerschaft/tippabgabe" target="_blank" rel="noopener" data-en="🖊️ Tip now">🖊️ Jetzt tippen</a><button id="shareMd" class="share-btn" aria-label="Teilen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 6.5 12 2.5l4 4"/><path d="M5.5 10.5v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-8.5"/></svg></button></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
+      <p class="mini" id="liveMdFoot"></p>
     </section>
 
     <section class="block" id="raceSec" hidden>
@@ -638,6 +639,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <h2 class="sec-title" data-en="Title projection">Die Titel-Hochrechnung</h2>
       <div class="sec-note" id="projNote"></div>
       <div class="tbl-wrap"><table id="projTable"></table></div>
+      <p class="mini" id="projFoot"></p>
     </section>
 
     <section class="block" id="oracleSec" hidden>
@@ -1310,6 +1312,19 @@ function renderProj(scope){
       <td><div class="nm-cell">${av(r.name,24)}<span class="player-name">${dispName(r.name)}</span></div></td>
       <td class="r mono"><b>${r.proj}</b></td><td class="r mono">${dec(r.avg)}</td>
       <td class="r mono">${r.proj>=best?'👑':(r.need>36?'🙏':('Ø '+dec(r.need)))}</td></tr>`).join('')}</tbody>`;
+  const pl=dispFull(rows[0].name), pp=rows[0].proj;
+  document.getElementById('projFoot').textContent='😏 '+spruch('proj',[
+    L('Lineare Hochrechnungen haben noch nie gelogen. Außer immer.','Linear projections have never lied. Except always.'),
+    L('Sollte '+pl+' wirklich '+pp+' Punkte holen, drucken wir diese Tabelle aus und rahmen sie.','If '+pl+' really scores '+pp+' points, we\u2019ll print this table and frame it.'),
+    L('🙏 bedeutet: rechnerisch möglich, praktisch ein Fall für den Sportwettenanbieter deines Misstrauens.','🙏 means: mathematically possible, practically one for the bookmaker you trust least.'),
+    L('Prognosen sind schwierig, besonders wenn sie die Zukunft betreffen. Wir machen sie trotzdem.','Forecasts are hard, especially about the future. We make them anyway.')
+  ]);
+}
+// 😏 Pointen-Rotation: je Spieltag ein neuer Spruch (deterministisch — alle sehen denselben)
+function spruch(key,arr){
+  const pm=(ADV.liveMd&&Object.values(ADV.liveMd)[0]&&Object.values(ADV.liveMd)[0].cur)||1;
+  let h=pm*2654435761; for(let i=0;i<key.length;i++) h=(h*31+key.charCodeAt(i))|0;
+  return arr[Math.abs(h)%arr.length];
 }
 function renderOracle(scope){
   const sec=document.getElementById('oracleSec'); if(!sec)return;
@@ -1432,6 +1447,13 @@ function renderLiveMd(scope){
       return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
+  document.getElementById('liveMdFoot').textContent='😏 '+spruch('livemd',[
+    L('Live-Punkte sind wie Grillgut: erst nach dem Abpfiff wirklich durch.','Live points are like barbecue: only done after the final whistle.'),
+    L('Anzeige ohne Gewähr — die letzte Wahrheit kennt nur der Videobeweis.','No guarantees — only VAR knows the final truth.'),
+    L('Bitte während der Konferenz nicht das Handy anschreien. Es kann nichts dafür.','Please don\u2019t yell at your phone during the games. It\u2019s not its fault.'),
+    L('Tipps erscheinen ab Anpfiff — vorher gilt: Schweigen ist Gold, Abschreiben ist Silber.','Tips appear at kickoff — before that: silence is golden, copying is silver.'),
+    L('Ein 0:7 ist übrigens noch nie eingetroffen. Wir warten, Matthew.','A 0:7 has never once hit. We\u2019re waiting, Matthew.')
+  ]);
   // 📤 Teilen: Spieltags-Zusammenfassung via Web-Share (Fallback: Zwischenablage)
   const shareBtn=document.getElementById('shareMd');
   if(shareBtn) shareBtn.onclick=async()=>{
@@ -1969,7 +1991,15 @@ function renderScope(scope){
   document.getElementById('mainEye').textContent=gesamt?L('Die ewige Bestenliste','The all-time leaderboard'):(SMAP[scope].running?L('Zwischenstand','Current standings'):L('Endstand','Final standings'));
   document.getElementById('mainTitle').textContent=gesamt?L('Ewige Tabelle','All-Time Table'):(SMAP[scope].running?L('Zwischenstand ','Current standings ')+SMAP[scope].short+(SMAP[scope].playedMd?L(' · nach '+SMAP[scope].playedMd+'. Spieltag',' · after MD '+SMAP[scope].playedMd):''):L('Abschlusstabelle ','Final table ')+SMAP[scope].short);
   document.getElementById('mainNote').textContent=gesamt?L('Alle Wettbewerbe zusammengerechnet. Sortierbar — Kopf anklicken.','All competitions combined. Sortable — click a header.'):(SMAP[scope].running?L('Zwischenstand dieses Wettbewerbs — die Saison läuft noch. Sortierbar — Kopf anklicken.','Current standings — the season is still running. Sortable — click a header.'):L('Endstand dieses Wettbewerbs. Sortierbar — Kopf anklicken.','Final standings of this competition. Sortable — click a header.'));
-  document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'')+(SMAP[scope].running?L(' · 🔥/❄️ = Formkurve (letzte Spieltage vs. Saisonschnitt)',' · 🔥/❄️ = form (recent matchdays vs. season average)'):'');
+  document.getElementById('mainFoot').innerHTML=gesamt?L('Ø/ST = Punkte pro Spieltag. Turniere zählen mit, haben aber weniger Spieltage.','Ø/MD = points per matchday. Tournaments count too, but have fewer matchdays.'):L('Ø/ST = Punkte pro Spieltag · 4er/3er = exakte Ergebnisse bzw. richtige Tordifferenz · Verg. = vergessene Tipps','Ø/MD = points per matchday · 4s/3s = exact results resp. correct goal difference · Missed = forgotten tips')+(SMAP[scope].type==='BL'?L(' · vs 🐻 = gegen die Bayern getippt',' · vs 🐻 = tipped against Bayern'):'')+(SMAP[scope].running?L(' · 🔥/❄️ = Formkurve (letzte Spieltage vs. Saisonschnitt)',' · 🔥/❄️ = form (recent matchdays vs. season average)'):'')
+    +(SMAP[scope].running?(()=>{const act=SMAP[scope].standings.filter(x=>x.active);const ld=dispFull(act[0].name),lz=dispFull(act[act.length-1].name);
+      return '<br>😏 '+esc(spruch('zwischenstand',[
+        L(ld+' führt — aber die Saison ist ein Marathon, kein Drei-Spieltage-Sprint.',ld+' leads — but the season is a marathon, not a three-matchday sprint.'),
+        L('Statistisch gesehen hat '+lz+' noch alle Chancen. Statistisch.','Statistically, '+lz+' still has every chance. Statistically.'),
+        L('Punkte sind vergänglich, Häme am Stammtisch ist für immer.','Points fade, pub banter is forever.'),
+        L('Wer jetzt führt, zahlt am Ende trotzdem das gleiche Bier.','Leading now still buys the same beer at the end.'),
+        L('Tabellenführung im Herbst ist wie Sonnenbrand im April: fühlt sich groß an, hält selten.','An autumn lead is like April sunburn: feels big, rarely lasts.')
+      ]));})():'');
   document.getElementById('rankNote').textContent=gesamt?L('Über alle Wettbewerbe hinweg.','Across all competitions.'):L('Nur für ','Only for ')+SMAP[scope].short+'.';
   renderTiles(scope); renderMainTable(scope); renderRankGrid(scope); renderLiveMd(scope); renderRace(scope); renderProj(scope); renderOracle(scope); renderBonusTips(scope); applyMobileSticky();
   document.querySelectorAll('.gesamt-only').forEach(el=>el.classList.toggle('hidden',!gesamt));
