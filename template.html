@@ -227,6 +227,11 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .lmd-refresh{width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(226,0,26,.4);background:var(--surface);color:var(--brand);
   font-size:17px;font-weight:800;cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
 .lmd-refresh2{font-size:19px;font-weight:800}
+.robo-say{margin:14px 0 4px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid #7b52c7;border-radius:12px;padding:12px 15px}
+.rs-head{font-weight:850;font-size:14px;margin-bottom:7px}
+.rs-row{display:flex;gap:11px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.rs-m{flex:0 0 auto;font-size:13px;min-width:110px}
+.rs-q{flex:1;min-width:200px;font-size:13.5px;font-style:italic;color:var(--ink-2)}
 .lmd-refresh.spin,.lmd-refresh2.spin{animation:ptrSpin .8s linear infinite}
 .lmd-refresh:active,.lmd-refresh2:active{opacity:.6}
 .live-now-lbl{font-weight:900;color:var(--brand);font-size:13px;letter-spacing:.03em}
@@ -654,6 +659,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><button id="lmdRefresh2" class="share-btn lmd-refresh2" aria-label="Aktualisieren"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 2.5v4.6h-4.6"/></svg></button><button id="shareMd" class="share-btn" aria-label="Teilen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 6.5 12 2.5l4 4"/><path d="M5.5 10.5v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-8.5"/></svg></button></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
+      <div id="roboSay"></div>
       <p class="mini" id="liveMdFoot"></p>
     </section>
 
@@ -1195,7 +1201,8 @@ function renderMainTable(scope){
         const sc=c.k===sortState.k?' sortcol':'';
         if(c.k==='name')return `<td class="${sc}"><div class="nm-cell"><span class="rank-badge">${gesamt?rks[i]:p.pos}</span>${av(p.name,28)}<span class="player-name">${dispName(p.name)}</span></div></td>`;
         if(c.bar)return `<td class="r bar-cell${sc}"><b class="mono">${p.points.toLocaleString(LANG==='en'?'en-GB':'de-DE')}</b><div class="bar" style="width:${Math.round(p.points/maxPts*100)}%;margin-top:4px"></div></td>`;
-        const v=c.f?c.f(p):(p[c.k]);
+        let v=c.f?c.f(p):(p[c.k]);
+        if(v==null||v==='undefined'||v==='NaN'||(typeof v==='number'&&!isFinite(v))) v='–'; // Bot hat keine Statistik-Werte
         return `<td class="r mono${sc}">${v}</td>`;
       }).join('')}</tr>`;}).join('');})()}</tbody>`;
   tbl.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;
@@ -1535,6 +1542,16 @@ function renderLiveMd(scope){
       return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
+  // 🤖 RoboSepps Begründungen zum gewählten Spieltag
+  const roboEl=document.getElementById('roboSay');
+  const RT=(typeof ADV!=='undefined'&&ADV.roboTips)||null;
+  if(roboEl){
+    if(RT&&RT.season===scope&&RT.md===sel.md&&(RT.tips||[]).some(t=>t.grund)){
+      const codeR=n=>{for(const k in TSHORT){if(n.includes(k))return TSHORT[k];}const w=String(n).trim().split(/\s+/).filter(x=>!/^\d+$/.test(x)).pop()||String(n);return w.slice(0,3).toUpperCase();};
+      roboEl.innerHTML=`<div class="robo-say"><div class="rs-head">🤖 ${L('RoboSepp begründet seine Tipps','RoboSepp explains his tips')}</div>${
+        RT.tips.filter(t=>t.grund).map(t=>`<div class="rs-row"><span class="rs-m mono">${esc(codeR(t.h))}–${esc(codeR(t.a))} <b>${esc(t.tipp)}</b></span><span class="rs-q">„${esc(t.grund)}"</span></div>`).join('')}</div>`;
+    } else roboEl.innerHTML='';
+  }
   document.getElementById('liveMdFoot').textContent='😏 '+spruch('livemd',[
     L('Live-Punkte sind wie Grillgut: erst nach dem Abpfiff wirklich durch.','Live points are like barbecue: only done after the final whistle.'),
     L('Anzeige ohne Gewähr — die letzte Wahrheit kennt nur der Videobeweis.','No guarantees — only VAR knows the final truth.'),

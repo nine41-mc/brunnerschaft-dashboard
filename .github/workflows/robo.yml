@@ -13,6 +13,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write
+
 jobs:
   tip:
     runs-on: ubuntu-latest
@@ -26,4 +29,11 @@ jobs:
         env:
           KICKTIPP_BOT_EMAIL: ${{ secrets.KICKTIPP_BOT_EMAIL }}
           KICKTIPP_BOT_PASSWORD: ${{ secrets.KICKTIPP_BOT_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node robo.js ${{ inputs.dry && '--dry' || '' }}
+      - name: Tipps + Begründungen ins Repo (erscheinen im Dashboard)
+        run: |
+          if [ -n "$(git status --porcelain robo-tips.json)" ]; then
+            git config user.name "RoboSepp" && git config user.email "robo@brunnerschaft.local"
+            git add robo-tips.json && git commit -m "🤖 RoboSepp: Tipps + Begründungen" && git push
+          else echo "Keine neuen Tipps."; fi

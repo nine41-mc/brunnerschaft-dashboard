@@ -44,6 +44,8 @@ function replaceConst(html, name, valueLiteral){
   console.log('▶ Scrape + Berechnung …');
   const t0=Date.now();
   const data = await buildData(config);
+  // RoboSepps aktuelle Tipps + Begründungen (aus dem Robo-Workflow committet) — vor der Serialisierung anhängen
+  try{ data.ADV.roboTips = JSON.parse(fs.readFileSync(p('robo-tips.json'),'utf8')); }catch(e){ data.ADV.roboTips=null; }
   console.log(`  ✓ ${((Date.now()-t0)/1000).toFixed(1)}s · ${data.DATA.seasons.length} Wettbewerbe · ${data.DATA.players.length} Tipper`);
 
   let html = fs.readFileSync(p('template.html'), 'utf8');

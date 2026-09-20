@@ -65,6 +65,43 @@ function predict(model, g, rng) {
   return [th, ta];
 }
 
+// ---------- LLM-Veredelung: Claude justiert die Modell-Tipps und liefert freche Begründungen ----------
+import fs from 'node:fs';
+const TIPS_FILE = new URL('./robo-tips.json', import.meta.url).pathname;
+async function llmRefine(tips, model, mdNo) {
+  if (process.argv.includes('--mock')) return tips.map(t => ({ ...t, grund: `Mock-Weisheit zu ${t.h}.` }));
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) { console.log('Kein ANTHROPIC_API_KEY — reines Statistik-Modell.'); return tips; }
+  const lines = tips.map(t => `${t.h} – ${t.a} | Modell-Tipp ${t.th}:${t.ta} | erwartete Tore ${ (model.avgH*model.att(t.h)*model.def(t.a)).toFixed(2) }:${ (model.avgA*model.att(t.a)*model.def(t.h)).toFixed(2) }`).join('\n');
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Hier der ${mdNo}. Bundesliga-Spieltag mit den Tipps meines Statistik-Modells:\n\n${lines}\n\nDeine Aufgabe: Prüfe jeden Tipp mit deinem Fußballwissen. Du darfst das Ergebnis anpassen, wenn du gute Gründe hast (Form, Kader, Derby-Logik) — realistisch bleiben (0-5 Tore). Zu JEDEM Spiel schreibst du GENAU EINEN frechen, kurzen Satz auf Deutsch als Begründung (max. 90 Zeichen, gern mit Augenzwinkern zu den Vereinen, nie beleidigend).\n\nAntworte NUR mit einem JSON-Array, exakt ein Objekt pro Spiel in derselben Reihenfolge:\n[{"tipp":"2:1","grund":"..."}]`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!r.ok) throw new Error('API ' + r.status);
+    const txt = (await r.json()).content?.[0]?.text || '';
+    const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
+    if (!Array.isArray(arr) || arr.length !== tips.length) throw new Error('unerwartetes Format');
+    return tips.map((t, i) => {
+      const m = String(arr[i]?.tipp || '').match(/^(\d):(\d)$/);
+      return { ...t, th: m ? +m[1] : t.th, ta: m ? +m[2] : t.ta,
+        grund: String(arr[i]?.grund || '').slice(0, 120) || null };
+    });
+  } catch (e) { console.warn('LLM-Veredelung fehlgeschlagen (' + e.message + ') — Statistik-Tipps bleiben.'); return tips; }
+}
+function loadStoredTips(mdNo) {
+  try { const j = JSON.parse(fs.readFileSync(TIPS_FILE, 'utf8'));
+    if (j.season === SEASON && j.md === mdNo && Array.isArray(j.tips) && j.tips.length) return j.tips; } catch (e) {}
+  return null;
+}
+function storeTips(mdNo, tips) {
+  try { fs.writeFileSync(TIPS_FILE, JSON.stringify({ season: SEASON, md: mdNo, generatedAt: new Date().toISOString(),
+    tips: tips.map(t => ({ h: t.h, a: t.a, tipp: t.th + ':' + t.ta, grund: t.grund || null })) }, null, 1)); } catch (e) {}
+}
+
 // ---------- Kicktipp-Login + Abgabe ----------
 async function submit(tips) {
   const email = process.env.KICKTIPP_BOT_EMAIL, pass = process.env.KICKTIPP_BOT_PASSWORD;
@@ -134,9 +171,18 @@ async function submit(tips) {
   if (!next) { console.log('Kein offener Spieltag gefunden.'); process.exit(0); }
   const model = buildModel(results);
   const rng = rngFor(SEASON + '-' + nextNo);
-  const tips = (forceMd ? next : next.filter(g => g.rh == null)).map(g => { const [th, ta] = predict(model, g, rng); return { ...g, th, ta }; });
-  console.log(`🤖 RoboBrunner tippt den ${nextNo}. Spieltag (Modell aus ${results.length} Ergebnissen):`);
-  for (const t of tips) console.log(`   ${t.h} – ${t.a}:  ${t.th}:${t.ta}`);
+  let tips = (forceMd ? next : next.filter(g => g.rh == null)).map(g => { const [th, ta] = predict(model, g, rng); return { ...g, th, ta }; });
+  const stored = forceMd ? null : loadStoredTips(nextNo);
+  if (stored && stored.length === tips.length) { // Spieltag schon getippt: identisch wiederholen (Fr-Sicherheitslauf)
+    tips = tips.map((t, i) => { const m = String(stored[i].tipp).match(/^(\d+):(\d+)$/);
+      return m ? { ...t, th: +m[1], ta: +m[2], grund: stored[i].grund } : t; });
+    console.log('Nutze gespeicherte Tipps vom ersten Lauf dieses Spieltags.');
+  } else if (!forceMd) {
+    tips = await llmRefine(tips, model, nextNo);
+    storeTips(nextNo, tips);
+  }
+  console.log(`🤖 RoboSepp tippt den ${nextNo}. Spieltag (Modell aus ${results.length} Ergebnissen${process.env.ANTHROPIC_API_KEY||process.argv.includes('--mock')?' + KI-Veredelung':''}):`);
+  for (const t of tips) console.log(`   ${t.h} – ${t.a}:  ${t.th}:${t.ta}${t.grund?'  — „'+t.grund+'“':''}`);
   if (DRY) { console.log('(Dry-Run — nichts abgegeben)'); process.exit(0); }
   const ok = await submit(tips);
   process.exit(ok ? 0 : 1);
