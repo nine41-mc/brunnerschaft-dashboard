@@ -129,6 +129,22 @@ async function statsOut(env, days) {
   }
   return { days: out, wau: w7.size, mau: m30.size }; // WAU/MAU = Geräte-Vereinigung über 7/30 Tage
 }
+async function pushStats(env) {
+  const list = await env.SUBS.list();
+  const CH = ['p4', 'lead', 'done', 'bonus', 'remind'];
+  const channels = {}; CH.forEach(c => channels[c] = 0);
+  let total = 0;
+  for (const k of list.keys) {
+    if (k.name.startsWith('an_')) continue; // Analytics-Tageszähler überspringen
+    const raw = await env.SUBS.get(k.name); if (!raw) continue;
+    let rec; try { rec = JSON.parse(raw); } catch (e) { continue; }
+    if (!((rec.subscription && rec.subscription.endpoint) || rec.endpoint)) continue;
+    total++;
+    const cats = rec.cats || {};
+    CH.forEach(c => { if (cats[c] !== false) channels[c]++; }); // fehlend = abonniert
+  }
+  return { total, channels };
+}
 
 export default {
   async fetch(req, env) {
@@ -137,7 +153,9 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'GET' && url.pathname === '/stats') {
       const days = Math.min(60, Math.max(1, +(url.searchParams.get('days') || 30)));
-      return json(await statsOut(env, days)); // nur anonyme Aggregate — keine IDs, keine Namen
+      const out = await statsOut(env, days); // nur anonyme Aggregate — keine IDs, keine Namen
+      out.push = await pushStats(env);       // Abo-Gesamtzahl + aktive Kanäle, keine Endpoints
+      return json(out);
     }
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
     if (url.pathname === '/hit') {

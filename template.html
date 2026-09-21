@@ -1018,6 +1018,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
         <div class="tbl-wrap"><table id="anDev"></table></div>
         <div class="tbl-wrap"><table id="anGeo"></table></div>
         <div class="tbl-wrap"><table id="anFeat"></table></div>
+        <div class="tbl-wrap"><table id="anPush"></table></div>
         <div class="tbl-wrap"><table id="anTabs"></table></div>
       </div>
     </section>
@@ -2348,7 +2349,7 @@ async function renderAnalytics(){
   try{
     const resp=await (await fetch(PUSH_URL+'/stats?days=30')).json();
     const days=(Array.isArray(resp)?resp:resp.days).reverse(); // alt -> neu (Array = alter Worker)
-    const wau=resp.wau||0, mau=resp.mau||0;
+    const wau=resp.wau||0, mau=resp.mau||0, push=resp.push||null;
     const today=days[days.length-1]||{};
     const last7=days.slice(-7);
     const tot=(arr,k)=>arr.reduce((a,d)=>a+(d[k]||0),0);
@@ -2360,7 +2361,7 @@ async function renderAnalytics(){
       {cap:L('🗓️ Aktiv 30 Tage','🗓️ Active 30 days'),big:mau,meta:L('eindeutige Geräte (MAU)','unique devices (MAU)')},
       {cap:L('📱 Mobil-Anteil (7T)','📱 Mobile share (7d)'),big:(v7?Math.round(100*m7/v7):0)+'%',meta:m7+L(' mobile Aufrufe',' mobile views')},
       {cap:L('⚽ App-Anteil (7T)','⚽ App share (7d)'),big:(v7?Math.round(100*s7/v7):0)+'%',meta:s7+L('× als Homescreen-App','× as home-screen app')},
-    ].map(t=>`<div class="card tile"><span class="rail"></span><div class="cap">${t.cap}</div><div class="big">${t.big}</div><div class="meta">${t.meta}</div></div>`).join('');
+    ].concat(push?[{cap:L('🔔 Push-Abos','🔔 Push subs'),big:push.total,meta:L('Geräte mit Benachrichtigungen','devices with notifications')}]:[]).map(t=>`<div class="card tile"><span class="rail"></span><div class="cap">${t.cap}</div><div class="big">${t.big}</div><div class="meta">${t.meta}</div></div>`).join('');
     const W=700,H=170,PB=26,PL=30,max=Math.max(...days.map(d=>d.views),1);
     const bw=(W-PL-8)/days.length;
     const bars=days.map((d,i)=>{const h=Math.round((d.views/max)*(H-PB-12));
@@ -2387,6 +2388,8 @@ async function renderAnalytics(){
     miniTbl('anGeo',L('Land (30 T)','Country (30d)'),Object.entries(agg('geo')).sort((a,b)=>b[1]-a[1]),cc=>flag(cc)+' '+esc(regName(cc)));
     const FL={share:L('📤 Teilen-Button','📤 Share button'),racefull:L('📈 Rennen im Vollbild','📈 Race fullscreen'),robo:L('🤖 RoboSepp-Karussell','🤖 RoboSepp carousel'),en:'🇬🇧 English',mdsel:L('📅 Spieltags-Dropdown','📅 Matchday dropdown')};
     miniTbl('anFeat',L('Feature-Nutzung (30 T)','Feature usage (30d)'),Object.entries(agg('feat')).sort((a,b)=>b[1]-a[1]),f=>FL[f]||esc(f));
+    const CHL={p4:L('🎯 Volltreffer','🎯 Bullseyes'),lead:L('👑 Führungswechsel','👑 Lead changes'),done:L('🏁 Spieltag-Ergebnis','🏁 Matchday result'),bonus:L('⭐ Bonus-Auflösungen','⭐ Bonus results'),remind:L('🖊️ Tipp-Erinnerung','🖊️ Tip reminder')};
+    miniTbl('anPush',L('Push-Kanal (aktive Abos)','Push channel (active subs)'),push?Object.entries(push.channels||{}).sort((a,b)=>b[1]-a[1]):[],c=>CHL[c]||esc(c));
     const TL={stats:'📊 Statistiken',kessel:'🎨 Ein Kessel Buntes',bayern:'🐻 MIA SAN MIA',fin:'💶 Auswertungen',settings:'⚙️ Einstellungen'};
     miniTbl('anTabs',L('Tab-Wechsel (30 T)','Tab switches (30d)'),Object.entries(agg('tabs')).sort((a,b)=>b[1]-a[1]),t=>TL[t]||esc(t));
   }catch(e){ chartEl.textContent=L('Analytics nicht erreichbar.','Analytics unreachable.'); }
