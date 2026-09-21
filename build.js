@@ -83,9 +83,12 @@ function replaceConst(html, name, valueLiteral){
       const p4={}; md.rows.forEach(r=>{p4[r.n]=r.tips.filter((t,i)=>t&&md.results[i]&&t[2]>=4).length;});
       const mdDone=md.results.length>0&&md.results.every(Boolean);
       const win=[...md.rows].sort((a,b)=>b.t-a.t)[0];
+      const tipped=md.rows.filter(r=>r.tips.some(t=>t));
+      const last=tipped.length?[...tipped].sort((a,b)=>a.t-b.t)[0]:null;
       const solved=((data.ADV.bonusTips||{})[rid]||{cols:[]}).cols.filter(h=>!/-{3}$/.test(h)).length;
       st={ id:rid, md:lm.cur, anyLive, p4, mdDone,
         winner:win?win.n:null, winnerPts:win?win.t:0,
+        last:last?last.n:null, lastPts:last?last.t:0,
         leader:act[0].name, leaderPts:act[0].total, second:act[1]?act[1].name:null, secondPts:act[1]?act[1].total:0,
         top3:act.slice(0,3).map(x=>x.pos+'. '+x.name+' '+x.total).join(' · '), bonusSolved:solved };
     }

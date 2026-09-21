@@ -106,8 +106,32 @@ function loadStoredTips(mdNo) {
 function storeTips(mdNo, tips) {
   try { const j = loadFile();
     j.mds[mdNo] = { generatedAt: new Date().toISOString(),
+      vorschau: (j.mds[mdNo] || {}).vorschau || null, // 🔮 Vorschau überlebt Tipp-Updates
       tips: tips.map(t => ({ h: t.h, a: t.a, tipp: (t.tipp != null ? t.tipp : t.th + ':' + t.ta), grund: t.grund || null })) };
     fs.writeFileSync(TIPS_FILE, JSON.stringify(j, null, 1)); } catch (e) {}
+}
+function storeVorschau(mdNo, text) {
+  try { const j = loadFile();
+    j.mds[mdNo] = j.mds[mdNo] || { generatedAt: new Date().toISOString(), tips: [] };
+    j.mds[mdNo].vorschau = text;
+    fs.writeFileSync(TIPS_FILE, JSON.stringify(j, null, 1)); } catch (e) {}
+}
+// 🔮 Freche 2-3-Satz-Vorschau auf den kommenden Spieltag (aus RoboSepps Sicht, ohne Ergebniswissen)
+async function llmPreview(tips, mdNo) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const lines = tips.map(t => `${t.h} – ${t.a}: ${t.th != null ? t.th + ':' + t.ta : t.tipp}`).join('\n');
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Gleich startet der ${mdNo}. Bundesliga-Spieltag, das sind deine Tipps:\n\n${lines}\n\nSchreibe eine freche Spieltags-Vorschau aus deiner Sicht: 2 bis 3 Sätze, max. 320 Zeichen, Augenzwinkern erlaubt, gern eine kleine Kampfansage an die menschlichen Tipper, nie beleidigend. Keine Ergebnisse, keine Rückschau. Antworte NUR mit JSON: {"vorschau":"..."}`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 500, temperature: 0.8,
+        messages: [{ role: 'user', content: prompt }] }) });
+    if (!r.ok) throw new Error('API ' + r.status);
+    const txt = (await r.json()).content?.[0]?.text || '';
+    const o = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    return String(o.vorschau || '').slice(0, 360) || null;
+  } catch (e) { console.warn(`ST ${mdNo}: Vorschau fehlgeschlagen (${e.message}).`); return null; }
 }
 
 // ---------- Backfill: Begründungen für bereits getippte Spieltage nachziehen ----------
@@ -240,6 +264,11 @@ async function submit(tips) {
   } else if (!forceMd) {
     tips = await llmRefine(tips, model, nextNo);
     storeTips(nextNo, tips);
+  }
+  // 🔮 Spieltags-Vorschau — einmal je Spieltag, erscheint im Dashboard bis zum Anpfiff
+  if (!forceMd && !DRY && !(loadFile().mds[nextNo] || {}).vorschau) {
+    const v = await llmPreview(tips, nextNo);
+    if (v) { storeVorschau(nextNo, v); console.log('🔮 Vorschau: „' + v + '“'); }
   }
   console.log(`🤖 RoboSepp tippt den ${nextNo}. Spieltag (Modell aus ${results.length} Ergebnissen${process.env.ANTHROPIC_API_KEY||process.argv.includes('--mock')?' + KI-Veredelung':''}):`);
   for (const t of tips) console.log(`   ${t.h} – ${t.a}:  ${t.th}:${t.ta}${t.grund?'  — „'+t.grund+'“':''}`);

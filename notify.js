@@ -21,31 +21,35 @@ const events = [];
 // 🎯 Neue Volltreffer (nur während Live-Spielen desselben Spieltags)
 if (neu.anyLive && oldSt.md === neu.md) {
   const hits = Object.keys(neu.p4).filter(n => (neu.p4[n] || 0) > (oldSt.p4?.[n] || 0)).map(nm);
-  if (hits.length === 1) events.push({ title: '🎯 Volltreffer!', body: `${hits[0]} trifft ein Ergebnis exakt — +4 Punkte`, tag: 'brun-p4', channel: 'p4' });
-  else if (hits.length > 1) events.push({ title: `🎯 ${hits.length}× Volltreffer!`, body: `${hits.join(', ')} treffen exakt — je +4 Punkte`, tag: 'brun-p4', channel: 'p4' });
+  if (hits.length === 1) events.push({ title: '🎯 Volltreffer!', body: `${hits[0]} trifft ein Ergebnis exakt — +4 Punkte`, tag: 'brun-p4', channel: 'p4', link: '#go=live' });
+  else if (hits.length > 1) events.push({ title: `🎯 ${hits.length}× Volltreffer!`, body: `${hits.join(', ')} treffen exakt — je +4 Punkte`, tag: 'brun-p4', channel: 'p4', link: '#go=live' });
 }
 
 // 👑 Führungswechsel
 if (oldSt.leader && neu.leader && oldSt.leader !== neu.leader) {
-  events.push({ title: '👑 Führungswechsel!', body: `${nm(neu.leader)} überholt ${nm(oldSt.leader)} — ${neu.leaderPts}:${neu.secondPts}`, tag: 'brun-lead', channel: 'lead' });
+  events.push({ title: '👑 Führungswechsel!', body: `${nm(neu.leader)} überholt ${nm(oldSt.leader)} — ${neu.leaderPts}:${neu.secondPts}`, tag: 'brun-lead', channel: 'lead', link: '#go=stand' });
 }
 
-// 🏁 Spieltag beendet
+// 🏁 Spieltag beendet — mit Volltreffer-Bilanz und Schlusslicht-Gruß
 if (oldSt.md === neu.md && !oldSt.mdDone && neu.mdDone) {
-  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `Sieger: ${nm(neu.winner)} (${neu.winnerPts} P) 🎉\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done', channel: 'done' });
+  const p4n = Object.values(neu.p4 || {}).reduce((a, b) => a + b, 0);
+  const extra = (p4n ? ` · 🎯 ${p4n}× Volltreffer` : ' · 🎯 kein einziger Volltreffer')
+    + (neu.last && neu.last !== neu.winner ? `\n🎪 Schlusslicht: ${nm(neu.last)} (${neu.lastPts} P)` : '');
+  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `Sieger: ${nm(neu.winner)} (${neu.winnerPts} P) 🎉${extra}\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done', channel: 'done', link: '#go=live' });
 }
 
 // ⭐ Bonusfrage aufgelöst
 if ((neu.bonusSolved || 0) > (oldSt.bonusSolved || 0)) {
-  events.push({ title: '⭐ Bonusfrage entschieden!', body: 'Kicktipp hat eine Saisonfrage aufgelöst — schau ins Dashboard.', tag: 'brun-bonus', channel: 'bonus' });
+  events.push({ title: '⭐ Bonusfrage entschieden!', body: 'Kicktipp hat eine Saisonfrage aufgelöst — schau ins Dashboard.', tag: 'brun-bonus', channel: 'bonus', link: '#go=bonus' });
 }
 
 if (!events.length) { console.log('Keine Ereignisse.'); process.exit(0); }
 for (const ev of events.slice(0, 3)) {
+  const { link, ...msg } = ev;
   const r = await fetch(PUSH_URL.replace(/\/$/, '') + '/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET}` },
-    body: JSON.stringify({ ...ev, url: SITE }),
+    body: JSON.stringify({ ...msg, url: SITE + (link || '') }), // Deeplink: Hash steuert Tab/Sektion im Dashboard
   }).catch(e => ({ ok: false, statusText: e.message }));
   console.log('Push:', ev.title, '→', r.ok ? await r.text() : 'FEHLER ' + (r.status || r.statusText));
 }

@@ -228,6 +228,9 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
   font-size:17px;font-weight:800;cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
 .lmd-refresh2{font-size:19px;font-weight:800}
 .robo-say{margin:14px 0 4px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid #7b52c7;border-radius:12px;padding:12px 15px 10px}
+.robo-duel{display:flex;align-items:center;gap:12px;margin:14px 0 2px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid #7b52c7;border-radius:12px;padding:11px 15px;font-size:14px;line-height:1.45}
+.robo-duel .rd-ic{font-size:22px;flex:0 0 auto}
+.rs-vorschau{margin:2px 0 11px;font-size:14px;line-height:1.5}
 .rs-head{font-weight:850;font-size:14px;margin-bottom:9px}
 .rs-carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
 .rs-carousel::-webkit-scrollbar{display:none}
@@ -677,6 +680,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="lmd-bar"><select id="liveMdSel" aria-label="Spieltag wählen"></select><button id="lmdRefresh2" class="share-btn lmd-refresh2" aria-label="Aktualisieren"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 2.5v4.6h-4.6"/></svg></button><button id="shareMd" class="share-btn" aria-label="Teilen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 6.5 12 2.5l4 4"/><path d="M5.5 10.5v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-8.5"/></svg></button></div>
       <div id="liveNow"></div>
       <div class="tbl-wrap"><table id="liveMdTable" class="msticky"></table></div>
+      <div id="roboDuel"></div>
       <div id="roboSay"></div>
       <p class="mini" id="liveMdFoot"></p>
     </section>
@@ -865,6 +869,29 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="sec-note" data-en="4 points per actual 1:1, 3 per any other draw (correct goal difference), 0 otherwise. No bonus points for lazy people — so the comparison uses pure tip points.">4 Punkte je echtem 1:1, 3 je sonstigem Remis (richtige Tordifferenz), sonst nix. Bonuspunkte gibt's fürs Faulenzen keine — verglichen wird darum mit den reinen Tipp-Punkten der Runde.</div>
       <div class="tbl-wrap"><table id="lazyTable"></table></div>
       <p class="mini" id="lazyFoot"></p>
+    </section>
+
+    <section class="block" data-panel="kessel" id="mutSec" hidden>
+      <div class="eyebrow" data-en="🎲 The courage index">🎲 Der Mut-Index</div>
+      <h2 class="sec-title" data-en="Who dares to tip differently?">Wer traut sich, anders zu tippen?</h2>
+      <div class="sec-note" data-en="Maverick tips = results nobody else tipped for that game. Does courage pay off — or is it just stubbornness? BL 26/27 only, counted from settled games; the bot doesn’t play.">Exoten-Tipps = Ergebnisse, die für dieses Spiel sonst niemand getippt hat. Zahlt sich der Mut aus — oder ist es nur Sturheit? Nur BL 26/27, gezählt ab gewerteten Spielen; der Bot spielt nicht mit.</div>
+      <div class="tbl-wrap"><table id="mutTable"></table></div>
+      <p class="mini" id="mutFoot"></p>
+    </section>
+
+    <section class="block" data-panel="kessel" id="biasSec" hidden>
+      <div class="eyebrow" data-en="🏠 Home romantics &amp; away dreamers">🏠 Heim-Romantiker &amp; Auswärts-Träumer</div>
+      <h2 class="sec-title" data-en="Who believes in the home win?">Wer glaubt an den Heimsieg?</h2>
+      <div class="sec-note" data-en="How everyone splits their tips between home win, draw and away win — BL 26/27 only. The last row shows how the real results are actually distributed.">So verteilt jeder seine Tipps auf Heimsieg, Remis und Auswärtssieg — nur BL 26/27. Die letzte Zeile zeigt, wie die echten Ergebnisse tatsächlich ausgehen.</div>
+      <div class="tbl-wrap"><table id="biasTable"></table></div>
+    </section>
+
+    <section class="block" data-panel="kessel" id="koSec" hidden>
+      <div class="eyebrow" data-en="⏰ Kickoff balance">⏰ Die Anstoßzeiten-Bilanz</div>
+      <h2 class="sec-title" data-en="Top-match hero or Sunday sleeper?">Topspiel-Held oder Sonntags-Schläfer?</h2>
+      <div class="sec-note" data-en="Average points per game by kickoff slot — who shines on Friday night, who sleeps through Sunday? BL 26/27 only.">Ø Punkte pro Spiel nach Anstoßzeit — wer glänzt am Freitagabend, wer verpennt den Sonntag? Nur BL 26/27.</div>
+      <div class="tbl-wrap"><table id="koTable"></table></div>
+      <p class="mini" id="koFoot"></p>
     </section>
 
     <section class="block" data-panel="kessel">
@@ -1556,6 +1583,71 @@ function formMap(scope){ // 🔥/❄️: letzte Spieltage vs. Saisonschnitt
   return out;
 }
 let LIVEMD_SEL=null;
+// 🖼️ Spieltags-Recap als teilbares Bild (Canvas → PNG) — für die WhatsApp-Gruppe
+async function mdRecapImage(lm,scope,rks){
+  try{
+    const W=1080,H=1350,FF='-apple-system,system-ui,"Segoe UI",Roboto,sans-serif';
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    const x=cv.getContext('2d'); if(!x)return null;
+    const rr=(x0,y0,w,h,r)=>{x.beginPath();x.moveTo(x0+r,y0);x.arcTo(x0+w,y0,x0+w,y0+h,r);x.arcTo(x0+w,y0+h,x0,y0+h,r);x.arcTo(x0,y0+h,x0,y0,r);x.arcTo(x0,y0,x0+w,y0,r);x.closePath();};
+    const loadImg=src=>new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=src;});
+    const avC=async(n,cx,cy,r)=>{x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.fillStyle='#f2e9e4';x.fill();x.clip();
+      const im=MEMOJI[n]?await loadImg(MEMOJI[n]):null;
+      if(im)x.drawImage(im,cx-r,cy-r,2*r,2*r);
+      else{x.fillStyle='#6b625d';x.font='700 '+Math.round(r*0.9)+'px '+FF;x.textAlign='center';x.fillText(n==='RoboSepp'?'🤖':(dispName(n)||'?').charAt(0).toUpperCase(),cx,cy+r*0.32);}
+      x.restore();};
+    // Fond + Kopfband
+    x.fillStyle='#faf6f3'; x.fillRect(0,0,W,H);
+    const g=x.createLinearGradient(0,0,W,300); g.addColorStop(0,'#e2001a'); g.addColorStop(1,'#a80016');
+    x.fillStyle=g; x.fillRect(0,0,W,300);
+    x.textAlign='left'; x.fillStyle='rgba(255,255,255,.8)'; x.font='800 30px '+FF;
+    x.fillText('B R U N N E R S C H A F T  ·  '+(SMAP[scope]?SMAP[scope].short:''),64,92);
+    x.fillStyle='#fff'; x.font='900 92px '+FF; x.fillText(lm.md+'. '+L('SPIELTAG','MATCHDAY'),60,198);
+    const ks=(lm.ko||[]).filter(Boolean);
+    if(ks.length){const dtf=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',day:'numeric',month:'long',year:'numeric'});
+      x.fillStyle='rgba(255,255,255,.85)'; x.font='600 32px '+FF; x.fillText('🏁 '+dtf.format(new Date(Math.max(...ks))),64,254);}
+    const card=(y,h)=>{x.fillStyle='#fff';rr(56,y,W-112,h,28);x.fill();x.strokeStyle='#eadfd9';x.lineWidth=2;x.stroke();};
+    const cap=(t,y)=>{x.fillStyle='#96897f';x.font='800 27px '+FF;x.fillText(t,96,y);};
+    let y=348;
+    // 🏆 Sieger
+    card(y,186); cap('🏆 '+L('SPIELTAGSSIEGER','MATCHDAY WINNER'),y+58);
+    const wins=lm.rows.filter((r,i)=>rks[i]===1).slice(0,3);
+    for(let i=0;i<wins.length;i++) await avC(wins[i].name,140+i*96,y+126,42);
+    x.fillStyle='#1c1917'; x.font='800 50px '+FF;
+    x.fillText(wins.map(w=>dispFull(w.name)).join(' & '),140+wins.length*96-40+44,y+143);
+    x.textAlign='right'; x.fillStyle='#e2001a'; x.font='900 54px '+FF; x.fillText(lm.rows[0].mdTot+' P',W-96,y+143); x.textAlign='left';
+    y+=226;
+    // 🎯 Volltreffer
+    card(y,150); cap('🎯 '+L('VOLLTREFFER','BULLSEYES'),y+58);
+    const p4s=lm.rows.map(r=>({n:r.name,c:r.tips.filter((t,i)=>t&&lm.results[i]&&t.p>=4).length})).filter(v=>v.c>0).sort((a,b)=>b.c-a.c);
+    x.fillStyle='#1c1917'; x.font='700 40px '+FF;
+    x.fillText(p4s.length?p4s.map(v=>dispFull(v.n)+(v.c>1?' ×'+v.c:'')).join(' · '):L('— diesmal keiner —','— none this time —'),96,y+118);
+    y+=190;
+    // 📊 Zwischenstand Top 3
+    const top3=SMAP[scope].standings.filter(s2=>s2.active).slice(0,3);
+    card(y,300); cap('📊 '+L('ZWISCHENSTAND','STANDINGS'),y+58);
+    for(let i=0;i<top3.length;i++){const ry=y+120+i*74;
+      x.fillStyle=i===0?'#e2001a':'#96897f'; x.font='900 40px '+FF; x.fillText(String(top3[i].pos),96,ry+14);
+      await avC(top3[i].name,196,ry,32);
+      x.fillStyle='#1c1917'; x.font=(i===0?'800':'600')+' 42px '+FF; x.fillText(dispFull(top3[i].name),252,ry+14);
+      x.textAlign='right'; x.font='700 42px '+FF; x.fillText(top3[i].total+' P',W-96,ry+14); x.textAlign='left';}
+    y+=340;
+    // 🤖 Duell oder 🎪 Schlusslicht
+    card(y,132);
+    const bot=lm.rows.find(r=>TBOTS.has(r.name));
+    x.fillStyle='#1c1917'; x.font='600 36px '+FF;
+    if(bot){const hum=lm.rows.filter(r=>!TBOTS.has(r.name)&&r.tips.some(Boolean));
+      const beat=hum.filter(h2=>h2.mdTot<bot.mdTot).length;
+      x.fillText('🤖 RoboSepp ('+bot.mdTot+' P) '+L('schlug','beat')+' '+beat+' '+L('von','of')+' '+hum.length+' '+L('Menschen','humans'),96,y+80);}
+    else{const tipped=lm.rows.filter(r=>r.tips.some(Boolean));const lastR=tipped[tipped.length-1];
+      if(lastR)x.fillText('🎪 '+L('Schlusslicht','Bringing up the rear')+': '+dispFull(lastR.name)+' ('+lastR.mdTot+' P)',96,y+80);}
+    // Fuß
+    x.fillStyle='#96897f'; x.font='600 28px '+FF;
+    x.fillText('nine41-mc.github.io/brunnerschaft-dashboard',64,H-56);
+    const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+    return blob?new File([blob],'brunnerschaft-'+lm.md+'-spieltag.png',{type:'image/png'}):null;
+  }catch(e){ return null; }
+}
 function renderLiveMd(scope){
   const sec=document.getElementById('liveMdSec'); if(!sec)return;
   const data=scope!=='gesamt'&&((ADV.liveMd||{})[scope]);
@@ -1604,6 +1696,34 @@ function renderLiveMd(scope){
       return `<td class="mono lmd-tip${cl}">${t.h}:${t.a}<sub>${scored?(t.p||0):''}</sub></td>`;}).join('')}
     <td class="r mono"><b>${r.mdTot}</b></td></tr>`).join('')}</tbody>`;
   document.getElementById('liveMdTable').innerHTML=head+body;
+  // 🤖 Mensch vs. Maschine: wie viele Menschen hat der Bot an diesem Spieltag hinter sich gelassen?
+  const duelEl=document.getElementById('roboDuel');
+  if(duelEl){
+    const bot=lm.rows.find(r=>TBOTS.has(r.name));
+    const anyScored=lm.results.some(Boolean);
+    if(bot&&anyScored){
+      const humans=lm.rows.filter(r=>!TBOTS.has(r.name)&&r.tips.some(Boolean));
+      const beaten=humans.filter(h=>h.mdTot<bot.mdTot).length, total=humans.length;
+      const allDone=lm.results.length&&lm.results.every(Boolean)&&!lm.fixtures.some((_,i)=>st(i)==='live');
+      const verb=allDone?L('schlug','beat'):L('liegt vor','is ahead of');
+      const quip=beaten>=total?spruch('duel3',[
+          L('Kompletter Kahlschlag. Vielleicht solltet ihr ihn einfach abschreiben — er merkt es nicht.','A clean sweep. Maybe just copy him — he won’t notice.'),
+          L('Alle geschlagen. Er läuft nicht mal warm dabei.','Beat everyone. He didn’t even warm up.')])
+        :beaten>total/2?spruch('duel2',[
+          L('Die Maschine grinst in Binärcode.','The machine is grinning in binary.'),
+          L('Mehr als die halbe Brunnerschaft im Rückspiegel — Software schläft nie.','More than half the group in the rear-view mirror — software never sleeps.'),
+          L('Skynet lässt grüßen, zumindest tipptechnisch.','Skynet says hi — at least tip-wise.')])
+        :beaten===0?spruch('duel0',[
+          L('Die Menschheit ist gerettet. Vorerst.','Humanity is saved. For now.'),
+          L('Null geschlagen — zurück ins Rechenzentrum, Sepp.','Beat nobody — back to the data centre, Sepp.'),
+          L('Künstliche Intelligenz, natürliche Demütigung.','Artificial intelligence, natural humiliation.')])
+        :spruch('duel1',[
+          L('Ein Achtungserfolg für den Blechkollegen.','A respectable showing for the tin colleague.'),
+          L('Er schlägt immerhin ein paar — wer es ist, verrät die Tabelle oben.','He does beat a few — the table above tells on you.'),
+          L('Fleisch führt gegen Blech. Noch.','Flesh leads against metal. For now.')]);
+      duelEl.innerHTML=`<div class="robo-duel"><span class="rd-ic">🤖</span><span><b>${L('Mensch vs. Maschine','Man vs. machine')}:</b> RoboSepp (${bot.mdTot} P) ${verb} <b>${beaten} ${L('von','of')} ${total}</b> ${L('Menschen','humans')}. ${quip}</span></div>`;
+    } else duelEl.innerHTML='';
+  }
   // 🤖 RoboSepps Begründungen: Karussell mit einer Kachel pro Spiel + Paginierungspunkte
   const roboEl=document.getElementById('roboSay');
   const RT=(typeof ADV!=='undefined'&&ADV.roboTips)||null;
@@ -1619,7 +1739,8 @@ function renderLiveMd(scope){
         const resHtml=r2?`<span class="rs-c-res ${bp>=4?'lmd-c4':bp>=3?'lmd-c3':bp>=2?'lmd-c2':'lmd-c0'}">${r2.rh}:${r2.ra} · ${bp||0}P</span>`:'';
         return `<div class="rs-card"><div class="rs-c-top"><span class="rs-c-match">${esc(code(t.h))} – ${esc(code(t.a))}</span><span class="rs-c-tip mono">${esc(t.tipp)}</span>${resHtml}</div><div class="rs-c-quote">„${esc(t.grund)}"</div></div>`;
       });
-      roboEl.innerHTML=`<div class="robo-say"><div class="rs-head">🤖 ${L('RoboSepp begründet seine Tipps','RoboSepp explains his tips')}</div>
+      const vorHtml=(rtEntry.vorschau&&!lm.results.some(Boolean))?`<div class="rs-vorschau">🔮 <b>${L('RoboSepps Vorschau','RoboSepp’s preview')}:</b> ${esc(rtEntry.vorschau)}</div>`:'';
+      roboEl.innerHTML=`<div class="robo-say"><div class="rs-head">🤖 ${L('RoboSepp begründet seine Tipps','RoboSepp explains his tips')}</div>${vorHtml}
         <div class="rs-carousel" id="rsCar">${cards.join('')}</div>
         <div class="rs-dots" id="rsDots">${cards.map((_,i)=>`<button class="rs-dot${i===0?' on':''}" data-i="${i}" aria-label="Karte ${i+1}"></button>`).join('')}</div></div>`;
       const car=document.getElementById('rsCar'), dots=[...document.querySelectorAll('#rsDots .rs-dot')];
@@ -1641,6 +1762,15 @@ function renderLiveMd(scope){
     const winTxt=hasPts?lm.rows.filter((r,i)=>rks[i]===1).map(r=>dispFull(r.name)).join(' & ')+' ('+lm.rows[0].mdTot+' P)':'—';
     const top=SMAP[scope].standings.filter(x=>x.active).slice(0,3).map((x,i)=>`${x.pos}. ${dispFull(x.name)} ${x.total}`).join(' · ');
     const txt=`⚽ ${SMAP[scope].short} · ${lm.md}. ${L('Spieltag','Matchday')}\n🏆 ${L('Spieltagssieger','Matchday winner')}: ${winTxt}\n📊 ${L('Zwischenstand','Standings')}: ${top}\n${location.origin+location.pathname}`;
+    // Fertiger Spieltag → hübsches Recap-Bild dazu (WhatsApp & Co.); sonst nur Text
+    const allDone=lm.results.length&&lm.results.every(Boolean)&&!lm.fixtures.some((_,i)=>st(i)==='live');
+    if(allDone&&hasPts){
+      const file=await mdRecapImage(lm,scope,rks);
+      if(file){
+        try{ if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:txt,title:'Brunnerschaft'}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
+        if(!navigator.share){ const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click(); } // Desktop ohne Web-Share: Bild als Download
+      }
+    }
     try{ if(navigator.share){ await navigator.share({title:'Brunnerschaft',text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
     try{ await navigator.clipboard.writeText(txt); const ic=shareBtn.innerHTML; shareBtn.textContent='✓'; setTimeout(()=>{shareBtn.innerHTML=ic;},1600); }catch(e){}
   };
@@ -2077,6 +2207,77 @@ function renderBlitz(){
    rows.map(r=>`<tr><td><span class="player-name">${esc(r.short)}</span></td>
      <td>${who(r.md)}</td><td class="r mono">${r.md&&r.md.names.length?`<b>${r.md.pts}</b>`:'–'}</td></tr>`).join('')}</tbody>`;
 }
+function renderKesselLive(){ // 🎲/🏠/⏰ — nur laufende Saison, aus den eingebetteten Spieltagsdaten; Bots außen vor
+  const lmAll=(typeof ADV!=='undefined'&&ADV.liveMd)||{}; const rid=Object.keys(lmAll)[0];
+  const data=rid&&lmAll[rid]; if(!data||!data.mds)return;
+  const per={}; let resH=0,resD=0,resA=0,resN=0;
+  const wdF=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',weekday:'short',hour:'numeric',hour12:false});
+  const slotOf=k=>{ if(!k)return null; const p=wdF.formatToParts(new Date(k));
+    const w=p.find(x=>x.type==='weekday').value, h=+p.find(x=>x.type==='hour').value;
+    return w==='Fri'?'fr':w==='Sat'?(h>=17?'sa2':'sa1'):w==='Sun'?'so':null; };
+  data.mds.forEach(m=>{ const rows=m.rows.filter(r=>!TBOTS.has(r.n));
+    m.fixtures.forEach((f,i)=>{
+      const res=m.results[i];
+      if(res){ resN++; if(res.rh>res.ra)resH++; else if(res.rh===res.ra)resD++; else resA++; }
+      const cnt={}; rows.forEach(r=>{const t=r.tips[i]; if(!t)return; cnt[t[0]+':'+t[1]]=(cnt[t[0]+':'+t[1]]||0)+1;});
+      rows.forEach(r=>{ const t=r.tips[i]; if(!t)return;
+        const P=per[r.n]||(per[r.n]={tips:0,n:0,pts:0,uniq:0,uniqPts:0,h:0,d:0,a:0,slots:{}});
+        P.tips++; P.h+=t[0]>t[1]?1:0; P.d+=t[0]===t[1]?1:0; P.a+=t[0]<t[1]?1:0;
+        if(res){ P.n++; P.pts+=t[2]||0;
+          if(cnt[t[0]+':'+t[1]]===1){ P.uniq++; P.uniqPts+=t[2]||0; }
+          const s=slotOf((m.ko||[])[i]); if(s){ const S=P.slots[s]=P.slots[s]||{n:0,p:0}; S.n++; S.p+=t[2]||0; } }
+      });
+    });
+  });
+  const names=Object.keys(per).filter(n=>per[n].n>=5); // erst ab 5 gewerteten Tipps aussagekräftig
+  if(names.length<3) return;
+  const f1=x=>(Math.round(x*10)/10).toLocaleString(LANG==='en'?'en-GB':'de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+  // 🎲 Mut-Index
+  {
+    const rows=names.map(n=>{const P=per[n];return {n,u:P.uniq,up:P.uniqPts,avgU:P.uniq?P.uniqPts/P.uniq:0,avgAll:P.n?P.pts/P.n:0};})
+      .sort((a,b)=>b.u-a.u||b.up-a.up);
+    const rks=sharedRanks(rows,r=>r.u);
+    document.getElementById('mutTable').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">🎲 ${L('Exoten','Mavericks')}</th><th class="r">${L('Pkt daraus','Pts from them')}</th><th class="r">Ø ${L('je Exot','per maverick')}</th><th class="r mhide">Ø ${L('gesamt','overall')}</th></tr></thead><tbody>${
+      rows.map((r,i)=>`<tr class="${rks[i]===1?'p1':''}"><td><span class="rank-badge">${rks[i]}</span></td>
+        <td>${nmCell(r.n,24)}${rks[i]===1?` <span class="mini">🦁 ${LANG==='en'?'bravest':gLbl(r.n,'Mutigster','Mutigste')}</span>`:''}</td>
+        <td class="r mono"><b>${r.u}</b></td><td class="r mono">${r.up}</td>
+        <td class="r mono" style="${r.avgU>r.avgAll?'color:var(--ok,#188038);font-weight:700':''}">${f1(r.avgU)}</td>
+        <td class="r mono mhide" style="color:var(--ink-2)">${f1(r.avgAll)}</td></tr>`).join('')}</tbody>`;
+    const paysOff=rows.filter(r=>r.u>=2&&r.avgU>r.avgAll).sort((a,b)=>(b.avgU-b.avgAll)-(a.avgU-a.avgAll))[0];
+    document.getElementById('mutFoot').textContent='😏 '+(paysOff
+      ?L(`Bei ${dispFull(paysOff.n)} zahlt sich der Mut sogar aus: ${f1(paysOff.avgU)} Punkte je Exoten-Tipp, ${f1(paysOff.avgAll)} im Schnitt.`,`For ${dispFull(paysOff.n)} courage even pays off: ${f1(paysOff.avgU)} points per maverick tip vs. ${f1(paysOff.avgAll)} overall.`)
+      :L('Bisher gilt: Wer anders tippt, tippt vor allem … anders.','So far: those who tip differently mostly just tip … differently.'));
+    document.getElementById('mutSec').hidden=false;
+  }
+  // 🏠 Heim/Auswärts-Bias
+  {
+    const rows=names.map(n=>{const P=per[n];const tot=P.h+P.d+P.a||1;return {n,h:100*P.h/tot,d:100*P.d/tot,a:100*P.a/tot};})
+      .sort((a,b)=>b.h-a.h);
+    const pct=x=>Math.round(x)+'&nbsp;%';
+    const cell=(v,top)=>`<td class="r mono"${top?' style="font-weight:700"':''}>${pct(v)}</td>`;
+    const maxH=Math.max(...rows.map(r=>r.h)),maxD=Math.max(...rows.map(r=>r.d)),maxA=Math.max(...rows.map(r=>r.a));
+    document.getElementById('biasTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th><th class="r">🏠 ${L('Heimsieg','Home win')}</th><th class="r">🤝 ${L('Remis','Draw')}</th><th class="r">✈️ ${L('Auswärts','Away win')}</th></tr></thead><tbody>${
+      rows.map((r,i)=>`<tr><td>${nmCell(r.n,24)}${i===0?` <span class="mini">🏠 ${LANG==='en'?'home romantic':gLbl(r.n,'Heim-Romantiker','Heim-Romantikerin')}</span>`:(r.a===maxA?` <span class="mini">✈️ ${LANG==='en'?'away dreamer':gLbl(r.n,'Auswärts-Träumer','Auswärts-Träumerin')}</span>`:'')}</td>${cell(r.h,r.h===maxH)}${cell(r.d,r.d===maxD)}${cell(r.a,r.a===maxA)}</tr>`).join('')}
+      <tr style="border-top:2px solid var(--line-2)"><td><span class="player-name" style="color:var(--ink-2)">⚽ ${L('Echte Ergebnisse','Real results')}</span></td>
+      <td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resH/resN):0}&nbsp;%</td><td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resD/resN):0}&nbsp;%</td><td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resA/resN):0}&nbsp;%</td></tr></tbody>`;
+    document.getElementById('biasSec').hidden=false;
+  }
+  // ⏰ Anstoßzeiten
+  {
+    const SL=[['fr',L('Fr-Abend','Fri night')],['sa1',L('Sa 15:30','Sat 15:30')],['sa2',L('Sa-Topspiel','Sat top match')],['so',L('Sonntag','Sunday')]];
+    const avgS=(P,s)=>{const S=P.slots[s];return S&&S.n?S.p/S.n:null;};
+    const rows=names.map(n=>{const P=per[n];return {n,vals:SL.map(([s])=>avgS(P,s)),tot:P.n?P.pts/P.n:0};})
+      .sort((a,b)=>b.tot-a.tot);
+    document.getElementById('koTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${SL.map(([,l])=>`<th class="r">${l}</th>`).join('')}<th class="r">Ø</th></tr></thead><tbody>${
+      rows.map(r=>{const best=Math.max(...r.vals.filter(v=>v!=null));
+        return `<tr><td>${nmCell(r.n,24)}</td>${r.vals.map(v=>`<td class="r mono"${v!=null&&v===best?' style="font-weight:700;color:var(--brand)"':''}>${v==null?'–':f1(v)}</td>`).join('')}<td class="r mono"><b>${f1(r.tot)}</b></td></tr>`;}).join('')}</tbody>`;
+    // Fun-Fußnote: stärkster & schwächster Slot der ganzen Gruppe
+    const gAvg=SL.map(([s,l])=>{let n=0,p=0;names.forEach(nm2=>{const S=per[nm2].slots[s];if(S){n+=S.n;p+=S.p;}});return {l,v:n?p/n:null};}).filter(x=>x.v!=null);
+    if(gAvg.length>=2){ const hi=gAvg.reduce((a,b)=>b.v>a.v?b:a), lo=gAvg.reduce((a,b)=>b.v<a.v?b:a);
+      document.getElementById('koFoot').textContent='😏 '+L(`Gruppen-Bestzeit: ${hi.l} (Ø ${f1(hi.v)} P) · kollektiver Tiefschlaf: ${lo.l} (Ø ${f1(lo.v)} P).`,`Group prime time: ${hi.l} (Ø ${f1(hi.v)} pts) · collective nap: ${lo.l} (Ø ${f1(lo.v)} pts).`); }
+    document.getElementById('koSec').hidden=false;
+  }
+}
 function renderSpread(){
   const rows=DISPLAY_ORDER.filter(id=>!SMAP[id].running).map(id=>{const s=SMAP[id];const act=s.standings.filter(p=>p.active);const f=act[0],l=act[act.length-1];
     return {short:s.short,w:f.name,wp:f.total,l:l.name,lp:l.total,spread:f.total-l.total};}).sort((a,b)=>a.spread-b.spread);
@@ -2436,6 +2637,27 @@ function renderAll(){
     document.addEventListener('change',ev=>{ if(ev.target&&ev.target.id==='liveMdSel')sendF('mdsel'); });
     document.addEventListener('scroll',ev=>{ if(ev.target&&ev.target.id==='rsCar')sendF('robo'); },true); // scroll bubbelt nicht -> capture
   }}catch(e){}
+  // 🔗 URL-Scheme: #go=<ziel>[/<param>] aus Push-Notifications und geteilten Links.
+  //   Ziele: live (Spieltags-Browser, Param = Spieltag, z. B. #go=live/12), stand (Zwischenstand),
+  //   bonus, race, proj, oracle, mut, bias, zeit — oder jede Sektions-ID direkt. #go=tab/<name> wechselt nur den Tab.
+  try{
+    const deepLink=()=>{ try{
+      const m=/^#go=([\w-]+)(?:\/([\w.-]+))?/.exec(location.hash); if(!m)return;
+      if(m[1]==='tab'){ const tb=document.querySelector(`.tab[data-tab="${m[2]}"]`); if(tb)tb.click(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+      const MAPT={live:'liveMdSec',stand:'mainTable',bonus:'bonusTipsSec',race:'raceSec',proj:'projSec',oracle:'oracleSec',mut:'mutSec',bias:'biasSec',zeit:'koSec'};
+      const target=document.getElementById(MAPT[m[1]]||m[1]); if(!target)return;
+      const panel=target.closest('[id^="panel-"]');
+      if(panel){ const tb=document.querySelector(`.tab[data-tab="${panel.id.slice(6)}"]`); if(tb&&tb.getAttribute('aria-selected')!=='true')tb.click(); }
+      if(panel&&panel.id==='panel-stats'){ // Live-Sektionen brauchen die laufende Saison als Filter
+        const liveS=SEASONS.find(s=>s.running);
+        if(liveS&&CUR_SCOPE!==liveS.id){ const b=document.querySelector(`#pills .pill[data-scope="${liveS.id}"]`); if(b)b.click(); } }
+      if(m[1]==='live'&&m[2]) setTimeout(()=>{ const sel=document.getElementById('liveMdSel');
+        if(sel&&[...sel.options].some(o=>o.value===m[2])){ sel.value=m[2]; sel.dispatchEvent(new Event('change')); } },380);
+      setTimeout(()=>{ const sec=target.closest('section')||target; if(sec.scrollIntoView)sec.scrollIntoView({behavior:'smooth',block:'start'}); },460);
+    }catch(e){} };
+    window.addEventListener('hashchange',deepLink);
+    setTimeout(deepLink,80); // erst NACH renderAll: die Pill-/Tab-Handler hängen sonst noch nicht (renderPills läuft später)
+  }catch(e){}
   // 🎉 Konfetti-Schalter (pro Gerät, unabhängig vom Push-Support)
   try{ const confT=document.getElementById('confettiToggle');
     if(confT){ confT.checked=localStorage.getItem('brun_confetti')!=='0';
@@ -2575,6 +2797,7 @@ function renderAll(){
   renderTipReminder();
   renderLazy();
   renderBlitz();
+  renderKesselLive();
   renderSpread();
   renderH2H();
   renderPills();
