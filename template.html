@@ -706,6 +706,9 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <h2 class="sec-title" data-en="Who hosts the season party?">Wer richtet das Saison-Fest aus?</h2>
       <div class="sec-note" id="oracleNote"></div>
       <div class="tbl-wrap"><table id="oracleTable"></table></div>
+      <h3 style="margin:18px 0 4px;font-size:16.5px" data-en="🏠 Where will the loser party be?">🏠 In welchem Haushalt steigt die Party?</h3>
+      <div class="sec-note" data-en="Household risk = sum of its members' last-place probabilities.">Haushalts-Risiko = Summe der Letzter-Platz-Wahrscheinlichkeiten seiner Bewohner.</div>
+      <div class="tbl-wrap" style="max-width:560px"><table id="oracleHomes"></table></div>
       <p class="mini" id="oracleFoot"></p>
     </section>
 
@@ -999,6 +1002,15 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <h2 class="sec-title" data-en="Payouts in detail">Auszahlungen im Detail</h2>
       <div class="sec-note" data-en="Pot and payout per round.">Topf und Ausschüttung je Runde.</div>
       <div id="finAll"></div>
+    </section>
+
+    <section class="block">
+      <div class="eyebrow" data-en="📊 Analytics">📊 Analytics</div>
+      <h2 class="sec-title" data-en="How is the dashboard used?">Wie wird das Dashboard genutzt?</h2>
+      <div class="sec-note" data-en="Anonymous counters only — daily views, unique devices, mobile/app share, tab usage. No names, no content.">Nur anonyme Zähler — tägliche Aufrufe, eindeutige Geräte, Mobil-/App-Anteil, Tab-Nutzung. Keine Namen, keine Inhalte.</div>
+      <div class="grid tiles" id="anTiles"></div>
+      <div class="card race-card"><div id="anChart" class="mini"></div></div>
+      <div class="tbl-wrap" style="margin-top:14px;max-width:420px"><table id="anTabs"></table></div>
     </section>
   </div>
   <!-- ============ EINSTELLUNGEN ============ -->
@@ -1503,6 +1515,17 @@ function renderOracle(scope){
       <td class="r mono"><b>${r.fest<0.5?'&lt;1':Math.round(r.fest)}&nbsp;%</b></td>
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.fest/maxF*100)}%"></div></td>
       <td class="r mono">${r.titel<0.5?'&lt;1':Math.round(r.titel)}&nbsp;%</td></tr>`).join('')}</tbody>`;
+  // 🏠 Haushalts-Aggregation: wo steigt die Loser-Party?
+  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'München'};
+  const homes={};
+  rows.forEach(r=>{ const h=HOME[r.name]||('❓ '+dispName(r.name)); (homes[h]=homes[h]||{p:0,who:[]}).p+=r.fest; homes[h].who.push(r.name); });
+  const hrows=Object.entries(homes).map(([h,x])=>({h,...x})).sort((a,b)=>b.p-a.p);
+  const hmax=Math.max(...hrows.map(r=>r.p),1);
+  document.getElementById('oracleHomes').innerHTML=`<thead><tr><th>${L('Haushalt','Household')}</th><th>${L('Bewohner','Residents')}</th><th class="r">🎪 %</th><th class="bar-cell bar-only" data-nosort style="width:24%"></th></tr></thead><tbody>${
+    hrows.map((r,i)=>`<tr class="${i===0?'p1':''}"><td class="player-name">${esc(r.h)}${i===0?' 🎪':''}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${r.who.map(n=>av(n,22)).join('')}</div></td>
+      <td class="r mono"><b>${r.p<0.5?'&lt;1':Math.round(r.p)}</b></td>
+      <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.p/hmax*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const pl=(window.__oracle&&window.__oracle.played)||2;
   document.getElementById('oracleFoot').textContent=L('Kein Grund zur Panik: Nach '+pl+' Spieltagen ist das Orakel ungefähr so treffsicher wie Matthews 0:7-Tipps. Es würfelt nach jedem Spieltag neu.','No panic: after '+pl+' matchdays the oracle is about as reliable as a 0:7 tip. It re-rolls after every matchday.');
   }
@@ -2309,6 +2332,33 @@ function renderFinance(){
   document.getElementById('finOpen').innerHTML=openPayouts.length?openPayouts.map(id=>payoutBlock(SMAP[id])).join(''):`<div class="card emptystate">${L('Alle Gewinne sind ausgezahlt. 🎉','All winnings paid out. 🎉')}</div>`;
   document.getElementById('finAll').innerHTML=DISPLAY_ORDER.map(id=>payoutBlock(SMAP[id])).join('');
   renderBalance();}
+async function renderAnalytics(){
+  const chartEl=document.getElementById('anChart'); if(!chartEl||!PUSH_URL||chartEl.dataset.done)return;
+  chartEl.dataset.done='1'; chartEl.textContent=L('Lade …','Loading …');
+  try{
+    const days=(await (await fetch(PUSH_URL+'/stats?days=30')).json()).reverse(); // alt -> neu
+    const today=days[days.length-1]||{};
+    const last7=days.slice(-7);
+    const tot=(arr,k)=>arr.reduce((a,d)=>a+(d[k]||0),0);
+    const v7=tot(last7,'views'), m7=tot(last7,'mobile'), s7=tot(last7,'standalone');
+    document.getElementById('anTiles').innerHTML=[
+      {cap:L('👀 Aufrufe heute','👀 Views today'),big:today.views||0,meta:(today.uniq||0)+L(' Geräte',' devices')},
+      {cap:L('📅 Aufrufe 7 Tage','📅 Views 7 days'),big:v7,meta:'Ø '+(last7.length?Math.round(v7/last7.length):0)+L(' pro Tag',' per day')},
+      {cap:L('📱 Mobil-Anteil (7T)','📱 Mobile share (7d)'),big:(v7?Math.round(100*m7/v7):0)+'%',meta:m7+L(' mobile Aufrufe',' mobile views')},
+      {cap:L('⚽ App-Anteil (7T)','⚽ App share (7d)'),big:(v7?Math.round(100*s7/v7):0)+'%',meta:s7+L('× als Homescreen-App','× as home-screen app')},
+    ].map(t=>`<div class="card tile"><span class="rail"></span><div class="cap">${t.cap}</div><div class="big">${t.big}</div><div class="meta">${t.meta}</div></div>`).join('');
+    const W=700,H=170,PB=26,PL=30,max=Math.max(...days.map(d=>d.views),1);
+    const bw=(W-PL-8)/days.length;
+    const bars=days.map((d,i)=>{const h=Math.round((d.views/max)*(H-PB-12));
+      return `<rect x="${(PL+i*bw+1).toFixed(1)}" y="${H-PB-h}" width="${(bw-2).toFixed(1)}" height="${h}" rx="2" fill="var(--brand)" opacity="${d.views?0.85:0.15}"/>`
+        +((i%5===0||i===days.length-1)?`<text x="${(PL+i*bw+bw/2).toFixed(1)}" y="${H-PB+14}" text-anchor="middle" font-size="8.5" fill="var(--ink-2)">${d.day.slice(8)}.${d.day.slice(5,7)}.</text>`:'');}).join('');
+    chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" aria-label="Aufrufe pro Tag"><text x="${PL-4}" y="14" text-anchor="end" font-size="9" fill="var(--ink-2)">${max}</text>${bars}</svg>`;
+    const tabs={}; days.forEach(d=>Object.entries(d.tabs||{}).forEach(([t,n])=>tabs[t]=(tabs[t]||0)+n));
+    const TL={stats:'📊 Statistiken',kessel:'🎨 Ein Kessel Buntes',bayern:'🐻 MIA SAN MIA',fin:'💶 Auswertungen',settings:'⚙️ Einstellungen'};
+    const rows=Object.entries(tabs).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('anTabs').innerHTML=rows.length?`<thead><tr><th>${L('Tab-Wechsel (30 T)','Tab switches (30d)')}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${rows.map(([t,n])=>`<tr><td>${TL[t]||esc(t)}</td><td class="r mono">${n}</td></tr>`).join('')}</tbody>`:'';
+  }catch(e){ chartEl.textContent=L('Analytics nicht erreichbar.','Analytics unreachable.'); }
+}
 function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won:0});
   SEASONS.filter(s=>!s.running&&SETTLE[s.id]&&SETTLE[s.id].out).forEach(s=>{const f=seasonFinance(s);f.act.forEach(p=>bal[p.name].paid+=f.fee);f.payouts.forEach(p=>bal[p.name].won+=p.amt);}); // nur komplett abgerechnete Wettbewerbe — laufende/offene würden den Saldo verfälschen
   const rows=Object.entries(bal).map(([name,b])=>({name,...b,net:b.won-b.paid})).filter(r=>r.paid>0).sort((a,b)=>b.net-a.net);
@@ -2331,6 +2381,14 @@ function renderAll(){
   }catch(e){}
   // Service Worker: sofortiger Start aus dem Cache, netz-zuerst mit Fallback (Offline im Stadion!)
   try{ if('serviceWorker' in navigator && /github\.io$|^localhost$/.test(location.hostname)) navigator.serviceWorker.register('sw.js'); }catch(e){}
+  // 📊 Mini-Analytics-Beacon: anonyme Zähler (zufällige Geräte-ID, kein Name, kein Inhalt)
+  try{ if(PUSH_URL && /github\.io$/.test(location.hostname)){
+    let vid=localStorage.getItem('brun_vid'); if(!vid){ vid=Math.random().toString(36).slice(2,14); localStorage.setItem('brun_vid',vid); }
+    const standalone=(matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+    const send=e=>{ try{ navigator.sendBeacon(PUSH_URL+'/hit', new Blob([JSON.stringify({e,m:innerWidth<768?1:0,s:standalone?1:0,v:vid})],{type:'text/plain'})); }catch(err){} };
+    send('view');
+    document.querySelectorAll('.tab').forEach(tb=>tb.addEventListener('click',()=>send('tab:'+tb.dataset.tab)));
+  }}catch(e){}
   // 🎉 Konfetti-Schalter (pro Gerät, unabhängig vom Push-Support)
   try{ const confT=document.getElementById('confettiToggle');
     if(confT){ confT.checked=localStorage.getItem('brun_confetti')!=='0';
@@ -2551,6 +2609,7 @@ async function unlockFinance(pw, silent){
     PAYPAL=Object.fromEntries(Object.entries(cfg.paypal).map(([h,payer])=>[h,{payer}])); PAYPAL[cfg.ownerHandle]={owner:true};
     if(cfg.fees){ document.getElementById('feeBL').value=cfg.fees.BL; document.getElementById('feeCUP').value=cfg.fees.CUP; }
     renderFinance();
+    try{renderAnalytics();}catch(e){}
     financeSections().forEach(s=>s.style.display='');
     document.getElementById('finGate').hidden=true;
     try{sessionStorage.setItem('brun_fin_pw', pw);}catch(e){}

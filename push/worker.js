@@ -4,7 +4,7 @@
 
 const CORS = {
   'Access-Control-Allow-Origin': 'https://nine41-mc.github.io',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
@@ -93,11 +93,46 @@ async function subKey(endpoint) {
   return bytesToB64u(h).slice(0, 32);
 }
 
+// ---------- Mini-Analytics: anonyme Tageszähler in KV ----------
+const dayKey = () => 'an_' + new Date().toISOString().slice(0, 10);
+async function trackHit(env, body) {
+  const k = dayKey();
+  let d = {}; try { d = JSON.parse(await env.SUBS.get(k) || '{}'); } catch (e) {}
+  d.views = (d.views || 0) + (body.e === 'view' ? 1 : 0);
+  if (body.e === 'view') {
+    if (body.m) d.mobile = (d.mobile || 0) + 1;
+    if (body.s) d.standalone = (d.standalone || 0) + 1;
+    if (body.v) { d.vids = d.vids || {}; if (String(body.v).length <= 24) d.vids[body.v] = (d.vids[body.v] || 0) + 1; }
+  } else if (typeof body.e === 'string' && body.e.startsWith('tab:')) {
+    const t = body.e.slice(4, 24); d.tabs = d.tabs || {}; d.tabs[t] = (d.tabs[t] || 0) + 1;
+  }
+  await env.SUBS.put(k, JSON.stringify(d));
+}
+async function statsOut(env, days) {
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const dt = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    let d = {}; try { d = JSON.parse(await env.SUBS.get('an_' + dt) || '{}'); } catch (e) {}
+    out.push({ day: dt, views: d.views || 0, uniq: Object.keys(d.vids || {}).length,
+      mobile: d.mobile || 0, standalone: d.standalone || 0, tabs: d.tabs || {} });
+  }
+  return out;
+}
+
 export default {
   async fetch(req, env) {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
+    if (req.method === 'GET' && url.pathname === '/stats') {
+      const days = Math.min(60, Math.max(1, +(url.searchParams.get('days') || 30)));
+      return json(await statsOut(env, days)); // nur anonyme Aggregate — keine IDs, keine Namen
+    }
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+    if (url.pathname === '/hit') {
+      const body = await req.json().catch(() => ({}));
+      await trackHit(env, body || {});
+      return json({ ok: true });
+    }
 
     if (url.pathname === '/subscribe') {
       const body = await req.json().catch(() => null);
