@@ -1010,10 +1010,16 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     <section class="block">
       <div class="eyebrow" data-en="📊 Analytics">📊 Analytics</div>
       <h2 class="sec-title" data-en="How is the dashboard used?">Wie wird das Dashboard genutzt?</h2>
-      <div class="sec-note" data-en="Anonymous counters only — daily views, unique devices, mobile/app share, tab usage. No names, no content.">Nur anonyme Zähler — tägliche Aufrufe, eindeutige Geräte, Mobil-/App-Anteil, Tab-Nutzung. Keine Namen, keine Inhalte.</div>
+      <div class="sec-note" data-en="Anonymous counters only — views, active devices, device types, time of day, country, feature and tab usage. No names, no content, no IP addresses.">Nur anonyme Zähler — Aufrufe, aktive Geräte, Gerätetypen, Uhrzeiten, Länder, Feature- und Tab-Nutzung. Keine Namen, keine Inhalte, keine IP-Adressen.</div>
       <div class="grid tiles an-tiles" id="anTiles"></div>
       <div class="card" style="padding:18px 14px 12px"><div id="anChart" class="mini"></div></div>
-      <div class="tbl-wrap" style="margin-top:14px;max-width:420px"><table id="anTabs"></table></div>
+      <div class="card" style="padding:18px 14px 12px;margin-top:14px"><div id="anHours" class="mini"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:14px;align-items:start">
+        <div class="tbl-wrap"><table id="anDev"></table></div>
+        <div class="tbl-wrap"><table id="anGeo"></table></div>
+        <div class="tbl-wrap"><table id="anFeat"></table></div>
+        <div class="tbl-wrap"><table id="anTabs"></table></div>
+      </div>
     </section>
   </div>
   <!-- ============ EINSTELLUNGEN ============ -->
@@ -2340,7 +2346,9 @@ async function renderAnalytics(){
   const chartEl=document.getElementById('anChart'); if(!chartEl||!PUSH_URL||chartEl.dataset.done)return;
   chartEl.dataset.done='1'; chartEl.textContent=L('Lade …','Loading …');
   try{
-    const days=(await (await fetch(PUSH_URL+'/stats?days=30')).json()).reverse(); // alt -> neu
+    const resp=await (await fetch(PUSH_URL+'/stats?days=30')).json();
+    const days=(Array.isArray(resp)?resp:resp.days).reverse(); // alt -> neu (Array = alter Worker)
+    const wau=resp.wau||0, mau=resp.mau||0;
     const today=days[days.length-1]||{};
     const last7=days.slice(-7);
     const tot=(arr,k)=>arr.reduce((a,d)=>a+(d[k]||0),0);
@@ -2348,6 +2356,8 @@ async function renderAnalytics(){
     document.getElementById('anTiles').innerHTML=[
       {cap:L('👀 Aufrufe heute','👀 Views today'),big:today.views||0,meta:(today.uniq||0)+L(' Geräte',' devices')},
       {cap:L('📅 Aufrufe 7 Tage','📅 Views 7 days'),big:v7,meta:'Ø '+(last7.length?Math.round(v7/last7.length):0)+L(' pro Tag',' per day')},
+      {cap:L('👥 Aktiv 7 Tage','👥 Active 7 days'),big:wau,meta:L('eindeutige Geräte (WAU)','unique devices (WAU)')},
+      {cap:L('🗓️ Aktiv 30 Tage','🗓️ Active 30 days'),big:mau,meta:L('eindeutige Geräte (MAU)','unique devices (MAU)')},
       {cap:L('📱 Mobil-Anteil (7T)','📱 Mobile share (7d)'),big:(v7?Math.round(100*m7/v7):0)+'%',meta:m7+L(' mobile Aufrufe',' mobile views')},
       {cap:L('⚽ App-Anteil (7T)','⚽ App share (7d)'),big:(v7?Math.round(100*s7/v7):0)+'%',meta:s7+L('× als Homescreen-App','× as home-screen app')},
     ].map(t=>`<div class="card tile"><span class="rail"></span><div class="cap">${t.cap}</div><div class="big">${t.big}</div><div class="meta">${t.meta}</div></div>`).join('');
@@ -2357,10 +2367,28 @@ async function renderAnalytics(){
       return `<rect x="${(PL+i*bw+1).toFixed(1)}" y="${H-PB-h}" width="${(bw-2).toFixed(1)}" height="${h}" rx="2" fill="var(--brand)" opacity="${d.views?0.85:0.15}"/>`
         +((i%5===0||i===days.length-1)?`<text x="${(PL+i*bw+bw/2).toFixed(1)}" y="${H-PB+14}" text-anchor="middle" font-size="8.5" fill="var(--ink-2)">${d.day.slice(8)}.${d.day.slice(5,7)}.</text>`:'');}).join('');
     chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" aria-label="Aufrufe pro Tag"><text x="${PL-4}" y="14" text-anchor="end" font-size="9" fill="var(--ink-2)">${max}</text>${bars}</svg>`;
-    const tabs={}; days.forEach(d=>Object.entries(d.tabs||{}).forEach(([t,n])=>tabs[t]=(tabs[t]||0)+n));
+    const agg=k=>{const o={};days.forEach(d=>Object.entries(d[k]||{}).forEach(([a,n])=>o[a]=(o[a]||0)+n));return o;};
+    const miniTbl=(id,head,rows,fmt)=>{const el=document.getElementById(id);el.innerHTML=rows.length?`<thead><tr><th>${head}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${rows.map(([a,n])=>`<tr><td>${fmt(a)}</td><td class="r mono">${n}</td></tr>`).join('')}</tbody>`:'';el.closest('.tbl-wrap').style.display=rows.length?'':'none';};
+    // Uhrzeit-Heatmap (Europe/Berlin, 30 Tage)
+    const hrs=agg('hrs'), hMax=Math.max(...Array.from({length:24},(_,h)=>hrs[h]||0),1);
+    const hW=700,hH=150,hPB=26,hPL=30,hbw=(hW-hPL-8)/24;
+    const hBars=Array.from({length:24},(_,h)=>{const n=hrs[h]||0,bh=Math.round((n/hMax)*(hH-hPB-26));
+      return `<rect x="${(hPL+h*hbw+1).toFixed(1)}" y="${hH-hPB-bh}" width="${(hbw-2).toFixed(1)}" height="${bh}" rx="2" fill="var(--brand)" opacity="${n?0.85:0.15}"/>`
+        +(h%3===0?`<text x="${(hPL+h*hbw+hbw/2).toFixed(1)}" y="${hH-hPB+14}" text-anchor="middle" font-size="8.5" fill="var(--ink-2)">${h}${L(' Uhr','h')}</text>`:'');}).join('');
+    document.getElementById('anHours').innerHTML=`<svg viewBox="0 0 ${hW} ${hH}" width="100%" aria-label="${L('Aufrufe nach Uhrzeit','Views by hour')}"><text x="${hPL-4}" y="14" text-anchor="end" font-size="9" fill="var(--ink-2)">${hMax}</text><text x="${hPL+2}" y="14" font-size="9.5" font-weight="700" fill="var(--ink-2)">${L('🕐 Aufrufe nach Uhrzeit (30 T)','🕐 Views by hour (30d)')}</text>${hBars}</svg>`;
+    // Geräte, Länder, Features, Tabs (je 30 Tage aggregiert)
+    const dev=Object.entries(agg('dev')).sort((a,b)=>b[1]-a[1]), dTot=dev.reduce((a,x)=>a+x[1],0)||1;
+    const DI={iOS:'📱',Android:'🤖',macOS:'💻',Windows:'🖥️',Linux:'🐧'};
+    const devEl=document.getElementById('anDev');
+    devEl.innerHTML=dev.length?`<thead><tr><th>${L('Gerät (30 T)','Device (30d)')}</th><th class="r">${L('Anteil','Share')}</th></tr></thead><tbody>${dev.map(([a,n])=>{const[os]=a.split('-');return `<tr><td>${DI[os]||'❓'} ${esc(a.replace('-',' · '))}</td><td class="r mono">${Math.round(100*n/dTot)}&nbsp;% <span style="color:var(--ink-2)">(${n})</span></td></tr>`;}).join('')}</tbody>`:'';
+    devEl.closest('.tbl-wrap').style.display=dev.length?'':'none';
+    let regName=cc=>cc; try{const dn=new Intl.DisplayNames([LANG],{type:'region'}); regName=cc=>dn.of(cc)||cc;}catch(e){}
+    const flag=cc=>cc.replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));
+    miniTbl('anGeo',L('Land (30 T)','Country (30d)'),Object.entries(agg('geo')).sort((a,b)=>b[1]-a[1]),cc=>flag(cc)+' '+esc(regName(cc)));
+    const FL={share:L('📤 Teilen-Button','📤 Share button'),racefull:L('📈 Rennen im Vollbild','📈 Race fullscreen'),robo:L('🤖 RoboSepp-Karussell','🤖 RoboSepp carousel'),en:'🇬🇧 English',mdsel:L('📅 Spieltags-Dropdown','📅 Matchday dropdown')};
+    miniTbl('anFeat',L('Feature-Nutzung (30 T)','Feature usage (30d)'),Object.entries(agg('feat')).sort((a,b)=>b[1]-a[1]),f=>FL[f]||esc(f));
     const TL={stats:'📊 Statistiken',kessel:'🎨 Ein Kessel Buntes',bayern:'🐻 MIA SAN MIA',fin:'💶 Auswertungen',settings:'⚙️ Einstellungen'};
-    const rows=Object.entries(tabs).sort((a,b)=>b[1]-a[1]);
-    document.getElementById('anTabs').innerHTML=rows.length?`<thead><tr><th>${L('Tab-Wechsel (30 T)','Tab switches (30d)')}</th><th class="r">${L('Anzahl','Count')}</th></tr></thead><tbody>${rows.map(([t,n])=>`<tr><td>${TL[t]||esc(t)}</td><td class="r mono">${n}</td></tr>`).join('')}</tbody>`:'';
+    miniTbl('anTabs',L('Tab-Wechsel (30 T)','Tab switches (30d)'),Object.entries(agg('tabs')).sort((a,b)=>b[1]-a[1]),t=>TL[t]||esc(t));
   }catch(e){ chartEl.textContent=L('Analytics nicht erreichbar.','Analytics unreachable.'); }
 }
 function renderBalance(){const bal={};PLAYERS.forEach(p=>bal[p.name]={paid:0,won:0});
@@ -2389,9 +2417,21 @@ function renderAll(){
   try{ if(PUSH_URL && /github\.io$/.test(location.hostname)){
     let vid=localStorage.getItem('brun_vid'); if(!vid){ vid=Math.random().toString(36).slice(2,14); localStorage.setItem('brun_vid',vid); }
     const standalone=(matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
-    const send=e=>{ try{ navigator.sendBeacon(PUSH_URL+'/hit', new Blob([JSON.stringify({e,m:innerWidth<768?1:0,s:standalone?1:0,v:vid})],{type:'text/plain'})); }catch(err){} };
-    send('view');
+    // grobes Geräte-Token statt UA-String — mehr verlässt das Gerät nicht
+    const ua=navigator.userAgent;
+    const os=/iPhone|iPad|iPod/.test(ua)||(/Mac/.test(ua)&&navigator.maxTouchPoints>1)?'iOS':/Android/.test(ua)?'Android':/Mac/.test(ua)?'macOS':/Win/.test(ua)?'Windows':/Linux/.test(ua)?'Linux':'?';
+    const br=/Edg\//.test(ua)?'Edge':/OPR\//.test(ua)?'Opera':/SamsungBrowser/.test(ua)?'Samsung':/Firefox|FxiOS/.test(ua)?'Firefox':/CriOS|Chrom/.test(ua)?'Chrome':/Safari/.test(ua)?'Safari':'?';
+    const send=(e,x)=>{ try{ navigator.sendBeacon(PUSH_URL+'/hit', new Blob([JSON.stringify(Object.assign({e,m:innerWidth<768?1:0,s:standalone?1:0,v:vid},x||{}))],{type:'text/plain'})); }catch(err){} };
+    send('view',{d:os+'-'+br});
     document.querySelectorAll('.tab').forEach(tb=>tb.addEventListener('click',()=>send('tab:'+tb.dataset.tab)));
+    // Feature-Zähler: je Feature max. 1× pro Seitenaufruf ("Aufrufe mit Nutzung"), per Delegation — überlebt Re-Renders
+    const sentF={}, sendF=n=>{ if(sentF[n])return; sentF[n]=1; send('f:'+n); };
+    document.addEventListener('click',ev=>{ const t=ev.target;
+      if(t.closest&&t.closest('#shareMd'))sendF('share');
+      else if(t.closest&&t.closest('#raceChart'))sendF('racefull');
+      else if(t.closest&&t.closest('.lang-switch [data-lang="en"],[data-lang="en"]'))sendF('en'); });
+    document.addEventListener('change',ev=>{ if(ev.target&&ev.target.id==='liveMdSel')sendF('mdsel'); });
+    document.addEventListener('scroll',ev=>{ if(ev.target&&ev.target.id==='rsCar')sendF('robo'); },true); // scroll bubbelt nicht -> capture
   }}catch(e){}
   // 🎉 Konfetti-Schalter (pro Gerät, unabhängig vom Push-Support)
   try{ const confT=document.getElementById('confettiToggle');

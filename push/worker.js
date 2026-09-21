@@ -96,7 +96,8 @@ async function subKey(endpoint) {
 
 // ---------- Mini-Analytics: anonyme Tageszähler in KV ----------
 const dayKey = () => 'an_' + new Date().toISOString().slice(0, 10);
-async function trackHit(env, body) {
+const bump = (d, k, key, max) => { if (!key || String(key).length > max) return; d[k] = d[k] || {}; d[k][key] = (d[k][key] || 0) + 1; };
+async function trackHit(env, body, req) {
   const k = dayKey();
   let d = {}; try { d = JSON.parse(await env.SUBS.get(k) || '{}'); } catch (e) {}
   d.views = (d.views || 0) + (body.e === 'view' ? 1 : 0);
@@ -104,20 +105,29 @@ async function trackHit(env, body) {
     if (body.m) d.mobile = (d.mobile || 0) + 1;
     if (body.s) d.standalone = (d.standalone || 0) + 1;
     if (body.v) { d.vids = d.vids || {}; if (String(body.v).length <= 24) d.vids[body.v] = (d.vids[body.v] || 0) + 1; }
+    bump(d, 'dev', body.d, 24); // grobes Geräte-Token (z. B. "iOS-Safari"), kein UA-String
+    const hr = parseInt(new Intl.DateTimeFormat('de-DE', { hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin' }).format(new Date()), 10);
+    if (hr >= 0 && hr < 24) bump(d, 'hrs', hr, 2);
+    const cc = (req && req.cf && req.cf.country) || ''; // nur Länderkürzel von Cloudflare — die IP wird nie gespeichert
+    if (/^[A-Z]{2}$/.test(cc)) bump(d, 'geo', cc, 2);
   } else if (typeof body.e === 'string' && body.e.startsWith('tab:')) {
     const t = body.e.slice(4, 24); d.tabs = d.tabs || {}; d.tabs[t] = (d.tabs[t] || 0) + 1;
+  } else if (typeof body.e === 'string' && body.e.startsWith('f:')) {
+    bump(d, 'feat', body.e.slice(2, 26), 24);
   }
   await env.SUBS.put(k, JSON.stringify(d));
 }
 async function statsOut(env, days) {
-  const out = [];
+  const out = [], w7 = new Set(), m30 = new Set();
   for (let i = 0; i < days; i++) {
     const dt = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
     let d = {}; try { d = JSON.parse(await env.SUBS.get('an_' + dt) || '{}'); } catch (e) {}
+    Object.keys(d.vids || {}).forEach(v => { if (i < 7) w7.add(v); m30.add(v); });
     out.push({ day: dt, views: d.views || 0, uniq: Object.keys(d.vids || {}).length,
-      mobile: d.mobile || 0, standalone: d.standalone || 0, tabs: d.tabs || {} });
+      mobile: d.mobile || 0, standalone: d.standalone || 0, tabs: d.tabs || {},
+      dev: d.dev || {}, hrs: d.hrs || {}, geo: d.geo || {}, feat: d.feat || {} });
   }
-  return out;
+  return { days: out, wau: w7.size, mau: m30.size }; // WAU/MAU = Geräte-Vereinigung über 7/30 Tage
 }
 
 export default {
@@ -132,7 +142,7 @@ export default {
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
     if (url.pathname === '/hit') {
       const body = await req.json().catch(() => ({}));
-      await trackHit(env, body || {});
+      await trackHit(env, body || {}, req);
       return json({ ok: true });
     }
 
