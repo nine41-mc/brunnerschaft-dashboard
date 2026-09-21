@@ -1516,7 +1516,7 @@ function renderOracle(scope){
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.fest/maxF*100)}%"></div></td>
       <td class="r mono">${r.titel<0.5?'&lt;1':Math.round(r.titel)}&nbsp;%</td></tr>`).join('')}</tbody>`;
   // 🏠 Haushalts-Aggregation: wo steigt die Loser-Party?
-  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'München'};
+  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','BigBen':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'München'};
   const homes={};
   rows.forEach(r=>{ const h=HOME[r.name]||('❓ '+dispName(r.name)); (homes[h]=homes[h]||{p:0,who:[]}).p+=r.fest; homes[h].who.push(r.name); });
   const hrows=Object.entries(homes).map(([h,x])=>({h,...x})).sort((a,b)=>b.p-a.p);
