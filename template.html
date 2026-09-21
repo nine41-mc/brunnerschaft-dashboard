@@ -240,6 +240,9 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .rs-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
 .rs-dot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--line-2);cursor:pointer;transition:transform .15s,background .15s}
 .rs-dot.on{background:#7b52c7;transform:scale(1.35)}
+.an-tiles .tile{min-height:0;padding:16px 18px 14px}
+.an-tiles .tile .big{margin-top:7px;font-size:26px}
+#anChart svg{display:block}
 .lmd-refresh.spin,.lmd-refresh2.spin{animation:ptrSpin .8s linear infinite}
 .lmd-refresh:active,.lmd-refresh2:active{opacity:.6}
 .live-now-lbl{font-weight:900;color:var(--brand);font-size:13px;letter-spacing:.03em}
@@ -708,7 +711,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="tbl-wrap"><table id="oracleTable"></table></div>
       <h3 style="margin:18px 0 4px;font-size:16.5px" data-en="🏠 Where will the loser party be?">🏠 In welchem Haushalt steigt die Party?</h3>
       <div class="sec-note" data-en="Household risk = sum of its members' last-place probabilities.">Haushalts-Risiko = Summe der Letzter-Platz-Wahrscheinlichkeiten seiner Bewohner.</div>
-      <div class="tbl-wrap" style="max-width:560px"><table id="oracleHomes"></table></div>
+      <div class="tbl-wrap"><table id="oracleHomes"></table></div>
       <p class="mini" id="oracleFoot"></p>
     </section>
 
@@ -1008,8 +1011,8 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="📊 Analytics">📊 Analytics</div>
       <h2 class="sec-title" data-en="How is the dashboard used?">Wie wird das Dashboard genutzt?</h2>
       <div class="sec-note" data-en="Anonymous counters only — daily views, unique devices, mobile/app share, tab usage. No names, no content.">Nur anonyme Zähler — tägliche Aufrufe, eindeutige Geräte, Mobil-/App-Anteil, Tab-Nutzung. Keine Namen, keine Inhalte.</div>
-      <div class="grid tiles" id="anTiles"></div>
-      <div class="card race-card"><div id="anChart" class="mini"></div></div>
+      <div class="grid tiles an-tiles" id="anTiles"></div>
+      <div class="card" style="padding:18px 14px 12px"><div id="anChart" class="mini"></div></div>
       <div class="tbl-wrap" style="margin-top:14px;max-width:420px"><table id="anTabs"></table></div>
     </section>
   </div>
@@ -1521,10 +1524,11 @@ function renderOracle(scope){
   rows.forEach(r=>{ const h=HOME[r.name]||('❓ '+dispName(r.name)); (homes[h]=homes[h]||{p:0,who:[]}).p+=r.fest; homes[h].who.push(r.name); });
   const hrows=Object.entries(homes).map(([h,x])=>({h,...x})).sort((a,b)=>b.p-a.p);
   const hmax=Math.max(...hrows.map(r=>r.p),1);
-  document.getElementById('oracleHomes').innerHTML=`<thead><tr><th>${L('Haushalt','Household')}</th><th>${L('Bewohner','Residents')}</th><th class="r">🎪 %</th><th class="bar-cell bar-only" data-nosort style="width:24%"></th></tr></thead><tbody>${
-    hrows.map((r,i)=>`<tr class="${i===0?'p1':''}"><td class="player-name">${esc(r.h)}${i===0?' 🎪':''}</td>
-      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${r.who.map(n=>av(n,22)).join('')}</div></td>
-      <td class="r mono"><b>${r.p<0.5?'&lt;1':Math.round(r.p)}</b></td>
+  const hks=sharedRanks(hrows,r=>Math.round(r.p*10));
+  document.getElementById('oracleHomes').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Haushalt','Household')}</th><th class="r">🎪 ${L('Fest-Risiko','Party risk')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
+    hrows.map((r,i)=>`<tr class="${hks[i]===1?'p1':''}"><td><span class="rank-badge">${hks[i]}</span></td>
+      <td><div class="nm-cell"><span class="player-name"><b>${esc(r.h)}</b></span><span style="display:inline-flex;gap:3px;flex-wrap:wrap">${r.who.map(n=>av(n,22)).join('')}</span>${hks[i]===1?' <span class="mini">🎪 '+L('Fest-Favorit','party favourite')+'</span>':''}</div></td>
+      <td class="r mono"><b>${r.p<0.5?'&lt;1':Math.round(r.p)}&nbsp;%</b></td>
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.p/hmax*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const pl=(window.__oracle&&window.__oracle.played)||2;
   document.getElementById('oracleFoot').textContent=L('Kein Grund zur Panik: Nach '+pl+' Spieltagen ist das Orakel ungefähr so treffsicher wie Matthews 0:7-Tipps. Es würfelt nach jedem Spieltag neu.','No panic: after '+pl+' matchdays the oracle is about as reliable as a 0:7 tip. It re-rolls after every matchday.');

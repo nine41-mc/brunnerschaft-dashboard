@@ -2,11 +2,12 @@
 // Speichert Web-Push-Abos in KV und verschickt Benachrichtigungen (RFC 8291 aes128gcm + RFC 8292 VAPID),
 // komplett mit WebCrypto — keine Abhängigkeiten. Freitags-Tipp-Erinnerung via Cron-Trigger.
 
-const CORS = {
-  'Access-Control-Allow-Origin': 'https://nine41-mc.github.io',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+const corsFor = req => {
+  const o = req.headers.get('Origin') || '';
+  const allow = (o === 'https://nine41-mc.github.io' || /^http:\/\/localhost(:\d+)?$/.test(o)) ? o : 'https://nine41-mc.github.io';
+  return { 'Access-Control-Allow-Origin': allow, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 };
+let CORS = corsFor({ headers: { get: () => '' } }); // wird je Request gesetzt
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
 // ---------- Base64url ----------
@@ -121,6 +122,7 @@ async function statsOut(env, days) {
 
 export default {
   async fetch(req, env) {
+    CORS = corsFor(req);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
     if (req.method === 'GET' && url.pathname === '/stats') {
