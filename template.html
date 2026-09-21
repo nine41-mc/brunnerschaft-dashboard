@@ -1591,59 +1591,71 @@ async function mdRecapImage(lm,scope,rks){
     const x=cv.getContext('2d'); if(!x)return null;
     const rr=(x0,y0,w,h,r)=>{x.beginPath();x.moveTo(x0+r,y0);x.arcTo(x0+w,y0,x0+w,y0+h,r);x.arcTo(x0+w,y0+h,x0,y0+h,r);x.arcTo(x0,y0+h,x0,y0,r);x.arcTo(x0,y0,x0+w,y0,r);x.closePath();};
     const loadImg=src=>new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=src;});
-    const avC=async(n,cx,cy,r)=>{x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.fillStyle='#f2e9e4';x.fill();x.clip();
+    const avC=async(n,cx,cy,r)=>{ // rundes Profilbild mit dezentem Ring
       const im=MEMOJI[n]?await loadImg(MEMOJI[n]):null;
+      x.save(); x.beginPath(); x.arc(cx,cy,r,0,Math.PI*2); x.closePath();
+      x.fillStyle='#f2e9e4'; x.fill(); x.clip();
       if(im)x.drawImage(im,cx-r,cy-r,2*r,2*r);
-      else{x.fillStyle='#6b625d';x.font='700 '+Math.round(r*0.9)+'px '+FF;x.textAlign='center';x.fillText(n==='RoboSepp'?'🤖':(dispName(n)||'?').charAt(0).toUpperCase(),cx,cy+r*0.32);}
-      x.restore();};
+      else{x.fillStyle='#6b625d';x.font='700 '+Math.round(r*0.9)+'px '+FF;x.textAlign='center';x.fillText(n==='RoboSepp'?'🤖':(dispName(n)||'?').charAt(0).toUpperCase(),cx,cy+r*0.32);x.textAlign='left';}
+      x.restore();
+      x.beginPath(); x.arc(cx,cy,r,0,Math.PI*2); x.strokeStyle='rgba(28,25,23,.14)'; x.lineWidth=2.5; x.stroke();};
+    const fitText=(t,font,maxW,minPx)=>{ // Schrift verkleinern, bis der Text in die Karte passt
+      let px=+font.match(/(\d+)px/)[1];
+      for(;px>=minPx;px--){x.font=font.replace(/\d+px/,px+'px'); if(x.measureText(t).width<=maxW)break;}
+      return t;};
     // Fond + Kopfband
     x.fillStyle='#faf6f3'; x.fillRect(0,0,W,H);
     const g=x.createLinearGradient(0,0,W,300); g.addColorStop(0,'#e2001a'); g.addColorStop(1,'#a80016');
     x.fillStyle=g; x.fillRect(0,0,W,300);
-    x.textAlign='left'; x.fillStyle='rgba(255,255,255,.8)'; x.font='800 30px '+FF;
-    x.fillText('B R U N N E R S C H A F T  ·  '+(SMAP[scope]?SMAP[scope].short:''),64,92);
-    x.fillStyle='#fff'; x.font='900 92px '+FF; x.fillText(lm.md+'. '+L('SPIELTAG','MATCHDAY'),60,198);
+    // Kicktipp-Logo-Pille + Rundenname — analog zum Seiten-Header
+    x.textAlign='left'; x.font='800 40px '+FF;
+    const ktW=x.measureText('kicktipp').width+52;
+    x.fillStyle='#fff'; rr(64,52,ktW,60,30); x.fill();
+    x.fillStyle='#e2001a'; x.font='800 40px '+FF; x.fillText('kicktipp',90,95);
+    x.fillStyle='#fff'; x.font='800 42px '+FF; x.fillText('Brunnerschaft ⚽🍺',64+ktW+28,96);
+    x.font='900 96px '+FF; x.fillText(lm.md+'. '+L('SPIELTAG','MATCHDAY'),60,212);
     const ks=(lm.ko||[]).filter(Boolean);
-    if(ks.length){const dtf=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',day:'numeric',month:'long',year:'numeric'});
-      x.fillStyle='rgba(255,255,255,.85)'; x.font='600 32px '+FF; x.fillText('🏁 '+dtf.format(new Date(Math.max(...ks))),64,254);}
+    const dtf=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',day:'numeric',month:'long',year:'numeric'});
+    x.fillStyle='rgba(255,255,255,.85)'; x.font='600 31px '+FF;
+    x.fillText((ks.length?'🏁 '+dtf.format(new Date(Math.max(...ks)))+'  ·  ':'')+(SMAP[scope]?SMAP[scope].short:''),64,264);
     const card=(y,h)=>{x.fillStyle='#fff';rr(56,y,W-112,h,28);x.fill();x.strokeStyle='#eadfd9';x.lineWidth=2;x.stroke();};
     const cap=(t,y)=>{x.fillStyle='#96897f';x.font='800 27px '+FF;x.fillText(t,96,y);};
+    const GAP=36;
     let y=348;
     // 🏆 Sieger
-    card(y,186); cap('🏆 '+L('SPIELTAGSSIEGER','MATCHDAY WINNER'),y+58);
+    card(y,190); cap('🏆 '+L('SPIELTAGSSIEGER','MATCHDAY WINNER'),y+62);
     const wins=lm.rows.filter((r,i)=>rks[i]===1).slice(0,3);
-    for(let i=0;i<wins.length;i++) await avC(wins[i].name,140+i*96,y+126,42);
-    x.fillStyle='#1c1917'; x.font='800 50px '+FF;
-    x.fillText(wins.map(w=>dispFull(w.name)).join(' & '),140+wins.length*96-40+44,y+143);
-    x.textAlign='right'; x.fillStyle='#e2001a'; x.font='900 54px '+FF; x.fillText(lm.rows[0].mdTot+' P',W-96,y+143); x.textAlign='left';
-    y+=226;
-    // 🎯 Volltreffer
-    card(y,150); cap('🎯 '+L('VOLLTREFFER','BULLSEYES'),y+58);
+    for(let i=0;i<wins.length;i++) await avC(wins[i].name,138+i*96,y+130,42);
+    x.fillStyle='#1c1917';
+    fitText(wins.map(w=>dispFull(w.name)).join(' & '),'800 50px '+FF,W-96-(138+(wins.length-1)*96+42+28)-170,30);
+    x.fillText(wins.map(w=>dispFull(w.name)).join(' & '),138+(wins.length-1)*96+42+28,y+147);
+    x.textAlign='right'; x.fillStyle='#e2001a'; x.font='900 54px '+FF; x.fillText(lm.rows[0].mdTot+' P',W-96,y+148); x.textAlign='left';
+    y+=190+GAP;
+    // 🎯 Volltreffer — immer mit ×n
+    card(y,152); cap('🎯 '+L('VOLLTREFFER','BULLSEYES'),y+62);
     const p4s=lm.rows.map(r=>({n:r.name,c:r.tips.filter((t,i)=>t&&lm.results[i]&&t.p>=4).length})).filter(v=>v.c>0).sort((a,b)=>b.c-a.c);
-    x.fillStyle='#1c1917'; x.font='700 40px '+FF;
-    x.fillText(p4s.length?p4s.map(v=>dispFull(v.n)+(v.c>1?' ×'+v.c:'')).join(' · '):L('— diesmal keiner —','— none this time —'),96,y+118);
-    y+=190;
+    const p4txt=p4s.length?p4s.map(v=>dispFull(v.n)+' ×'+v.c).join(' · '):L('— diesmal keiner —','— none this time —');
+    x.fillStyle='#1c1917'; fitText(p4txt,'700 40px '+FF,W-192,26);
+    x.fillText(p4txt,96,y+120);
+    y+=152+GAP;
     // 📊 Zwischenstand Top 3
     const top3=SMAP[scope].standings.filter(s2=>s2.active).slice(0,3);
-    card(y,300); cap('📊 '+L('ZWISCHENSTAND','STANDINGS'),y+58);
-    for(let i=0;i<top3.length;i++){const ry=y+120+i*74;
+    card(y,336); cap('📊 '+L('ZWISCHENSTAND','STANDINGS'),y+62);
+    for(let i=0;i<top3.length;i++){const ry=y+130+i*78;
       x.fillStyle=i===0?'#e2001a':'#96897f'; x.font='900 40px '+FF; x.fillText(String(top3[i].pos),96,ry+14);
-      await avC(top3[i].name,196,ry,32);
-      x.fillStyle='#1c1917'; x.font=(i===0?'800':'600')+' 42px '+FF; x.fillText(dispFull(top3[i].name),252,ry+14);
-      x.textAlign='right'; x.font='700 42px '+FF; x.fillText(top3[i].total+' P',W-96,ry+14); x.textAlign='left';}
-    y+=340;
+      await avC(top3[i].name,192,ry,32);
+      x.fillStyle='#1c1917'; x.font=(i===0?'800':'600')+' 42px '+FF; x.fillText(dispFull(top3[i].name),252,ry+15);
+      x.textAlign='right'; x.font='700 42px '+FF; x.fillText(top3[i].total+' P',W-96,ry+15); x.textAlign='left';}
+    y+=336+GAP;
     // 🤖 Duell oder 🎪 Schlusslicht
-    card(y,132);
+    card(y,136);
     const bot=lm.rows.find(r=>TBOTS.has(r.name));
     x.fillStyle='#1c1917'; x.font='600 36px '+FF;
     if(bot){const hum=lm.rows.filter(r=>!TBOTS.has(r.name)&&r.tips.some(Boolean));
       const beat=hum.filter(h2=>h2.mdTot<bot.mdTot).length;
-      x.fillText('🤖 RoboSepp ('+bot.mdTot+' P) '+L('schlug','beat')+' '+beat+' '+L('von','of')+' '+hum.length+' '+L('Menschen','humans'),96,y+80);}
+      x.fillText('🤖 RoboSepp ('+bot.mdTot+' P) '+L('schlug','beat')+' '+beat+' '+L('von','of')+' '+hum.length+' '+L('Menschen','humans'),96,y+82);}
     else{const tipped=lm.rows.filter(r=>r.tips.some(Boolean));const lastR=tipped[tipped.length-1];
-      if(lastR)x.fillText('🎪 '+L('Schlusslicht','Bringing up the rear')+': '+dispFull(lastR.name)+' ('+lastR.mdTot+' P)',96,y+80);}
-    // Fuß
-    x.fillStyle='#96897f'; x.font='600 28px '+FF;
-    x.fillText('nine41-mc.github.io/brunnerschaft-dashboard',64,H-56);
+      if(lastR)x.fillText('🎪 '+L('Schlusslicht','Bringing up the rear')+': '+dispFull(lastR.name)+' ('+lastR.mdTot+' P)',96,y+82);}
     const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
     return blob?new File([blob],'brunnerschaft-'+lm.md+'-spieltag.png',{type:'image/png'}):null;
   }catch(e){ return null; }
