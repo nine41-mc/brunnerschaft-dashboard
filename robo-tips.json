@@ -236,6 +236,66 @@
      "grund": "Paderborn hält daheim, Hoffenheim zittert auswärts – Unentschieden ist die sichere Wette."
     }
    ]
+  },
+  "5": {
+   "generatedAt": "2026-09-24T19:56:19.749Z",
+   "vorschau": "Servus Brunnerschaft! RoboSepp hat wieder die Kristallkugel poliert und sieht diesen Spieltag kristallklar vor sich. Während ihr noch grübelnd beim Weißbier sitzt, tippe ich schon längst – und diesmal räum ich mit euch auf! 🤖⚽ Auf geht's!",
+   "tips": [
+    {
+     "h": "Borussia Dortmund",
+     "a": "Werder Bremen",
+     "tipp": "3:1",
+     "grund": "BVB zerlegt die Bremer wie ein altes Fahrrad – Modell sieht's richtig."
+    },
+    {
+     "h": "FC Augsburg",
+     "a": "FC Bayern München",
+     "tipp": "1:2",
+     "grund": "Bayern schlägt Augsburg auch im Schlaf, Modell kennt die Hierarchie."
+    },
+    {
+     "h": "1899 Hoffenheim",
+     "a": "Hamburger SV",
+     "tipp": "3:1",
+     "grund": "Hoffenheim ballert den HSV auseinander – zu viele Klasse-Unterschiede."
+    },
+    {
+     "h": "SC Paderborn 07",
+     "a": "VfB Stuttgart",
+     "tipp": "2:1",
+     "grund": "Paderborn hält knapp dagegen, Stuttgart siegt aber verdient."
+    },
+    {
+     "h": "FSV Mainz 05",
+     "a": "Bayer 04 Leverkusen",
+     "tipp": "2:2",
+     "grund": "Mainz und Leverkusen spielen sich gegenseitig müde – Remis-Gefühl."
+    },
+    {
+     "h": "1. FC Union Berlin",
+     "a": "SV Elversberg",
+     "tipp": "1:2",
+     "grund": "Elversberg hat in Berlin zu viel Respekt – Union dreht das Spiel."
+    },
+    {
+     "h": "RB Leipzig",
+     "a": "Eintracht Frankfurt",
+     "tipp": "3:1",
+     "grund": "Leipzig zerlegt Frankfurt wie gewohnt – Modell unterschätzt nicht."
+    },
+    {
+     "h": "1. FC Köln",
+     "a": "Bor. Mönchengladbach",
+     "tipp": "3:2",
+     "grund": "Köln und Gladbach liefern sich Schlagabtausch – Heimvorteil zählt."
+    },
+    {
+     "h": "SC Freiburg",
+     "a": "FC Schalke 04",
+     "tipp": "3:0",
+     "grund": "Schalke-Abstieg ist schon beschlossene Sache – Freiburg walzt durch."
+    }
+   ]
   }
  }
 }
