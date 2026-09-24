@@ -243,6 +243,7 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .tk-min{flex:0 0 38px;text-align:right;font-weight:700;color:var(--ink-2)}
 .tk-tx{min-width:0}
 .tk-hit{display:block;margin-top:2px;color:#188038;font-weight:650}
+.tk-quip{display:block;margin-top:2px;color:var(--ink-2);font-style:italic;font-size:12.5px}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tk-hit{color:#4cbf6e}}
 :root[data-theme="dark"] .tk-hit{color:#4cbf6e}
 /* Haushalts-Tabelle: Name + Bewohner-Avatare stur in EINER Zeile (Avatare überlappen leicht) */
@@ -1735,7 +1736,18 @@ function renderLiveMd(scope){
       }
       const ol=(C[ck]&&C[ck].d)||[];
       const norm=s=>String(s).toLowerCase().replace(/[^a-zä-ü0-9]/g,'');
-      const items=[];
+      const items=[], qreq=[];
+      // Fallback-Sprüche, falls RoboSepps Live-Kommentar (Worker/Haiku) nicht antwortet
+      const fbQuip=(id,exact)=>{const P=exact.length?[
+          exact.join(' & ')+' lehnt sich zurück und bestellt schon mal ein Weißbier.',
+          'Kicktipp-Poesie: genau so stand es auf dem Zettel von '+exact[0]+'.',
+          exact[0]+' tut jetzt bitte so, als wäre das Können gewesen.']:[
+          'Irgendwo in der 10a klirren die Gläser.',
+          'Die Konferenz bebt, die Tipps wackeln.',
+          'Ein Tor wie gemacht, um Tipps zu ruinieren.',
+          'Bitte bleiben Sie besonnen — es ist nur ein Tippspiel. Angeblich.',
+          'Der Fußballgott würfelt, die Brunnerschaft leidet.'];
+        let hsh=0; for(const c2 of id) hsh=(hsh*31+c2.charCodeAt(0))>>>0; return P[hsh%P.length];};
       ol.forEach(m=>{
         const h=m.team1&&m.team1.teamName, a=m.team2&&m.team2.teamName; if(!h||!a)return;
         const fi=lm.fixtures.findIndex(f=>norm(f[0])===norm(h)&&norm(f[1])===norm(a));
@@ -1744,10 +1756,34 @@ function renderLiveMd(scope){
         (m.goals||[]).forEach(g=>{
           const sh=g.scoreTeam1, sa=g.scoreTeam2; if(sh==null||sa==null)return;
           const exact=tips.filter(v=>v.t.h===sh&&v.t.a===sa).map(v=>dispFull(v.n));
+          const qid='g'+yr+'_'+lm.md+'_'+(g.goalID||gcode+'_'+sh+'_'+sa).toString().replace(/[^\w-]/g,'');
+          // Kontext für RoboSepps Kommentar: Spielstand + wer profitiert/leidet
+          const tend=sh>sa?1:sh<sa?-1:0;
+          const gegen=tips.filter(v=>(v.t.h>v.t.a?1:v.t.h<v.t.a?-1:0)===-tend&&tend!==0).map(v=>dispFull(v.n));
+          qreq.push({id:qid, ctx:`${g.matchMinute||'?'}. Min ${sh}:${sa} ${gcode}, Tor: ${g.goalGetterName||'?'}${g.isPenalty?' (Elfmeter)':''}${g.isOwnGoal?' (Eigentor)':''}.${exact.length?' Tipp steht jetzt exakt bei: '+exact.join(', ')+'.':''}${gegen.length?' Auf das Gegenteil getippt: '+gegen.slice(0,4).join(', ')+'.':''}`.slice(0,390)});
           items.push({ts:(fi>-1&&(lm.ko||[])[fi]||0)+(g.matchMinute||0)*60000,
-            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}</span>`});
+            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}<span class="tk-quip" data-qid="${qid}">🤖 „${esc(fbQuip(qid,exact))}“</span></span>`});
         });
       });
+      // 🟨🟥🔁 Karten & Wechsel vom Worker-Proxy (football-data.org) — nur wenn dort ein Token hinterlegt ist
+      try{
+        if(PUSH_URL&&window.__fdOn!==false){
+          const fk='fd_'+ck;
+          if(!C[fk]||Date.now()-C[fk].t>maxAge){
+            C[fk]={t:Date.now(), d:await (await fetch(PUSH_URL+'/events?season='+yr+'&md='+lm.md)).json()};
+          }
+          const fd=C[fk].d||{};
+          if(fd.enabled===false) window.__fdOn=false; // kein Token im Worker → nicht weiter anfragen
+          (fd.events||[]).forEach(e2=>{
+            const fi=lm.fixtures.findIndex(f=>norm(f[0])===norm(e2.h)&&norm(f[1])===norm(e2.a));
+            const gcode=code(e2.h||'?')+'–'+code(e2.a||'?');
+            const tx=e2.t==='sub'?`🔁 ${esc(gcode)} — ${esc(e2.plIn||'?')} ${L('kommt für','on for')} ${esc(e2.plOut||'?')}`
+              :`${e2.t==='red'?'🟥':'🟨'} ${esc(gcode)} — ${esc(e2.pl||'?')}`;
+            items.push({ts:(fi>-1&&(lm.ko||[])[fi]||0)+(e2.min||0)*60000,
+              html:`<span class="tk-min mono">${e2.min?e2.min+'′':'–'}</span><span class="tk-tx">${tx}</span>`});
+          });
+        }
+      }catch(e){}
       if(!items.length){ el.innerHTML=''; return; }
       items.sort((x,y)=>y.ts-x.ts); // neueste zuerst — wie beim 11Freunde-Ticker
       const prev=el.querySelector('details.ticker');
@@ -1755,6 +1791,13 @@ function renderLiveMd(scope){
       el.innerHTML=`<details class="ticker"${open?' open':''}>
         <summary>${liveIdx.length?'<span class="live-dot"></span> '+L('Liveticker','Live ticker'):'📼 '+L('Der Spielfilm','The match reel')}<span class="tk-n">${items.length} ${items.length===1?L('Tor','goal'):L('Tore','goals')}</span></summary>
         <div class="tk-feed">${items.map(i2=>`<div class="tk-row">${i2.html}</div>`).join('')}</div></details>`;
+      // 🤖 RoboSepps Live-Kommentare nachladen (Worker cached je Tor; ohne Antwort bleibt der Fallback-Spruch)
+      if(PUSH_URL&&qreq.length){
+        try{
+          const qs=await (await fetch(PUSH_URL+'/quips',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({events:qreq})})).json();
+          Object.entries(qs||{}).forEach(([id,q])=>{ const sp=el.querySelector(`.tk-quip[data-qid="${id}"]`); if(sp&&q) sp.innerHTML='🤖 „'+esc(q)+'“'; });
+        }catch(e){}
+      }
     }catch(e){ /* OpenLigaDB nicht erreichbar → Ticker einfach weglassen */ }
     if(liveIdx.length && !window.__tickerTimer)
       window.__tickerTimer=setInterval(()=>{ if(!document.hidden) renderLiveMd(scope); },75000);

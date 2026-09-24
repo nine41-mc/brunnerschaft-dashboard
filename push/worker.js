@@ -146,11 +146,86 @@ async function pushStats(env) {
   return { total, channels };
 }
 
+// ---------- 🤖 RoboSepp-Live-Kommentare: 1 Haiku-Batch-Call je Poll, KV-Cache je Tor ----------
+async function quips(env, body) {
+  const evs = Array.isArray(body.events) ? body.events.slice(0, 40) : [];
+  const out = {};
+  const missing = [];
+  for (const e of evs) {
+    if (!e || typeof e.id !== 'string' || !/^[\w:-]{4,60}$/.test(e.id)) continue;
+    const hit = await env.SUBS.get('q_' + e.id);
+    if (hit) out[e.id] = hit;
+    else if (typeof e.ctx === 'string' && e.ctx.length <= 400) missing.push({ id: e.id, ctx: e.ctx });
+  }
+  if (missing.length && env.ANTHROPIC_API_KEY) {
+    // Tagesdeckel gegen Missbrauch (die Seite ist öffentlich erreichbar)
+    const capK = 'qcap_' + new Date().toISOString().slice(0, 10);
+    const used = +(await env.SUBS.get(capK) || 0);
+    if (used < 150) {
+      const profiles = await env.SUBS.get('profiles') || '';
+      const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis).${profiles ? `\n\nWas du über die Tipper weißt (nur nutzen, wenn es passt):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(m => m.id + ' | ' + m.ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"...","q":"..."}]`;
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+          headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1200, temperature: 0.8,
+            messages: [{ role: 'user', content: prompt }] }) });
+        if (r.ok) {
+          const txt = (await r.json()).content?.[0]?.text || '';
+          const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
+          for (const it of arr) {
+            const id = String(it.id || ''), q = String(it.q || '').slice(0, 160);
+            if (missing.find(m => m.id === id) && q) { out[id] = q; await env.SUBS.put('q_' + id, q); }
+          }
+          await env.SUBS.put(capK, String(used + missing.length), { expirationTtl: 172800 });
+        }
+      } catch (e) {}
+    }
+  }
+  return out;
+}
+
+// ---------- 🟨🔁 Karten & Wechsel via football-data.org (optionaler Token) ----------
+async function fdEvents(env, season, md) {
+  if (!env.FOOTBALL_DATA_TOKEN) return { events: [], enabled: false };
+  const H = { 'X-Auth-Token': env.FOOTBALL_DATA_TOKEN };
+  const lk = `fdl_${season}_${md}`;
+  let list = null; try { list = JSON.parse(await env.SUBS.get(lk)); } catch (e) {}
+  if (!list) {
+    const r = await fetch(`https://api.football-data.org/v4/competitions/BL1/matches?season=${season}&matchday=${md}`, { headers: H });
+    if (!r.ok) return { events: [], enabled: true, error: r.status };
+    list = await r.json();
+    await env.SUBS.put(lk, JSON.stringify(list), { expirationTtl: 300 });
+  }
+  const events = [];
+  for (const m of (list.matches || [])) {
+    if (!['IN_PLAY', 'PAUSED', 'FINISHED'].includes(m.status)) continue;
+    const mk = 'fdm_' + m.id;
+    let d = null; try { d = JSON.parse(await env.SUBS.get(mk)); } catch (e) {}
+    if (!d) {
+      const r = await fetch('https://api.football-data.org/v4/matches/' + m.id, { headers: H });
+      if (!r.ok) continue; // Ratenlimit (10/min) — Rest kommt beim nächsten Poll
+      d = await r.json();
+      // fertige Spiele quasi für immer cachen, laufende nur kurz
+      await env.SUBS.put(mk, JSON.stringify(d), { expirationTtl: m.status === 'FINISHED' ? 604800 : 90 });
+    }
+    const base = { h: m.homeTeam?.name, a: m.awayTeam?.name };
+    (d.bookings || []).forEach(b => events.push({ ...base, t: b.card === 'RED_CARD' ? 'red' : 'yellow', min: b.minute, pl: b.player?.name || '' }));
+    (d.substitutions || []).forEach(s => events.push({ ...base, t: 'sub', min: s.minute, plIn: s.playerIn?.name || '', plOut: s.playerOut?.name || '' }));
+  }
+  return { events, enabled: true };
+}
+
 export default {
   async fetch(req, env) {
     CORS = corsFor(req);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
+    if (req.method === 'GET' && url.pathname === '/events') {
+      const season = Math.min(2099, Math.max(2020, +(url.searchParams.get('season') || 0)));
+      const md = Math.min(34, Math.max(1, +(url.searchParams.get('md') || 0)));
+      if (!season || !md) return json({ error: 'season+md?' }, 400);
+      try { return json(await fdEvents(env, season, md)); } catch (e) { return json({ events: [], enabled: true, error: 'fetch' }); }
+    }
     if (req.method === 'GET' && url.pathname === '/stats') {
       const days = Math.min(60, Math.max(1, +(url.searchParams.get('days') || 30)));
       const out = await statsOut(env, days); // nur anonyme Aggregate — keine IDs, keine Namen
@@ -178,6 +253,17 @@ export default {
       await env.SUBS.delete(await subKey(body.endpoint));
       return json({ ok: true });
     }
+    if (url.pathname === '/quips') {
+      const body = await req.json().catch(() => ({}));
+      return json(await quips(env, body || {}));
+    }
+    if (url.pathname === '/profiles') { // Tipper-Profile (Bullets) — nur der Kassenwart schreibt, gelesen wird nur intern für Prompts
+      if (req.headers.get('Authorization') !== `Bearer ${env.NOTIFY_SECRET}`) return json({ error: 'unauthorized' }, 401);
+      const txt = await req.text();
+      if (txt.length > 8000) return json({ error: 'too long' }, 400);
+      await env.SUBS.put('profiles', txt);
+      return json({ ok: true, chars: txt.length });
+    }
     if (url.pathname === '/notify') {
       if (req.headers.get('Authorization') !== `Bearer ${env.NOTIFY_SECRET}`) return json({ error: 'unauthorized' }, 401);
       const msg = await req.json().catch(() => null);
@@ -187,13 +273,23 @@ export default {
     return json({ error: 'not found' }, 404);
   },
 
-  // Freitags-Tipp-Erinnerung (Cron in wrangler.toml, UTC)
+  // Tipp-Erinnerung: Cron läuft täglich — gesendet wird NUR, wenn der nächste Spieltag
+  // heute startet und noch kein Spiel angepfiffen wurde (Quelle: OpenLigaDB, aktueller Spieltag).
   async scheduled(event, env) {
-    await broadcast(env, {
-      title: '🖊️ Bald rollt der Ball!',
-      body: 'Heute Abend startet der Spieltag. Schon getippt?',
-      tag: 'brun-remind', channel: 'remind',
-      url: 'https://www.kicktipp.de/brunnerschaft/tippabgabe',
-    });
+    try {
+      const md = await (await fetch('https://api.openligadb.de/getmatchdata/bl1')).json();
+      const kos = (md || []).map(m => new Date(m.matchDateTimeUTC || m.matchDateTime || 0).getTime()).filter(Boolean);
+      if (!kos.length) return;
+      const first = Math.min(...kos);
+      if (first <= Date.now()) return; // Spieltag läuft schon oder ist durch → nichts nerven
+      const day = t => new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit' }).format(new Date(t));
+      if (day(first) !== day(Date.now())) return; // erster Anstoß ist nicht heute → kein Reminder
+      await broadcast(env, {
+        title: '🖊️ Bald rollt der Ball!',
+        body: 'Heute Abend startet der Spieltag. Schon getippt?',
+        tag: 'brun-remind', channel: 'remind',
+        url: 'https://www.kicktipp.de/brunnerschaft/tippabgabe',
+      });
+    } catch (e) {}
   },
 };

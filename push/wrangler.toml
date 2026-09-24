@@ -8,6 +8,7 @@ account_id = "94ecf1a532fd478f390323d7f5756be8"
 binding = "SUBS"
 id = "7824c3abf05648a4bcb87e346a85e5db"
 
-# Freitags-Tipp-Erinnerung: 15:00 UTC = 17:00 MESZ (Winter: 16:00 — bewusst simpel gehalten)
+# Tipp-Erinnerung: läuft TÄGLICH 15:00 UTC — der Worker prüft selbst via OpenLigaDB,
+# ob der nächste Spieltag heute startet (Cloudflare-Cron zählt 1=Sonntag, "5" war Donnerstag!)
 [triggers]
-crons = ["0 15 * * 5"]
+crons = ["0 15 * * *"]
