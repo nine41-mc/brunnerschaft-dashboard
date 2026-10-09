@@ -282,7 +282,7 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsFor(req) });
     return withCors(await route(req, env), req);
   },
-  scheduled: (event, env) => remind(event, env),
+  scheduled: (event, env) => event.cron === '*/5 * * * *' ? liveKick(env) : remind(event, env),
 };
 
 async function route(req, env) {
@@ -348,6 +348,23 @@ async function route(req, env) {
       return json(await broadcast(env, { title: msg.title, body: msg.body || '', tag: msg.tag || 'brun', channel: msg.channel || null, url: msg.url || 'https://nine41-mc.github.io/brunnerschaft-dashboard/' }));
     }
     return json({ error: 'not found' }, 404);
+}
+
+// ⚡ Live-Anstoß: GitHub verschluckt geplante Workflows an Spieltagen gern komplett (z. B. 09.10.2026).
+// Cloudflare-Crons laufen zuverlässig — darum stößt der Worker alle 5 Min den Deploy an, solange ein Spiel läuft.
+// Braucht das Secret GH_DISPATCH_TOKEN (Fine-grained PAT, nur dieses Repo, „Actions: Read and write").
+async function liveKick(env) {
+  if (!env.GH_DISPATCH_TOKEN) return;
+  try {
+    const md = await (await fetch('https://api.openligadb.de/getmatchdata/bl1')).json();
+    const now = Date.now();
+    const live = (md || []).some(m => { const k = new Date(m.matchDateTimeUTC || m.matchDateTime || 0).getTime();
+      return k && now >= k - 5 * 60000 && now <= k + 135 * 60000; }); // Anpfiff −5 bis +135 Min (inkl. Nachspielzeit + Endstand)
+    if (!live) return;
+    await fetch('https://api.github.com/repos/nine41-mc/brunnerschaft-dashboard/actions/workflows/deploy.yml/dispatches', {
+      method: 'POST', body: JSON.stringify({ ref: 'main' }),
+      headers: { Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'brunnerschaft-worker' } });
+  } catch (e) {}
 }
 
 // Tipp-Erinnerung: zwei Crons (08:00 + 15:00 UTC). Gesendet wird nur am Tag des ersten Anstoßes:
