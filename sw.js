@@ -1,6 +1,6 @@
 // Brunnerschaft-Dashboard Service Worker
 // Netz-zuerst mit Cache-Fallback: online immer frisch (Live-Daten!), offline/lahm die letzte Version.
-const CACHE = 'brunnerschaft-v1';
+const CACHE = 'brunnerschaft-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
@@ -12,7 +12,7 @@ self.addEventListener('fetch', e => {
     try {
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(), 4500);
-      const fresh = await fetch(req, { signal: ctrl.signal });
+      const fresh = await fetch(req, { signal: ctrl.signal, cache: 'no-cache' }); // Revalidieren statt 10-Min-HTTP-Cache von GitHub Pages
       clearTimeout(to);
       if (fresh && fresh.ok) {
         const c = await caches.open(CACHE);

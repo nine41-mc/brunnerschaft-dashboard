@@ -73,7 +73,7 @@ async function llmRefine(tips, model, mdNo) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) { console.log('Kein ANTHROPIC_API_KEY — reines Statistik-Modell.'); return tips; }
   const lines = tips.map(t => `${t.h} – ${t.a} | Modell-Tipp ${t.th}:${t.ta} | erwartete Tore ${ (model.avgH*model.att(t.h)*model.def(t.a)).toFixed(2) }:${ (model.avgA*model.att(t.a)*model.def(t.h)).toFixed(2) }`).join('\n');
-  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Hier der ${mdNo}. Bundesliga-Spieltag mit den Tipps meines Statistik-Modells:\n\n${lines}\n\nDeine Aufgabe: Prüfe jeden Tipp mit deinem Fußballwissen. Du darfst das Ergebnis anpassen, wenn du gute Gründe hast (Form, Kader, Derby-Logik) — realistisch bleiben (0-5 Tore). Zu JEDEM Spiel schreibst du GENAU EINEN frechen, kurzen Satz auf Deutsch als Begründung (max. 90 Zeichen, gern mit Augenzwinkern zu den Vereinen, nie beleidigend).\n\nAntworte NUR mit einem JSON-Array, exakt ein Objekt pro Spiel in derselben Reihenfolge:\n[{"tipp":"2:1","grund":"..."}]`;
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft" (Achtung: Elias, Luisa und Marie sind Kinder — bei ihnen nie Alkohol-Anspielungen, höchstens Apfelschorle oder Robby Bubble). Hier der ${mdNo}. Bundesliga-Spieltag mit den Tipps meines Statistik-Modells:\n\n${lines}\n\nDeine Aufgabe: Prüfe jeden Tipp mit deinem Fußballwissen. Du darfst das Ergebnis anpassen, wenn du gute Gründe hast (Form, Kader, Derby-Logik) — realistisch bleiben (0-5 Tore). Zu JEDEM Spiel schreibst du GENAU EINEN frechen, kurzen Satz auf Deutsch als Begründung (max. 90 Zeichen, gern mit Augenzwinkern zu den Vereinen, nie beleidigend).\n\nAntworte NUR mit einem JSON-Array, exakt ein Objekt pro Spiel in derselben Reihenfolge:\n[{"tipp":"2:1","grund":"..."}]`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -121,7 +121,7 @@ async function llmPreview(tips, mdNo) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   const lines = tips.map(t => `${t.h} – ${t.a}: ${t.th != null ? t.th + ':' + t.ta : t.tipp}`).join('\n');
-  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Gleich startet der ${mdNo}. Bundesliga-Spieltag, das sind deine Tipps:\n\n${lines}\n\nSchreibe eine freche Spieltags-Vorschau aus deiner Sicht: 2 bis 3 Sätze, max. 320 Zeichen, Augenzwinkern erlaubt, gern eine kleine Kampfansage an die menschlichen Tipper, nie beleidigend. Keine Ergebnisse, keine Rückschau. Antworte NUR mit JSON: {"vorschau":"..."}`;
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft" (Achtung: Elias, Luisa und Marie sind Kinder — bei ihnen nie Alkohol-Anspielungen, höchstens Apfelschorle oder Robby Bubble). Gleich startet der ${mdNo}. Bundesliga-Spieltag, das sind deine Tipps:\n\n${lines}\n\nSchreibe eine freche Spieltags-Vorschau aus deiner Sicht: 2 bis 3 Sätze, max. 320 Zeichen, Augenzwinkern erlaubt, gern eine kleine Kampfansage an die menschlichen Tipper, nie beleidigend. Keine Ergebnisse, keine Rückschau. Antworte NUR mit JSON: {"vorschau":"..."}`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -153,7 +153,7 @@ async function llmReasons(games, mdNo) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) { console.log('Kein ANTHROPIC_API_KEY — Backfill braucht ihn.'); return null; }
   const lines = games.map(g => `${g.h} – ${g.a} | RoboSepps Tipp: ${g.tipp}`).join('\n');
-  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Das sind deine bereits abgegebenen Tipps zum ${mdNo}. Bundesliga-Spieltag:\n\n${lines}\n\nSchreibe zu JEDEM Spiel GENAU EINEN frechen, kurzen Begründungssatz auf Deutsch (max. 90 Zeichen, Augenzwinkern erlaubt, nie beleidigend). WICHTIG: Du schreibst aus der Sicht VOR dem Spieltag — du kennst keine Ergebnisse, keine Rückschau, kein "hätte/wäre".\n\nAntworte NUR mit einem JSON-Array in derselben Reihenfolge: [{"grund":"..."}]`;
+  const prompt = `Du bist RoboSepp, der KI-Tipper der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft" (Achtung: Elias, Luisa und Marie sind Kinder — bei ihnen nie Alkohol-Anspielungen, höchstens Apfelschorle oder Robby Bubble). Das sind deine bereits abgegebenen Tipps zum ${mdNo}. Bundesliga-Spieltag:\n\n${lines}\n\nSchreibe zu JEDEM Spiel GENAU EINEN frechen, kurzen Begründungssatz auf Deutsch (max. 90 Zeichen, Augenzwinkern erlaubt, nie beleidigend). WICHTIG: Du schreibst aus der Sicht VOR dem Spieltag — du kennst keine Ergebnisse, keine Rückschau, kein "hätte/wäre".\n\nAntworte NUR mit einem JSON-Array in derselben Reihenfolge: [{"grund":"..."}]`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },

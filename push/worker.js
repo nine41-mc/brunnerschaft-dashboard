@@ -212,7 +212,7 @@ async function quips(env, body) {
     goals[g.goalID] = { min: g.matchMinute, st: g.scoreTeam1 + ':' + g.scoreTeam2, who: (g.goalGetterName || '').slice(0, 40),
       game: (m.team1?.shortName || m.team1?.teamName) + ' – ' + (m.team2?.shortName || m.team2?.teamName), pen: g.isPenalty, og: g.isOwnGoal };
   const missing = want.filter(w => goals[w.gid]).slice(0, 12);
-  if (!missing.length) return out;
+  if (!missing.length || memGet('llm_off')) return out; // Key ungültig → 10 Min Pause statt Limit zu verbrennen
   // Tagesdeckel VOR dem Call hochzählen — parallele Anfragen können ihn so nicht umgehen
   const capK = 'qcap_' + new Date().toISOString().slice(0, 10);
   const used = +(await env.SUBS.get(capK) || 0);
@@ -222,12 +222,16 @@ async function quips(env, body) {
     return `${w.gid} | ${g.min || '?'}. Min, ${g.st} ${g.game}, Tor: ${g.who || '?'}${g.pen ? ' (Elfmeter)' : ''}${g.og ? ' (Eigentor)' : ''}.`
       + (w.exact.length ? ` Tipp steht jetzt exakt bei: ${w.exact.join(', ')}.` : '') + (w.gegen.length ? ` Aufs Gegenteil getippt: ${w.gegen.join(', ')}.` : ''); };
   const profiles = await env.SUBS.get('profiles') || '';
-  const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis).${profiles ? `\n\nHintergrundwissen über die Tipper (nur für Anspielungen, nie wörtlich zitieren oder auflisten):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"<Zahl vor dem |>","q":"..."}]`;
+  const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis). WICHTIG: Elias, Luisa und Marie sind Kinder — bei ihnen nie Alkohol-, Kneipen- oder Kater-Anspielungen; wenn ein Getränk, dann Apfelschorle oder Robby Bubble, und der Spott bleibt lieb.${profiles ? `\n\nHintergrundwissen über die Tipper (nur für Anspielungen, nie wörtlich zitieren oder auflisten):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"<Zahl vor dem |>","q":"..."}]`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1200, temperature: 0.8, messages: [{ role: 'user', content: prompt }] }) });
-    if (!r.ok) return out;
+    if (!r.ok) {
+      if (r.status === 401 || r.status === 403) memSet('llm_off', 1, 10 * 60 * 1000);
+      await env.SUBS.put(capK, String(used), { expirationTtl: 172800 }); // Fehlversuch zählt nicht ins Tageslimit
+      return out;
+    }
     const txt = (await r.json()).content?.[0]?.text || '';
     const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
     let added = 0;

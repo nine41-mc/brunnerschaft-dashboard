@@ -1789,11 +1789,16 @@ function renderLiveMd(scope){
       const fixIdx=(h,a)=>lm.fixtures.findIndex(f=>sameTeam(f[0],h)&&sameTeam(f[1],a));
       const items=[], qreq=[];
       // Fallback-Sprüche, falls RoboSepps Live-Kommentar (Worker/Haiku) nicht antwortet
-      const fbQuip=(id,exact)=>{const P=exact.length?[
-          exact.join(' & ')+' lehnt sich zurück und bestellt schon mal ein Weißbier.',
+      const KIDN=new Set([...KIDS].map(dispFull));
+      const fbQuip=(id,exact)=>{const kid=exact.some(n=>KIDN.has(n)), pl=exact.length>1;
+        const who=exact.length>2?exact.slice(0,2).join(', ')+' & Co.':exact.join(' & ');
+        let hsh0=0; for(const c2 of id) hsh0=(hsh0*31+c2.charCodeAt(0))>>>0;
+        const drink=kid?(hsh0%2?'eine Apfelschorle':'ein Robby Bubble'):'ein Weißbier';
+        const P=exact.length?[
+          who+(pl?' lehnen sich zurück und bestellen':' lehnt sich zurück und bestellt')+' schon mal '+drink+'.',
           'Kicktipp-Poesie: genau so stand es auf dem Zettel von '+exact[0]+'.',
           exact[0]+' tut jetzt bitte so, als wäre das Können gewesen.']:[
-          'Irgendwo in der 10a klirren die Gläser.',
+          'Irgendwo in der Brunnerschaft wird gejubelt.',
           'Die Konferenz bebt, die Tipps wackeln.',
           'Ein Tor wie gemacht, um Tipps zu ruinieren.',
           'Bitte bleiben Sie besonnen — es ist nur ein Tippspiel. Angeblich.',
@@ -1807,13 +1812,14 @@ function renderLiveMd(scope){
         (m.goals||[]).forEach(g=>{
           const sh=g.scoreTeam1, sa=g.scoreTeam2; if(sh==null||sa==null)return;
           const exact=tips.filter(v=>v.t.h===sh&&v.t.a===sa).map(v=>dispFull(v.n));
+          const exactH=tips.filter(v=>v.t.h===sh&&v.t.a===sa&&!TBOTS.has(v.n)).map(v=>dispFull(v.n));
           const qid=String(g.goalID||('x'+sh+'_'+sa+'_'+fi)); // Worker kennt nur OpenLigaDB-goalIDs
           // Kontext für RoboSepps Kommentar: Spielstand + wer profitiert/leidet
           const tend=sh>sa?1:sh<sa?-1:0;
           const gegen=tips.filter(v=>(v.t.h>v.t.a?1:v.t.h<v.t.a?-1:0)===-tend&&tend!==0).map(v=>dispFull(v.n));
-          if(g.goalID) qreq.push({gid:String(g.goalID), exact, gegen:gegen.slice(0,4)}); // Fakten ergänzt der Worker selbst
+          if(g.goalID) qreq.push({gid:String(g.goalID), exact:exactH, gegen:gegen.filter(n=>n!=='RoboSepp').slice(0,4)}); // Fakten ergänzt der Worker selbst
           items.push({goal:1, ko:(fi>-1&&(lm.ko||[])[fi])||0, ts:(fi>-1&&(lm.ko||[])[fi]||0)+(g.matchMinute||0)*60000,
-            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}<span class="tk-quip" data-qid="${qid}">🤖 „${esc(fbQuip(qid,exact))}“</span></span>`});
+            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}<span class="tk-quip" data-qid="${qid}">🤖 „${esc(fbQuip(qid,exactH))}“</span></span>`});
         });
       });
       // 🟨🟥🔁 Karten & Wechsel vom Worker-Proxy (football-data.org) — nur wenn dort ein Token hinterlegt ist
@@ -1865,7 +1871,7 @@ function renderLiveMd(scope){
         }
         const O=window.__oracle;
         if(O&&O.rows&&O.rows.length&&scope===SEASONS.find(x=>x.running)?.id){ const f=O.rows[0];
-          row('🎪',L(`Das KI-Orakel sieht <b>${esc(dispFull(f.name))}</b> mit ${Math.round(f.fest)} % als Ausrichter des Saison-Fests. ${spruch('pre_fest',['Schon mal Grillkohle besorgen schadet nicht.','Noch ist nichts verloren — außer vielleicht der Partykeller.','Die Nachbarn haben schon mal vorsorglich Bier kaltgestellt.'])}`,
+          row('🎪',L(`Das KI-Orakel sieht <b>${esc(dispFull(f.name))}</b> mit ${Math.round(f.fest)} % als Ausrichter des Saison-Fests. ${KIDS.has(f.name)?spruch('pre_fest_kid',['Schon mal Luftballons besorgen schadet nicht.','Die Nachbarn stellen vorsorglich Apfelschorle und Robby Bubble kalt.','Noch ist nichts verloren — die Konfetti-Kanone bleibt vorerst im Schrank.']):spruch('pre_fest',['Schon mal Grillkohle besorgen schadet nicht.','Noch ist nichts verloren — außer vielleicht der Partykeller.','Die Nachbarn haben schon mal vorsorglich Bier kaltgestellt.'])}`,
             `The AI oracle has <b>${esc(dispFull(f.name))}</b> at ${Math.round(f.fest)} % to host the season party.`)); }
         const fm=formMap(scope)||{}, hot=Object.keys(fm).filter(n=>fm[n]==='🔥').map(n=>esc(dispFull(n))), cold=Object.keys(fm).filter(n=>fm[n]==='❄️').map(n=>esc(dispFull(n)));
         if(hot.length||cold.length) row('🌡️',L(`Formkurve: ${hot.length?'heiß gelaufen 🔥 '+hot.join(', '):''}${hot.length&&cold.length?' · ':''}${cold.length?'eiskalt ❄️ '+cold.join(', '):''}.`,
@@ -2110,6 +2116,7 @@ function renderBestTeam(){
 const NFULL={'CH7':'Claus','Manurinho':'Manu','Lutz_Brunner7b':'Lutz','Tobias':'Tobi','Maxsen':'MaxSen','Maxjun.':'MaxJun','BigBen':'Ben','Messi':'Elias','LuLu':'Luisa'}; // Anzeigenamen (überall)
 const NSHORT={'Matthew':'Matt','RoboSepp':'Robo'}; // nur bei Platznot (mobil)
 const NFEM=new Set(['Marie','LuLu']); // Tipperinnen — für geschlechtsangepasste Labels
+const KIDS=new Set(['Messi','LuLu','Marie']); // Kinder: in Sprüchen nie Alkohol — Apfelschorle & Robby Bubble statt Weißbier
 const TBOTS=new Set(['RoboSepp']); // Bots: nur Zwischenstand, Hochrechnung, Spieltags-Browser
 const PUSH_URL='https://brunnerschaft-push.brunnerschaft.workers.dev'; // Cloudflare-Worker für Web Push
 const VAPID_PUB='BI2wQK54-pZ40rn2QzC99mi0ZfoQN4orGWQP6S8N8AlGYv2m5f3c0ppCYF_zCUZVnNPAvoSg71-dpbGvzLSHSvM';
