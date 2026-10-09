@@ -26,7 +26,8 @@ if (neu.anyLive && oldSt.md === neu.md) {
 }
 
 // 👑 Führungswechsel
-if (oldSt.leader && neu.leader && oldSt.leader !== neu.leader) {
+// nur echte Überholung — bei Punktgleichheit wechselt Kicktipp die Reihenfolge ohne sportlichen Grund
+if (oldSt.leader && neu.leader && oldSt.leader !== neu.leader && neu.leaderPts > neu.secondPts) {
   events.push({ title: '👑 Führungswechsel!', body: `${nm(neu.leader)} überholt ${nm(oldSt.leader)} — ${neu.leaderPts}:${neu.secondPts}`, tag: 'brun-lead', channel: 'lead', link: '#go=stand' });
 }
 

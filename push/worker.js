@@ -70,23 +70,54 @@ async function sendPush(sub, payload, env) {
 }
 
 // ---------- Versand an alle Abos ----------
+// Abos liegen unter "sub_<hash>" — getrennt von Analytics, Sprüchen & Caches im selben Namespace.
+const SUB_PREFIX = 'sub_';
+async function listNames(env, prefix) { // KV liefert max. 1000 Keys pro Seite → Cursor durchblättern
+  const names = []; let cursor;
+  do {
+    const r = await env.SUBS.list(prefix ? { prefix, cursor } : { cursor });
+    for (const k of r.keys) names.push(k.name);
+    cursor = r.list_complete ? null : r.cursor;
+  } while (cursor);
+  return names;
+}
+async function subNames(env) {
+  const names = await listNames(env, SUB_PREFIX);
+  // Einmal-Umzug: Abos von vor 10/2026 lagen ohne Präfix (32-Zeichen-Hash) im Namespace
+  if (!(await env.SUBS.get('meta_subs_v2'))) {
+    const legacy = (await listNames(env)).filter(n => /^[\w-]{32}$/.test(n));
+    for (const n of legacy) {
+      const raw = await env.SUBS.get(n);
+      try { const rec = JSON.parse(raw); if (!((rec.subscription || rec).endpoint)) continue; } catch (e) { continue; }
+      await env.SUBS.put(SUB_PREFIX + n, raw);
+      await env.SUBS.delete(n);
+      if (!names.includes(SUB_PREFIX + n)) names.push(SUB_PREFIX + n);
+    }
+    await env.SUBS.put('meta_subs_v2', '1');
+  }
+  return names;
+}
+async function readSub(env, name) { // null bei allem, was kein gültiges Abo ist — wirft nie
+  try {
+    const rec = JSON.parse(await env.SUBS.get(name));
+    const sub = rec && (rec.subscription || rec); // alte Einträge = rohes Abo
+    return sub && sub.endpoint && sub.keys ? { sub, cats: rec.cats || {} } : null;
+  } catch (e) { return null; }
+}
 async function broadcast(env, msg) {
-  const list = await env.SUBS.list();
-  let ok = 0, gone = 0, fail = 0;
-  for (const k of list.keys) {
-    const raw = await env.SUBS.get(k.name); if (!raw) continue;
-    const rec = JSON.parse(raw);
-    const sub = rec.subscription || rec;            // alte Einträge = rohes Abo
-    const cats = rec.cats || {};
-    if (msg.channel && cats[msg.channel] === false) continue; // Kanal abbestellt
+  const names = await subNames(env);
+  let ok = 0, gone = 0, fail = 0, skipped = 0;
+  for (const name of names) {
+    const s = await readSub(env, name); if (!s) { skipped++; continue; }
+    if (msg.channel && s.cats[msg.channel] === false) continue; // Kanal abbestellt
     try {
-      const r = await sendPush(sub, JSON.stringify(msg), env);
-      if (r.status === 404 || r.status === 410) { await env.SUBS.delete(k.name); gone++; }
+      const r = await sendPush(s.sub, JSON.stringify(msg), env);
+      if (r.status === 404 || r.status === 410) { await env.SUBS.delete(name); gone++; }
       else if (r.ok || r.status === 201) ok++;
       else fail++;
     } catch (e) { fail++; }
   }
-  return { ok, gone, fail, total: list.keys.length };
+  return { ok, gone, fail, skipped, total: names.length };
 }
 
 async function subKey(endpoint) {
@@ -130,18 +161,13 @@ async function statsOut(env, days) {
   return { days: out, wau: w7.size, mau: m30.size }; // WAU/MAU = Geräte-Vereinigung über 7/30 Tage
 }
 async function pushStats(env) {
-  const list = await env.SUBS.list();
   const CH = ['p4', 'lead', 'done', 'bonus', 'remind'];
   const channels = {}; CH.forEach(c => channels[c] = 0);
   let total = 0;
-  for (const k of list.keys) {
-    if (k.name.startsWith('an_')) continue; // Analytics-Tageszähler überspringen
-    const raw = await env.SUBS.get(k.name); if (!raw) continue;
-    let rec; try { rec = JSON.parse(raw); } catch (e) { continue; }
-    if (!((rec.subscription && rec.subscription.endpoint) || rec.endpoint)) continue;
+  for (const name of await subNames(env)) {
+    const s = await readSub(env, name); if (!s) continue;
     total++;
-    const cats = rec.cats || {};
-    CH.forEach(c => { if (cats[c] !== false) channels[c]++; }); // fehlend = abonniert
+    CH.forEach(c => { if (s.cats[c] !== false) channels[c]++; }); // fehlend = abonniert
   }
   return { total, channels };
 }
@@ -244,13 +270,15 @@ export default {
       const sub = body && body.subscription;
       if (!sub || !sub.endpoint || !sub.keys) return json({ error: 'bad subscription' }, 400);
       const cats = (body.cats && typeof body.cats === 'object') ? body.cats : {};
-      await env.SUBS.put(await subKey(sub.endpoint), JSON.stringify({ subscription: sub, cats }));
+      await env.SUBS.put(SUB_PREFIX + await subKey(sub.endpoint), JSON.stringify({ subscription: sub, cats }));
       return json({ ok: true });
     }
     if (url.pathname === '/unsubscribe') {
       const body = await req.json().catch(() => null);
       if (!body || !body.endpoint) return json({ error: 'bad request' }, 400);
-      await env.SUBS.delete(await subKey(body.endpoint));
+      const k = await subKey(body.endpoint);
+      await env.SUBS.delete(SUB_PREFIX + k);
+      await env.SUBS.delete(k); // Altbestand ohne Präfix
       return json({ ok: true });
     }
     if (url.pathname === '/quips') {
