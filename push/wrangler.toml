@@ -8,7 +8,7 @@ account_id = "94ecf1a532fd478f390323d7f5756be8"
 binding = "SUBS"
 id = "7824c3abf05648a4bcb87e346a85e5db"
 
-# Tipp-Erinnerung: läuft TÄGLICH 15:00 UTC — der Worker prüft selbst via OpenLigaDB,
-# ob der nächste Spieltag heute startet (Cloudflare-Cron zählt 1=Sonntag, "5" war Donnerstag!)
+# Tipp-Erinnerung: läuft täglich 08:00 + 15:00 UTC — der Worker prüft selbst via OpenLigaDB, ob der
+# nächste Spieltag heute startet, und nimmt den passenden Lauf (früher Anpfiff → morgens, sonst nachmittags)
 [triggers]
-crons = ["0 15 * * *"]
+crons = ["0 8 * * *", "0 15 * * *"]

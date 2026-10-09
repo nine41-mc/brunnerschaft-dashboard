@@ -7,9 +7,11 @@ name: Live-Loop (Spieltage)
 # beenden sich sofort, wenn das Fenster vorbei ist.
 on:
   schedule:
-    - cron: '7,37 18-20 * * 5'  # Fr ~20–23 MESZ
-    - cron: '7,37 13-18 * * 6'  # Sa ~15–21 MESZ
-    - cron: '7,37 13-19 * * 0'  # So ~15–22 MESZ
+    # Cron läuft in UTC — die Fenster decken Sommer- (UTC+2) und Winterzeit (UTC+1) ab;
+    # das eigentliche Ende bestimmt der Loop unten in Berliner Ortszeit.
+    - cron: '7,37 18-21 * * 5'  # Fr ~19/20–23 Uhr
+    - cron: '7,37 13-19 * * 6'  # Sa ~14/15–21 Uhr
+    - cron: '7,37 13-20 * * 0'  # So ~14/15–22 Uhr
   workflow_dispatch:             # manuell startbar (Pokalabende: läuft dann mind. 1 Stunde)
 
 permissions:
@@ -28,12 +30,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Fenster-Ende (UTC) je Wochentag; außerhalb (manueller Start) mind. 1 Stunde laufen
-          DOW=$(date -u +%u)   # 1=Mo … 5=Fr 6=Sa 7=So
+          # Fenster-Ende in BERLINER Ortszeit je Wochentag — gilt so für Sommer- UND Winterzeit
+          # (letzter Anpfiff + ~2 h: Fr 20:30 → 23:10, Sa 18:30 → 21:10, So 19:30 → 21:40)
+          DOW=$(TZ=Europe/Berlin date +%u)   # 1=Mo … 5=Fr 6=Sa 7=So
           case "$DOW" in
-            5) END=$(date -u -d "today 21:10" +%s) ;;
-            6) END=$(date -u -d "today 19:10" +%s) ;;
-            7) END=$(date -u -d "today 19:40" +%s) ;;
+            5) END=$(TZ=Europe/Berlin date -d "today 23:10" +%s) ;;
+            6) END=$(TZ=Europe/Berlin date -d "today 21:10" +%s) ;;
+            7) END=$(TZ=Europe/Berlin date -d "today 21:40" +%s) ;;
             *) END=0 ;;
           esac
           NOW=$(date -u +%s)
