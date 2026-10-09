@@ -129,6 +129,7 @@ section.block{margin:38px 0}
 .rscroll{overflow-x:auto;max-width:100%}
 .bcc-sel{display:none} /* Kategorie-Dropdown nur mobil */
 .mshort{display:none}  /* Kurz-Labels nur mobil (siehe Mobile-Block) */
+.mblk{display:none} /* Zusatzzeile nur mobil */
 .bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
 /* Horizontale Scrollbalken überall ausblenden (Scrollen per Wisch/Trackpad bleibt möglich) */
 .rscroll,.tbl-wrap,.heat-wrap{scrollbar-width:none;overscroll-behavior-x:none}
@@ -266,7 +267,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .rs-c-res{font-size:12px;font-weight:800;padding:2px 8px;border-radius:7px;margin-left:auto}
 .rs-c-quote{font-size:13.5px;font-style:italic;color:var(--ink-2);line-height:1.45}
 .rs-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
-.rs-dot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--line-2);cursor:pointer;transition:transform .15s,background .15s}
+.rs-dot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--line-2);cursor:pointer;transition:transform .15s,background .15s;position:relative}
+.rs-dot::after{content:'';position:absolute;inset:-12px -6px} /* unsichtbare 19×31-px-Tippfläche */
 .rs-dot.on{background:#7b52c7;transform:scale(1.35)}
 .an-tiles .tile{min-height:0;padding:16px 18px 14px}
 .an-tiles .tile .big{margin-top:7px;font-size:26px}
@@ -562,6 +564,17 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
 @media(max-width:720px){.tabs-inner{padding:0 6px}.payout .amt{font-size:18px}
   header.top{position:static} /* mobil scrollt der Header mit; Tabs rasten unter der iOS-Statusleiste ein */
   :root{--hdrH:env(safe-area-inset-top,0px)}}
+@media(max-width:360px){ /* sehr schmale Handys: Header bleibt einzeilig */
+  .brandemoji{display:none}
+  .brandtext{font-size:17px}
+  .logo-k{font-size:17px}
+  .top-inner{gap:8px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .sub-badge{font-size:9px;letter-spacing:1.2px}
+  /* Tabellen noch etwas dichter */
+  :is(#panel-kessel,#oracleSec,#projSec) table :is(th,td){padding-left:3px!important;padding-right:3px!important}
+  :is(#panel-kessel,#oracleSec,#projSec) table tbody td{font-size:11.5px}
+  #outcomeTable thead th:nth-child(2){width:76px!important}
+}
 /* ===== Mobile-Tabellen: fixierte Pos+Name-Spalten, schlanke Breiten, keine Balken ===== */
 @media(max-width:720px){
   .bar-only{display:none}                       /* reine Balken-Spalten mobil weglassen */
@@ -569,6 +582,16 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   thead th{white-space:normal}                  /* lange Kopfzeilen dürfen zweizeilig werden */
   .mhide{display:none}                          /* mobil ausgeblendete Kopf-Texte (Medaillen bleiben) */
   .mshort{display:inline}.mfull{display:none}   /* mobil: Kurz-Label statt Voll-Label */
+  .mblk{display:block;margin-top:2px}
+  #oracleHomes .player-name{overflow:visible;max-width:none;text-overflow:clip}
+  #liveMdSel{font-size:15px}
+  /* Kessel- & Rekord-Tabellen: kompakt, Nebenspalten aus — passen ohne Scrollen */
+  :is(#persTable,#outcomeTable,#accTable,#konstanzTable,#lazyTable,#mutTable,#biasTable,#koTable,#crazyTable,#worstTipTable,#tendenzTable,#recTable,#spreadTable) :is(th,td){padding-left:5px;padding-right:5px}
+  :is(#persTable,#outcomeTable,#accTable,#konstanzTable,#lazyTable,#mutTable,#biasTable,#koTable,#crazyTable,#worstTipTable,#tendenzTable,#recTable,#spreadTable) tbody td{font-size:12.5px}
+  :is(#lazyTable,#mutTable,#biasTable,#koTable,#crazyTable,#worstTipTable,#recTable,#spreadTable){width:100%}
+  #outcomeTable thead th:nth-child(2){width:84px!important}
+  #crazyTable :is(th,td):nth-child(n+5),#worstTipTable :is(th,td):nth-child(n+6),#recTable :is(th,td):nth-child(4){display:none}
+  #spreadTable td:not(:first-child) .player-name{display:none} /* Sieger/Letzter mobil nur als Avatar */
   /* Sticky: erste Spalte (msticky) bzw. Pos+Name (msticky2) bleiben beim Scrollen stehen */
   table.msticky thead th:first-child,table.msticky tbody td:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
   table.msticky thead th:first-child{background:var(--surface-2);z-index:3}
@@ -725,7 +748,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <div class="eyebrow" data-en="📈 Season race">📈 Saisonverlauf</div>
       <h2 class="sec-title" data-en="The race">Das Rennen</h2>
       <div class="sec-note" data-en="Cumulative matchday points resp. position after each matchday. Tap a name to show/hide a line.">Kumulierte Spieltagspunkte bzw. Platzierung nach jedem Spieltag. Tipper antippen zum Ein-/Ausblenden.</div>
-      <div class="race-modes"><button class="pill" data-rmode="pts" aria-pressed="true">Punkte</button><button class="pill" data-rmode="rank" aria-pressed="false" data-en="Position">Platzierung</button></div>
+      <div class="race-modes"><button class="pill" data-rmode="pts" aria-pressed="true" data-en="Points">Punkte</button><button class="pill" data-rmode="rank" aria-pressed="false" data-en="Position">Platzierung</button></div>
       <div class="race-legend" id="raceLegend"></div>
       <div class="card race-card"><div id="raceChart" title="Zum Vergrößern antippen"></div></div>
       <p class="mini" data-en="Tap the chart for fullscreen with zoom.">Grafik antippen für Vollbild mit Zoom.</p>
@@ -860,9 +883,9 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
       <h2 class="sec-title">Head-to-Head</h2>
       <div class="sec-note" data-en="Compare two tippers directly — across all shared competitions.">Zwei Tipper direkt vergleichen — über alle gemeinsamen Wettbewerbe.</div>
       <div class="card"><div class="h2h-bar">
-        <div><span class="filter-label" data-en="Tipper A">Tipper A</span><br><select id="h2hA"></select></div>
+        <div><span class="filter-label" data-en="Tipper A">Tipper A</span><br><select id="h2hA" aria-label="Tipper A"></select></div>
         <span class="h2h-vs">vs</span>
-        <div><span class="filter-label" data-en="Tipper B">Tipper B</span><br><select id="h2hB"></select></div>
+        <div><span class="filter-label" data-en="Tipper B">Tipper B</span><br><select id="h2hB" aria-label="Tipper B"></select></div>
       </div><div id="h2hBody"></div></div>
     </section>
 
@@ -1034,8 +1057,8 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     </div>
     <section class="block" style="margin-top:10px">
       <div class="card fin-controls">
-        <div class="field"><label data-en="Stake Bundesliga (€)">Einsatz Bundesliga (€)</label><input id="feeBL" type="number" min="0" step="1" value="30" inputmode="numeric"></div>
-        <div class="field"><label data-en="Stake tournament World Cup/Euro (€)">Einsatz Turnier WM/EM (€)</label><input id="feeCUP" type="number" min="0" step="1" value="10" inputmode="numeric"></div>
+        <div class="field"><label for="feeBL" data-en="Stake Bundesliga (€)">Einsatz Bundesliga (€)</label><input id="feeBL" type="number" min="0" step="1" value="30" inputmode="numeric"></div>
+        <div class="field"><label for="feeCUP" data-en="Stake tournament World Cup/Euro (€)">Einsatz Turnier WM/EM (€)</label><input id="feeCUP" type="number" min="0" step="1" value="10" inputmode="numeric"></div>
       </div>
       <p class="split-note" style="margin-top:8px" data-en="Payout depends on the competition: <b>first &amp; last share</b> (BL 24/25 &amp; 25/26), <b>top 3 share</b> (BL 21/22–23/24) or <b>winner takes all</b> (tournaments). The mode is shown on each card.">Auszahlung je nach Wettbewerb: <b>Erster &amp; Letzter teilen</b> (BL 24/25 &amp; 25/26), <b>Top 3 teilen</b> (BL 21/22–23/24) oder <b>Sieger gewinnt alles</b> (Turniere). Der Modus steht auf jeder Karte.</p>
     </section>
@@ -2223,21 +2246,22 @@ function renderOutcome(){
   const cell=o=>o&&o.pct!=null?`<b>${dec(o.pct)}&nbsp;%</b> <span class="mini">${o.ok}/${o.tot}</span>`:'–';
   const ov=o=>{const tot=o.H.tot+o.D.tot+o.A.tot,ok=o.H.ok+o.D.ok+o.A.ok;return tot?100*ok/tot:0;};
   const rows=PLAYERS.map(p=>p.name).filter(n=>O[n]).map(n=>({name:n,o:O[n],ov:ov(O[n])})).sort((a,b)=>b.ov-a.ov);
-  document.getElementById('outcomeTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r"><span class="mfull">🏠 ${L('Heimsiege','Home wins')}</span><span class="mshort">${L('Heim','Home')}</span></th><th class="r"><span class="mfull">🤝 ${L('Remis','Draws')}</span><span class="mshort">${L('Remis','Draw')}</span></th><th class="r"><span class="mfull">✈️ ${L('Auswärtssiege','Away wins')}</span><span class="mshort">${L('Ausw.','Away')}</span></th><th class="r">${L('Gesamt','Total')}</th></tr></thead><tbody>${
+  document.getElementById('outcomeTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r"><span class="mfull">🏠 ${L('Heimsiege','Home wins')}</span><span class="mshort">${L('Heim','Home')}</span></th><th class="r"><span class="mfull">🤝 ${L('Remis','Draws')}</span><span class="mshort">${L('Remis','Draw')}</span></th><th class="r"><span class="mfull">✈️ ${L('Auswärtssiege','Away wins')}</span><span class="mshort">${L('Ausw.','Away')}</span></th><th class="r">${ms(L('Gesamt','Total'),'Σ')}</th></tr></thead><tbody>${
    rows.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td>
      <td class="r mono">${cell(r.o.H)}</td><td class="r mono">${cell(r.o.D)}</td><td class="r mono">${cell(r.o.A)}</td><td class="r mono"><b>${dec(r.ov)}&nbsp;%</b></td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('outcomeTable'),5,-1);
 }
+const ms=(f,k)=>`<span class="mfull">${f}</span><span class="mshort">${k}</span>`; // Voll-/Kurzlabel (mobil)
 function renderCrazy(){
   const list=STATS18.crazy||[];
   document.getElementById('crazyTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th>${L('Paarung','Fixture')}</th><th class="r">${L('Ergebnis','Result')}</th><th class="r">${L('Tore','Goals')}</th><th>${L('Wettbewerb','Competition')}</th><th class="r">${L('Spieltag','Matchday')}</th></tr></thead><tbody>${
-   list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="dim">${r.match?tshort(esc(r.match)):'–'}</td><td class="r mono"><b>${esc(r.res)}</b></td><td class="r mono dim">${r.tot}</td><td>${esc(r.season)}</td><td class="r mono">${r.md}</td></tr>`).join('')}</tbody>`;
+   list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="dim">${r.match?tshort(esc(r.match)):'–'}<div class="mini mblk">${esc(r.season)} · ${L(r.md+'. ST','MD '+r.md)}</div></td><td class="r mono"><b>${esc(r.res)}</b></td><td class="r mono dim">${r.tot}</td><td>${esc(r.season)}</td><td class="r mono">${r.md}</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('crazyTable'),4,-1);
 }
 function renderWorstTip(){
   const list=STATS18.worstTip||[];
-  document.getElementById('worstTipTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th>${L('Paarung','Fixture')}</th><th class="r">${L('Tipp','Tip')}</th><th class="r">${L('Ergebnis','Result')}</th><th class="r">${L('Abweichung','Deviation')}</th><th>${L('Wettbewerb','Competition')}</th></tr></thead><tbody>${
-   list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="dim">${r.match?tshort(esc(r.match)):'–'}</td><td class="r mono">${esc(r.tip)}</td><td class="r mono"><b>${esc(r.res)}</b></td><td class="r mono">${r.dist}</td><td class="dim">${esc(r.season)} · ${L(r.md+'. ST','MD '+r.md)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('worstTipTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th>${L('Paarung','Fixture')}</th><th class="r">${L('Tipp','Tip')}</th><th class="r">${ms(L('Ergebnis','Result'),L('Erg.','Res.'))}</th><th class="r">${L('Abweichung','Deviation')}</th><th>${L('Wettbewerb','Competition')}</th></tr></thead><tbody>${
+   list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.name,24)}</td><td class="dim">${r.match?tshort(esc(r.match)):'–'}<div class="mini mblk">${esc(r.season)} · ${L(r.md+'. ST','MD '+r.md)}</div></td><td class="r mono">${esc(r.tip)}</td><td class="r mono"><b>${esc(r.res)}</b></td><td class="r mono">${r.dist}</td><td class="dim">${esc(r.season)} · ${L(r.md+'. ST','MD '+r.md)}</td></tr>`).join('')}</tbody>`;
   makeSortable(document.getElementById('worstTipTable'),5,-1);
 }
 function renderTendenz(){
@@ -2294,7 +2318,7 @@ function renderRecords(){
   document.getElementById('recordTiles').innerHTML=tiles.map(tileHTML).join('');
   function renderRecTable(type){
     const list=(type==='BL'?STATS18.recTopBL:STATS18.recTopCup)||[];
-    document.getElementById('recTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${L('Punkte','Points')}</th><th class="r">Max</th><th class="r">${L('Quote','Rate')}</th><th class="r">${L('Spieltag','Matchday')}</th></tr></thead><tbody>${
+    document.getElementById('recTable').innerHTML=`<thead><tr><th style="width:34px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">${ms(L('Punkte','Points'),L('Pkt','Pts'))}</th><th class="r">Max</th><th class="r">${L('Quote','Rate')}</th><th class="r">${ms(L('Spieltag','Matchday'),L('ST','MD'))}</th></tr></thead><tbody>${
      list.map((r,i)=>`<tr class="p${i+1}"><td><span class="rank-badge">${i+1}</span></td><td>${nmCell(r.n,24)}</td><td class="r mono"><b>${r.pts}</b></td><td class="r mono dim">${r.max}</td><td class="r mono dim">${dec(100*r.pts/(r.max||1))}&nbsp;%</td><td class="r mono">${r.md}</td></tr>`).join('')}</tbody>`;
     makeSortable(document.getElementById('recTable'),2);
   }
@@ -2484,7 +2508,7 @@ function renderKesselLive(){ // 🎲/🏠/⏰ — nur laufende Saison, aus den e
     const pct=x=>Math.round(x)+'&nbsp;%';
     const cell=(v,top)=>`<td class="r mono"${top?' style="font-weight:700"':''}>${pct(v)}</td>`;
     const maxH=Math.max(...rows.map(r=>r.h)),maxD=Math.max(...rows.map(r=>r.d)),maxA=Math.max(...rows.map(r=>r.a));
-    document.getElementById('biasTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th><th class="r">🏠 ${L('Heimsieg','Home win')}</th><th class="r">🤝 ${L('Remis','Draw')}</th><th class="r">✈️ ${L('Auswärts','Away win')}</th></tr></thead><tbody>${
+    document.getElementById('biasTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th><th class="r">🏠<span class="mhide"> ${L('Heimsieg','Home win')}</span></th><th class="r">🤝<span class="mhide"> ${L('Remis','Draw')}</span></th><th class="r">✈️<span class="mhide"> ${L('Auswärts','Away win')}</span></th></tr></thead><tbody>${
       rows.map((r,i)=>`<tr><td>${nmCell(r.n,24)}${i===0?` <span class="mini">🏠 ${LANG==='en'?'home romantic':gLbl(r.n,'Heim-Romantiker','Heim-Romantikerin')}</span>`:(r.a===maxA?` <span class="mini">✈️ ${LANG==='en'?'away dreamer':gLbl(r.n,'Auswärts-Träumer','Auswärts-Träumerin')}</span>`:'')}</td>${cell(r.h,r.h===maxH)}${cell(r.d,r.d===maxD)}${cell(r.a,r.a===maxA)}</tr>`).join('')}
       <tr style="border-top:2px solid var(--line-2)"><td><span class="player-name" style="color:var(--ink-2)">⚽ ${L('Echte Ergebnisse','Real results')}</span></td>
       <td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resH/resN):0}&nbsp;%</td><td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resD/resN):0}&nbsp;%</td><td class="r mono" style="color:var(--ink-2)">${resN?Math.round(100*resA/resN):0}&nbsp;%</td></tr></tbody>`;
@@ -2492,11 +2516,11 @@ function renderKesselLive(){ // 🎲/🏠/⏰ — nur laufende Saison, aus den e
   }
   // ⏰ Anstoßzeiten
   {
-    const SL=[['fr',L('Fr-Abend','Fri night')],['sa1',L('Sa 15:30','Sat 15:30')],['sa2',L('Sa-Topspiel','Sat top match')],['so',L('Sonntag','Sunday')]];
+    const SL=[['fr',L('Fr-Abend','Fri night'),L('Fr','Fri')],['sa1',L('Sa 15:30','Sat 15:30'),L('Sa 15','Sa 15')],['sa2',L('Sa-Topspiel','Sat top match'),L('Sa 18','Sa 18')],['so',L('Sonntag','Sunday'),L('So','Sun')]];
     const avgS=(P,s)=>{const S=P.slots[s];return S&&S.n?S.p/S.n:null;};
     const rows=names.map(n=>{const P=per[n];return {n,vals:SL.map(([s])=>avgS(P,s)),tot:P.n?P.pts/P.n:0};})
       .sort((a,b)=>b.tot-a.tot);
-    document.getElementById('koTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${SL.map(([,l])=>`<th class="r">${l}</th>`).join('')}<th class="r">Ø</th></tr></thead><tbody>${
+    document.getElementById('koTable').innerHTML=`<thead><tr><th>${L('Tipper','Player')}</th>${SL.map(([,l,k])=>`<th class="r">${ms(l,k)}</th>`).join('')}<th class="r">Ø</th></tr></thead><tbody>${
       rows.map(r=>{const best=Math.max(...r.vals.filter(v=>v!=null));
         return `<tr><td>${nmCell(r.n,24)}</td>${r.vals.map(v=>`<td class="r mono"${v!=null&&v===best?' style="font-weight:700;color:var(--brand)"':''}>${v==null?'–':f1(v)}</td>`).join('')}<td class="r mono"><b>${f1(r.tot)}</b></td></tr>`;}).join('')}</tbody>`;
     // Fun-Fußnote: stärkster & schwächster Slot der ganzen Gruppe
@@ -2510,7 +2534,7 @@ function renderSpread(){
   const rows=DISPLAY_ORDER.filter(id=>!SMAP[id].running).map(id=>{const s=SMAP[id];const act=s.standings.filter(p=>p.active);const f=act[0],l=act[act.length-1];
     return {short:s.short,w:f.name,wp:f.total,l:l.name,lp:l.total,spread:f.total-l.total};}).sort((a,b)=>a.spread-b.spread);
   const max=Math.max(...rows.map(r=>r.spread));
-  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${L('Wettbewerb','Competition')}</th><th>🥇 <span class="mhide">${L('Sieger','Winner')}</span></th><th class="r">${L('Pkt','Pts')}</th><th>🔴 <span class="mhide">${L('Letzter','Last')}</span></th><th class="r">${L('Pkt','Pts')}</th><th class="r">${L('Abstand','Gap')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
+  document.getElementById('spreadTable').innerHTML=`<thead><tr><th>${ms(L('Wettbewerb','Competition'),L('Wettb.','Comp.'))}</th><th>🥇 <span class="mhide">${L('Sieger','Winner')}</span></th><th class="r">${L('Pkt','Pts')}</th><th>🔴 <span class="mhide">${L('Letzter','Last')}</span></th><th class="r">${L('Pkt','Pts')}</th><th class="r">${ms(L('Abstand','Gap'),L('Diff.','Gap'))}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
    rows.map(r=>`<tr><td class="player-name">${esc(r.short)}</td>
      <td>${nmCell(r.w,24)}</td><td class="r mono">${r.wp}</td>
      <td>${nmCell(r.l,24)}</td><td class="r mono">${r.lp}</td>
@@ -2890,6 +2914,15 @@ function renderAll(){
     window.addEventListener('hashchange',deepLink);
     setTimeout(deepLink,80); // erst NACH renderAll: die Pill-/Tab-Handler hängen sonst noch nicht (renderPills läuft später)
   }catch(e){}
+  // 🔔 Kein Push möglich (falsche Domain, iPhone-Safari ohne Homescreen-App, alter Browser): Hinweis statt leerem Button
+  try{ if(!(PUSH_URL && 'serviceWorker' in navigator && 'PushManager' in window && /github\.io$/.test(location.hostname))){
+    const b=document.getElementById('pushMasterBtn'), n=document.getElementById('pushMasterNote');
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Mac/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+    const site='https://nine41-mc.github.io/brunnerschaft-dashboard/';
+    if(b){ if(/github\.io$/.test(location.hostname)&&ios){ b.outerHTML=`<p style="margin:0;font-size:14px;line-height:1.5">📲 ${L('Auf dem iPhone gibt es Pushes nur in der Homescreen-App: in Safari <b>Teilen → „Zum Home-Bildschirm"</b>, dann die App öffnen und hier aktivieren.','On iPhone, pushes only work in the home-screen app: in Safari tap <b>Share → "Add to Home Screen"</b>, then open the app and enable them here.')}</p>`; }
+      else { b.outerHTML=`<p style="margin:0;font-size:14px;line-height:1.5">🔕 ${L('In dieser Ansicht sind keine Pushes möglich.','Pushes are not available in this view.')} <a href="${site}" target="_blank" rel="noopener" style="color:var(--brand);font-weight:700">${L('Zur Web-App','Open the web app')} ›</a></p>`; } }
+    if(n) n.textContent='';
+  }}catch(e){}
   // 🎉 Konfetti-Schalter (pro Gerät, unabhängig vom Push-Support)
   try{ const confT=document.getElementById('confettiToggle');
     if(confT){ confT.checked=localStorage.getItem('brun_confetti')!=='0';
