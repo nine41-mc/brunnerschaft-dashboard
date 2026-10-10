@@ -225,10 +225,13 @@ async function quips(env, body) {
   const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis). WICHTIG: Elias, Luisa und Marie sind Kinder — bei ihnen nie Alkohol-, Kneipen- oder Kater-Anspielungen; wenn ein Getränk, dann Apfelschorle oder Robby Bubble, und der Spott bleibt lieb.${profiles ? `\n\nHintergrundwissen über die Tipper (nur für Anspielungen, nie wörtlich zitieren oder auflisten):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"<Zahl vor dem |>","q":"..."}]`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
-      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json',
+        // Keys ohne Workspace-Bindung verlangen die Workspace-ID je Anfrage (optionales Secret)
+        ...(env.ANTHROPIC_WORKSPACE_ID ? { 'anthropic-workspace-id': env.ANTHROPIC_WORKSPACE_ID } : {}) },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1200, temperature: 0.8, messages: [{ role: 'user', content: prompt }] }) });
     if (!r.ok) {
-      if (r.status === 401 || r.status === 403) memSet('llm_off', 1, 10 * 60 * 1000);
+      const errTxt = r.status === 400 ? await r.text().catch(() => '') : '';
+      if (r.status === 401 || r.status === 403 || /api key|workspace/i.test(errTxt)) memSet('llm_off', 1, 10 * 60 * 1000); // Key-Problem → Pause
       await env.SUBS.put(capK, String(used), { expirationTtl: 172800 }); // Fehlversuch zählt nicht ins Tageslimit
       return out;
     }
