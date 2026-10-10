@@ -130,6 +130,7 @@ section.block{margin:38px 0}
 .bcc-sel{display:none} /* Kategorie-Dropdown nur mobil */
 .mshort{display:none}  /* Kurz-Labels nur mobil (siehe Mobile-Block) */
 .mblk{display:none} /* Zusatzzeile nur mobil */
+.ff-lbl{margin-top:3px;padding-left:33px;white-space:nowrap}
 .bcc-sel select{font-family:inherit;font-size:14px;font-weight:650;padding:8px 11px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;margin-top:4px}
 /* Horizontale Scrollbalken überall ausblenden (Scrollen per Wisch/Trackpad bleibt möglich) */
 .rscroll,.tbl-wrap,.heat-wrap{scrollbar-width:none;overscroll-behavior-x:none}
@@ -288,6 +289,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #liveMdTable th.lmd-live .lmd-r{color:var(--brand);animation:liveBlink 1.6s ease-in-out infinite}
 #liveMdTable .lmd-livelbl{font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--brand)}
 @media(prefers-reduced-motion:reduce){.live-dot,.live-chip,#liveMdTable th.lmd-live .lmd-r{animation:none}}
+/* Eigenes Pull-to-Refresh: natives Nachfedern (iOS) bzw. Browser-PTR (Android-Chrome) abschalten, sonst ziehen zwei Gesten gegeneinander */
+@media(pointer:coarse){html,body{overscroll-behavior-y:none}}
 #ptr{height:0;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;gap:8px;
   color:var(--ink-2);font-size:13px;font-weight:700;padding-bottom:6px;box-sizing:border-box}
 #ptr .ptr-anim{display:inline-flex;align-items:flex-end;font-size:19px;line-height:1}
@@ -585,6 +588,7 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
   .mhide{display:none}                          /* mobil ausgeblendete Kopf-Texte (Medaillen bleiben) */
   .mshort{display:inline}.mfull{display:none}   /* mobil: Kurz-Label statt Voll-Label */
   .mblk{display:block;margin-top:2px}
+  .ff-lbl{padding-left:0} /* mobil bündig unter dem Avatar: 33 px Reserve für breitere iOS-Emojis/Schrift */
   #oracleHomes .player-name{overflow:visible;max-width:none;text-overflow:clip}
   #liveMdSel{font-size:15px}
   /* Kessel- & Rekord-Tabellen: kompakt, Nebenspalten aus — passen ohne Scrollen */
@@ -1635,12 +1639,12 @@ function renderOracle(scope){
   const rks=sharedRanks(rows,r=>Math.round(r.fest*10));
   document.getElementById('oracleTable').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Tipper','Player')}</th><th class="r">🎪 ${L('Fest-Risiko','Party risk')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th><th class="r">👑 ${L('Titel-Chance','Title odds')}</th></tr></thead><tbody>${
     rows.map((r,i)=>`<tr class="${i===0?'p1':''}"><td><span class="rank-badge">${rks[i]}</span></td>
-      <td><div class="nm-cell" style="flex-wrap:nowrap">${av(r.name,24)}<span class="player-name" style="white-space:nowrap">${esc(dispFull(r.name))}</span></div>${i===0?'<div class="mini" style="margin-top:3px;padding-left:33px;white-space:nowrap">🎪 '+L('Fest-Favorit','party favourite')+'</div>':''}</td>
+      <td><div class="nm-cell" style="flex-wrap:nowrap">${av(r.name,24)}<span class="player-name" style="white-space:nowrap">${esc(dispFull(r.name))}</span></div>${i===0?'<div class="mini ff-lbl">🎪 '+ms(L('Fest-Favorit','party favourite'),L('Favorit','favourite'))+'</div>':''}</td>
       <td class="r mono"><b>${r.fest<0.5?'&lt;1':Math.round(r.fest)}&nbsp;%</b></td>
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.fest/maxF*100)}%"></div></td>
       <td class="r mono">${r.titel<0.5?'&lt;1':Math.round(r.titel)}&nbsp;%</td></tr>`).join('')}</tbody>`;
   // 🏠 Haushalts-Aggregation: wo steigt die Loser-Party?
-  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','BigBen':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'München'};
+  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','BigBen':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'Oderstr.'};
   const homes={};
   rows.forEach(r=>{ const h=HOME[r.name]||('❓ '+dispName(r.name)); (homes[h]=homes[h]||{p:0,who:[]}).p+=r.fest; homes[h].who.push(r.name); });
   const hrows=Object.entries(homes).map(([h,x])=>({h,...x})).sort((a,b)=>b.p-a.p);
@@ -1648,7 +1652,7 @@ function renderOracle(scope){
   const hks=sharedRanks(hrows,r=>Math.round(r.p*10));
   document.getElementById('oracleHomes').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Haushalt','Household')}</th><th class="r">🎪 ${L('Fest-Risiko','Party risk')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
     hrows.map((r,i)=>`<tr class="${hks[i]===1?'p1':''}"><td><span class="rank-badge">${hks[i]}</span></td>
-      <td><div class="nm-cell oh-row"><span class="player-name"><b>${esc(r.h)}</b></span><span class="oh-avs">${r.who.map(n=>av(n,22)).join('')}</span></div>${hks[i]===1?'<div class="mini" style="margin-top:3px">🎪 '+L('Fest-Favorit','party favourite')+'</div>':''}</td>
+      <td><div class="nm-cell oh-row"><span class="player-name"><b>${esc(r.h)}</b></span><span class="oh-avs">${r.who.map(n=>av(n,22)).join('')}</span></div>${hks[i]===1?'<div class="mini" style="margin-top:3px;white-space:nowrap">🎪 '+ms(L('Fest-Favorit','party favourite'),L('Favorit','favourite'))+'</div>':''}</td>
       <td class="r mono"><b>${r.p<0.5?'&lt;1':Math.round(r.p)}&nbsp;%</b></td>
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.p/hmax*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const pl=(window.__oracle&&window.__oracle.played)||2;
@@ -1670,6 +1674,18 @@ function formMap(scope){ // 🔥/❄️: letzte Spieltage vs. Saisonschnitt
   return out;
 }
 let LIVEMD_SEL=null;
+// 🤖 Mensch-vs-Maschine-Satz: nach Lage formuliert (nie „liegt vor 0 von 12")
+function roboDuelLine(b,hum,done){
+  const n=hum.length; if(!n) return '';
+  const beat=hum.filter(x=>x<b).length, tie=hum.filter(x=>x===b).length, ahead=n-beat-tie, R=`RoboSepp (${b} P)`;
+  const M=k=>k===1?L('Mensch','human'):L('Menschen','humans');
+  if(beat===n) return done?L(`${R} hat alle ${n} Menschen geschlagen.`,`${R} beat all ${n} humans.`):L(`${R} liegt vor allen ${n} Menschen.`,`${R} is ahead of all ${n} humans.`);
+  if(ahead===n) return done?L(`Alle ${n} Menschen haben ${R} geschlagen.`,`All ${n} humans beat ${R}.`):L(`Alle ${n} Menschen liegen vor ${R}.`,`All ${n} humans are ahead of ${R}.`);
+  if(beat===0) return L(`${R} ist gleichauf mit ${tie} ${M(tie)}, alle anderen liegen vor ihm.`,`${R} is level with ${tie} ${M(tie)}; everyone else is ahead.`);
+  if(ahead===0) return L(`${R} liegt vorn — nur ${tie} ${M(tie)} ${tie===1?'hält':'halten'} mit.`,`${R} leads — only ${tie} ${M(tie)} keep${tie===1?'s':''} up.`);
+  return (done?L(`${R} hat ${beat} von ${n} Menschen geschlagen`,`${R} beat ${beat} of ${n} humans`):L(`${R} liegt vor ${beat} von ${n} Menschen`,`${R} is ahead of ${beat} of ${n} humans`))
+    +(tie?L(`, ${tie} gleichauf`,`, ${tie} level`):'')+'.';
+}
 // 🖼️ Spieltags-Recap als teilbares Bild (Canvas → PNG) — für die WhatsApp-Gruppe
 async function mdRecapImage(lm,scope,rks){
   try{
@@ -1740,7 +1756,7 @@ async function mdRecapImage(lm,scope,rks){
     x.fillStyle='#1c1917'; x.font='600 36px '+FF;
     if(bot){const hum=lm.rows.filter(r=>!TBOTS.has(r.name)&&r.tips.some(Boolean));
       const beat=hum.filter(h2=>h2.mdTot<bot.mdTot).length;
-      x.fillText('🤖 RoboSepp ('+bot.mdTot+' P) '+L('schlug','beat')+' '+beat+' '+L('von','of')+' '+hum.length+' '+L('Menschen','humans'),96,y+82);}
+      const dl='🤖 '+roboDuelLine(bot.mdTot,hum.map(h2=>h2.mdTot),true); fitText(dl,'600 36px '+FF,W-192,24); x.fillText(dl,96,y+82);}
     else{const tipped=lm.rows.filter(r=>r.tips.some(Boolean));const lastR=tipped[tipped.length-1];
       if(lastR)x.fillText('🎪 '+L('Schlusslicht','Bringing up the rear')+': '+dispFull(lastR.name)+' ('+lastR.mdTot+' P)',96,y+82);}
     const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
@@ -1965,7 +1981,7 @@ function renderLiveMd(scope){
     }catch(e){ /* OpenLigaDB nicht erreichbar → Ticker einfach weglassen */ }
     if(liveIdx.length && !window.__tickerTimer)
       window.__tickerTimer=setInterval(()=>{ if(!document.hidden) renderLiveMd(scope); },75000);
-  })();
+  })().finally(()=>{ window.__tickerReady=true; dispatchEvent(new Event('brun:ticker')); });
   const head=`<thead><tr><th>${L('Tipper','Player')}</th>${lm.fixtures.map((f,i)=>{const li=st(i)==='live';
     return `<th class="lmd-h${li?' lmd-live':''}">${li?'<span class="live-dot"></span>':''}${esc(code(f[0]))}–${esc(code(f[1]))}<br><span class="lmd-r">${res(i)}</span>${li?`<br><span class="lmd-livelbl">LIVE</span>`:''}</th>`;}).join('')}<th class="r">${L('Pkt','Pts')}</th></tr></thead>`;
   const rks=sharedRanks(lm.rows,r=>r.mdTot);
@@ -1987,23 +2003,24 @@ function renderLiveMd(scope){
       const humans=lm.rows.filter(r=>!TBOTS.has(r.name)&&r.tips.some(Boolean));
       const beaten=humans.filter(h=>h.mdTot<bot.mdTot).length, total=humans.length;
       const allDone=lm.results.length&&lm.results.every(Boolean)&&!lm.fixtures.some((_,i)=>st(i)==='live');
-      const verb=allDone?L('schlug','beat'):L('liegt vor','is ahead of');
+      const ahead=humans.filter(h=>h.mdTot>bot.mdTot).length;
       const quip=beaten>=total?spruch('duel3',[
           L('Kompletter Kahlschlag. Vielleicht solltet ihr ihn einfach abschreiben — er merkt es nicht.','A clean sweep. Maybe just copy him — he won’t notice.'),
           L('Alle geschlagen. Er läuft nicht mal warm dabei.','Beat everyone. He didn’t even warm up.')])
-        :beaten>total/2?spruch('duel2',[
+        :(beaten===0||ahead>=total)?null:beaten>total/2?spruch('duel2',[
           L('Die Maschine grinst in Binärcode.','The machine is grinning in binary.'),
           L('Mehr als die halbe Brunnerschaft im Rückspiegel — Software schläft nie.','More than half the group in the rear-view mirror — software never sleeps.'),
           L('Skynet lässt grüßen, zumindest tipptechnisch.','Skynet says hi — at least tip-wise.')])
-        :beaten===0?spruch('duel0',[
+        :null; const quip0=spruch('duel0',[
           L('Die Menschheit ist gerettet. Vorerst.','Humanity is saved. For now.'),
           L('Null geschlagen — zurück ins Rechenzentrum, Sepp.','Beat nobody — back to the data centre, Sepp.'),
-          L('Künstliche Intelligenz, natürliche Demütigung.','Artificial intelligence, natural humiliation.')])
-        :spruch('duel1',[
+          L('Künstliche Intelligenz, natürliche Demütigung.','Artificial intelligence, natural humiliation.')]);
+      const quip1=spruch('duel1',[
           L('Ein Achtungserfolg für den Blechkollegen.','A respectable showing for the tin colleague.'),
           L('Er schlägt immerhin ein paar — wer es ist, verrät die Tabelle oben.','He does beat a few — the table above tells on you.'),
           L('Fleisch führt gegen Blech. Noch.','Flesh leads against metal. For now.')]);
-      duelEl.innerHTML=`<div class="robo-duel"><span class="rd-ic">🤖</span><span><b>${L('Mensch vs. Maschine','Man vs. machine')}:</b> RoboSepp (${bot.mdTot} P) ${verb} <b>${beaten} ${L('von','of')} ${total}</b> ${L('Menschen','humans')}. ${quip}</span></div>`;
+      const quipF=quip||((beaten===0||ahead>=total)?quip0:quip1);
+      duelEl.innerHTML=`<div class="robo-duel"><span class="rd-ic">🤖</span><span><b>${L('Mensch vs. Maschine','Man vs. machine')}:</b> ${roboDuelLine(bot.mdTot,humans.map(h=>h.mdTot),allDone)} ${quipF}</span></div>`;
     } else duelEl.innerHTML='';
   }
   // 🤖 RoboSepps Begründungen: Karussell mit einer Kachel pro Spiel + Paginierungspunkte
@@ -3050,8 +3067,25 @@ function renderAll(){
       if(vart==='beer'){ const f=anim.querySelector('.beer-full'); if(f)f.style.clipPath=`inset(${Math.round(prog*70)}% 0 0 0)`; }
       else { const el=anim.firstChild; if(el)el.style.transform=`rotate(${Math.round(prog*360)}deg)`; }
     };
-    const TH=70; let startY=null,startX=null,pull=0,active=false,horiz=false;
-    addEventListener('touchstart',e=>{ if(window.scrollY<=0){ startY=e.touches[0].clientY; startX=e.touches[0].clientX; pull=0; active=true; horiz=false; bar.style.transition='none'; pickAnim(); } else active=false; },{passive:true});
+    const TH=70; let startY=null,startX=null,pull=0,active=false,horiz=false,busy=false;
+    const txt=t=>{ bar.querySelector('.ptr-txt').textContent=t; };
+    const setAnim=v=>{ const bay=document.querySelector('.bayern-ic'); vart=v;
+      if(v==='beer') anim.innerHTML='<span class="ptr-beer"><span class="beer-empty">🍺</span><span class="beer-full">🍺</span></span>';
+      else if(v==='bay'&&bay) anim.innerHTML='<span class="ptr-bay">'+bay.outerHTML+'</span>';
+      else { vart='ball'; anim.innerHTML='<span class="ptr-ball"><span>⚽</span><span>⚽</span><span>⚽</span></span>'; } };
+    // Nach dem Neuladen: offen + animiert starten und erst zuklappen, wenn Spielfilm & Co. geladen sind
+    let resumed=null; try{ resumed=sessionStorage.getItem('brun_ptr'); sessionStorage.removeItem('brun_ptr'); }catch(e){}
+    if(resumed){ busy=true; setAnim(resumed); bar.style.transition='none'; bar.style.height='50px'; bar.classList.add('loading'); txt(L('Aktualisiere …','Refreshing …'));
+      const t0=Date.now(), sec=document.getElementById('liveMdSec');
+      const waitTicker=(sec&&!sec.hidden&&!window.__tickerReady)?new Promise(r=>{ addEventListener('brun:ticker',r,{once:true}); setTimeout(r,4000); }):Promise.resolve();
+      waitTicker.then(()=>new Promise(r=>setTimeout(r,Math.max(0,700-(Date.now()-t0))))).then(()=>{
+        bar.classList.remove('loading'); bar.classList.add('ready');
+        const hm=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'}).format(new Date());
+        txt('✓ '+L('Aktualisiert','Updated')+' · '+hm);
+        setTimeout(()=>{ bar.style.transition='height .28s ease'; bar.style.height='0'; bar.classList.remove('ready'); busy=false; },900);
+      });
+    }
+    addEventListener('touchstart',e=>{ if(busy) return; if(window.scrollY<=0){ startY=e.touches[0].clientY; startX=e.touches[0].clientX; pull=0; active=true; horiz=false; bar.style.transition='none'; pickAnim(); } else active=false; },{passive:true});
     addEventListener('touchmove',e=>{ if(!active||startY==null) return;
       const dy=e.touches[0].clientY-startY, dx=e.touches[0].clientX-startX;
       if(!horiz&&Math.abs(dx)>Math.abs(dy)+12){ horiz=true; } if(horiz) return; // seitliches Tabellen-Wischen nicht kapern
@@ -3065,9 +3099,10 @@ function renderAll(){
     },{passive:false});
     addEventListener('touchend',()=>{ if(!active) return; bar.style.transition='height .18s ease';
       const d=Math.min(pull*0.5,110);
-      if(d>=TH){ bar.classList.add('loading');
-        bar.querySelector('.ptr-txt').textContent=L('Aktualisiere …','Refreshing …'); bar.style.height='50px';
-        setTimeout(()=>location.reload(),650); // kurz die Animation genießen
+      if(d>=TH){ busy=true; bar.classList.remove('ready'); bar.classList.add('loading');
+        txt(L('Aktualisiere …','Refreshing …')); bar.style.height='50px';
+        try{ sessionStorage.setItem('brun_ptr',vart); }catch(e){} // dieselbe Animation läuft nach dem Neuladen weiter
+        setTimeout(()=>location.reload(),250);
       } else { bar.style.height='0'; bar.classList.remove('ready'); }
       startY=null; active=false; pull=0;
     },{passive:true});
