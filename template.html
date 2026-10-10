@@ -88,7 +88,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 :root[lang="en"] .tab-lbl .t-de{visibility:hidden}
 :root:not([lang="en"]) .tab-lbl .t-en{visibility:hidden}
 
-:root{--hdrH:58px}
+:root{--hdrH:58px;--sat:env(safe-area-inset-top,0px)} /* --sat = Statusleisten-Höhe (iOS Safe Area) */
 nav.tabs{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:var(--hdrH);z-index:40}
 .tabs-inner{max-width:var(--maxw);margin:0 auto;padding:0 14px;display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs-inner::-webkit-scrollbar{display:none}
@@ -567,8 +567,13 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
 .hidden{display:none !important}
 @media(max-width:820px){.tiles,.stat-tiles{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.tabs-inner{padding:0 6px}.payout .amt{font-size:18px}
-  header.top{position:static} /* mobil scrollt der Header mit; Tabs rasten unter der iOS-Statusleiste ein */
-  :root{--hdrH:env(safe-area-inset-top,0px)}}
+  header.top{position:static;padding-bottom:var(--sat)} /* mobil scrollt der Header mit */
+  /* Tabs rasten ganz oben ein und reichen selbst unter die Statusleiste (roter Streifen): so scrollt dort kein
+     Inhalt durch, den iOS 26 mit seinem Scroll-Edge-Effekt verwischt/abdunkelt. In Ruhe überlappt der rote
+     Streifen das untere Header-Polster — optisch unverändert. */
+  :root{--hdrH:0px}
+  nav.tabs{top:0;margin-top:calc(-1 * var(--sat));padding-top:var(--sat);
+    background:linear-gradient(to bottom,var(--brand) 0,var(--brand) var(--sat),var(--surface) var(--sat))}}
 @media(max-width:360px){ /* sehr schmale Handys: Header bleibt einzeilig */
   .brandemoji{display:none}
   .brandtext{font-size:17px}
