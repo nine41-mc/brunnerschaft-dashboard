@@ -249,6 +249,8 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 .tk-slot:first-child{border-top:0}
 .tk-pre .tk-min{font-size:16px;text-align:center}
 .tk-pre a{color:var(--brand);font-weight:700}
+.tk-ext{float:right;text-transform:none;letter-spacing:0;font-weight:700;color:var(--ink-2);text-decoration:none}
+.tk-ext:hover{color:var(--brand)}
 .tk-slot+.tk-row{border-top:0}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tk-hit{color:#4cbf6e}}
 :root[data-theme="dark"] .tk-hit{color:#4cbf6e}
@@ -1813,38 +1815,67 @@ function renderLiveMd(scope){
       const items=[], qreq=[];
       // Fallback-Sprüche, falls RoboSepps Live-Kommentar (Worker/Haiku) nicht antwortet
       const KIDN=new Set([...KIDS].map(dispFull));
-      const fbQuip=(id,exact)=>{const kid=exact.some(n=>KIDN.has(n)), pl=exact.length>1;
-        const who=exact.length>2?exact.slice(0,2).join(', ')+' & Co.':exact.join(' & ');
-        let hsh0=0; for(const c2 of id) hsh0=(hsh0*31+c2.charCodeAt(0))>>>0;
-        const drink=kid?(hsh0%2?'eine Apfelschorle':'ein Robby Bubble'):'ein Weißbier';
-        const P=exact.length?[
-          who+(pl?' lehnen sich zurück und bestellen':' lehnt sich zurück und bestellt')+' schon mal '+drink+'.',
-          'Kicktipp-Poesie: genau so stand es auf dem Zettel von '+exact[0]+'.',
-          exact[0]+' tut jetzt bitte so, als wäre das Können gewesen.']:[
-          'Irgendwo in der Brunnerschaft wird gejubelt.',
-          'Die Konferenz bebt, die Tipps wackeln.',
-          'Ein Tor wie gemacht, um Tipps zu ruinieren.',
-          'Bitte bleiben Sie besonnen — es ist nur ein Tippspiel. Angeblich.',
-          'Der Fußballgott würfelt, die Brunnerschaft leidet.'];
-        let hsh=0; for(const c2 of id) hsh=(hsh*31+c2.charCodeAt(0))>>>0; return P[hsh%P.length];};
+      // 🎙️ Ersatzsprüche (falls RoboSepps KI-Kommentar fehlt): reagieren auf die Spielsituation,
+      // werden chronologisch vergeben und wiederholen sich innerhalb eines Spieltags nicht
+      const QP={
+        broke:['Bitter für {broke}: Der exakte Tipp ist futsch.','{broke} {radiert} schon mal das {prev} vom Tippzettel.','Tschüss, Volltreffer: {wer} zerstört den {prev}-Traum von {broke}.','{broke} {hatte} das {prev} schon sicher geglaubt. Hatte.','Das {prev} war so schön — {broke} {trauert} kurz.'],
+        exact:['{names} {lehnt} sich zurück und {bestellt} schon mal {drink}.','Kicktipp-Poesie: Genau so stand es auf dem Zettel von {names}.','{names} {tut} jetzt bitte so, als wäre das Können gewesen.','Applaus für {names}: {st}, wie bestellt.','{names} {hat} den Spielverlauf offenbar vorab gelesen.'],
+        og:['Eigentor! {wer} trifft — leider ins falsche. {team} sagt danke.','Das schönste Tor schießt der Gegner selbst: Eigentor zum {st}.'],
+        pen:['Elfmeter, verwandelt: {wer} bleibt cool — die Tipper eher nicht.','Vom Punkt zum {st}. Der VAR lässt grüßen.'],
+        late:['{min}. Minute — {wer} ruiniert die Nerven aller, die schon die Punkte gezählt haben.','Spät, später, {wer}: In der {min}. Minute dreht sich die Tipp-Welt noch mal.','Wer schon abgeschaltet hat, verpasst das Beste: {st} in der {min}. Minute.','Nachspielzeit-Lotto: {team} zieht die Zusatzzahl.','Das ist kein Tor, das ist ein Anschlag auf die Tipp-Tabelle. {min}. Minute!'],
+        turn:['{team} dreht das Spiel! {wer} sorgt für {st} — Tipps im Schleudergang.','Comeback deluxe: {team} führt jetzt {st}.','Erst hinten, jetzt vorn: {team} macht die Tipp-Statistik zur Makulatur.'],
+        eq:['Ausgleich! {wer} stellt alles auf Anfang — Remis-Tipper, bitte melden.','{st} — und plötzlich ist wieder alles offen.','{team} kommt zurück. Die Tipp-Tabelle hält die Luft an.'],
+        blow:['{st} — {opp} sucht schon mal den Mannschaftsbus.','Kantersieg-Alarm: {team} spielt FIFA im Anfänger-Modus.','{st}. Wer hier knapp getippt hat, darf sich still schämen.'],
+        first:['Der Bann ist gebrochen: {wer} trifft zum {st}.','Endlich ein Tor! {wer} erlöst alle, die nicht auf 0:0 gesetzt haben.','{st} durch {wer} — die ersten Tipps fangen an zu wackeln.'],
+        early:['Kaum angepfiffen, schon {st} — {wer} hatte es eilig.','{min}. Minute! Da sitzt die Brunnerschaft noch nicht mal richtig.','Blitzstart für {team}: {wer} wartet nicht lange.'],
+        any:['{wer} trifft zum {st} — irgendwo jubelt ein Tipper, irgendwo flucht einer.','{st}: {team} legt nach.','Tor durch {wer}! Die Konferenz bebt, die Tipps wackeln.','{wer} schiebt ein — {st}. Kicktipp rechnet schon.','{team} trifft zum {st}. Der Fußballgott würfelt wieder.','{st}! {wer} hat die Tipps der Brunnerschaft offenbar nicht gelesen.','{wer} macht das {st}. Taschenrechner raus, Brunnerschaft!']
+      };
+      const usedQ=new Set();
+      const nameList=x=>x.length>2?x.slice(0,2).join(', ')+' & Co.':x.join(' & ');
+      const pickQ=(cat,seed)=>{ const P=QP[cat]; let h0=0; for(const c2 of seed) h0=(h0*31+c2.charCodeAt(0))>>>0;
+        for(let k=0;k<P.length;k++){ const t=P[(h0+k)%P.length]; if(!usedQ.has(t)){ usedQ.add(t); return t; } }
+        return P[h0%P.length]; };
+      const fbQuip=c=>{
+        const cat=c.broke.length?'broke':c.exact.length?'exact':c.og?'og':c.pen?'pen':(c.min||0)>=85?'late':c.turn?'turn':c.eq?'eq':c.blow?'blow':c.first?'first':(c.min&&c.min<=5)?'early':'any';
+        const plE=c.exact.length>1, plB=c.broke.length>1, kid=c.exact.some(n=>KIDN.has(n));
+        const map={wer:c.wer, st:c.st, min:c.min||'?', team:c.team, opp:c.opp, prev:c.prev, names:nameList(c.exact), broke:nameList(c.broke),
+          drink:kid?(c.id.length%2?'eine Apfelschorle':'ein Robby Bubble'):'ein Weißbier',
+          lehnt:plE?'lehnen':'lehnt', bestellt:plE?'bestellen':'bestellt', tut:plE?'tun':'tut', hat:plE?'haben':'hat',
+          radiert:plB?'radieren':'radiert', hatte:plB?'hatten':'hatte', trauert:plB?'trauern':'trauert'};
+        return pickQ(cat,c.id).replace(/\{(\w+)\}/g,(_,k)=>map[k]!=null?map[k]:'');
+      };
+      const goalCtx=[];
       ol.forEach(m=>{
         const h=m.team1&&m.team1.teamName, a=m.team2&&m.team2.teamName; if(!h||!a)return;
         const fi=fixIdx(h,a);
-        const gcode=fi>-1?code(lm.fixtures[fi][0])+'–'+code(lm.fixtures[fi][1]):code(h)+'–'+code(a);
+        const hc=fi>-1?code(lm.fixtures[fi][0]):code(h), ac=fi>-1?code(lm.fixtures[fi][1]):code(a), gcode=hc+'–'+ac;
         const tips=fi>-1?lm.rows.map(r=>({n:r.name,t:r.tips[fi]})).filter(v=>v.t):[];
-        (m.goals||[]).forEach(g=>{
+        let ph=0, pa=0, behindH=false, behindA=false; // Spielstand vor dem Tor + wer schon mal hinten lag (für „gedreht")
+        [...(m.goals||[])].sort((x,y)=>(x.matchMinute||0)-(y.matchMinute||0)).forEach(g=>{
           const sh=g.scoreTeam1, sa=g.scoreTeam2; if(sh==null||sa==null)return;
+          const homeGoal=sh>ph;
           const exact=tips.filter(v=>v.t.h===sh&&v.t.a===sa).map(v=>dispFull(v.n));
           const exactH=tips.filter(v=>v.t.h===sh&&v.t.a===sa&&!TBOTS.has(v.n)).map(v=>dispFull(v.n));
+          const brokeH=tips.filter(v=>v.t.h===ph&&v.t.a===pa&&!TBOTS.has(v.n)).map(v=>dispFull(v.n));
           const qid=String(g.goalID||('x'+sh+'_'+sa+'_'+fi)); // Worker kennt nur OpenLigaDB-goalIDs
           // Kontext für RoboSepps Kommentar: Spielstand + wer profitiert/leidet
           const tend=sh>sa?1:sh<sa?-1:0;
           const gegen=tips.filter(v=>(v.t.h>v.t.a?1:v.t.h<v.t.a?-1:0)===-tend&&tend!==0).map(v=>dispFull(v.n));
           if(g.goalID) qreq.push({gid:String(g.goalID), exact:exactH, gegen:gegen.filter(n=>n!=='RoboSepp').slice(0,4)}); // Fakten ergänzt der Worker selbst
-          items.push({goal:1, ko:(fi>-1&&(lm.ko||[])[fi])||0, ts:(fi>-1&&(lm.ko||[])[fi]||0)+(g.matchMinute||0)*60000,
-            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}<span class="tk-quip" data-qid="${qid}">🤖 „${esc(fbQuip(qid,exactH))}“</span></span>`});
+          const ts=(fi>-1&&(lm.ko||[])[fi]||0)+(g.matchMinute||0)*60000;
+          const qi=goalCtx.length;
+          goalCtx.push({id:qid, ts, min:g.matchMinute, st:sh+':'+sa, prev:ph+':'+pa, wer:g.goalGetterName||L('Unbekannt','Someone'),
+            team:homeGoal?hc:ac, opp:homeGoal?ac:hc, exact:exactH, broke:brokeH, pen:!!g.isPenalty, og:!!g.isOwnGoal,
+            eq:sh===sa, turn:homeGoal?(sh>sa&&behindH):(sa>sh&&behindA), first:ph===0&&pa===0,
+            blow:Math.abs(sh-sa)>=3&&(homeGoal?sh>sa:sa>sh)});
+          if(sh<sa) behindH=true; if(sa<sh) behindA=true; ph=sh; pa=sa;
+          items.push({goal:1, ko:(fi>-1&&(lm.ko||[])[fi])||0, ts,
+            html:`<span class="tk-min mono">${g.matchMinute?g.matchMinute+'′':'–'}</span><span class="tk-tx">⚽ <b>${sh}:${sa}</b> ${esc(gcode)} — ${esc(g.goalGetterName||L('Torschütze unbekannt','scorer unknown'))}${g.isPenalty?' ('+L('Elfmeter','penalty')+')':''}${g.isOwnGoal?' ('+L('Eigentor','own goal')+')':''}${exact.length?`<span class="tk-hit">🎯 ${L('Damit steht der Tipp exakt bei','Tip now spot on for')}: ${exact.map(esc).join(' & ')}</span>`:''}<span class="tk-quip" data-qid="${qid}">🤖 „@@Q${qi}@@“</span></span>`});
         });
       });
+      // Ersatzsprüche chronologisch vergeben → keine Wiederholung innerhalb des Spieltags
+      const fbArr=[]; [...goalCtx].map((c,i)=>({c,i})).sort((x,y)=>x.c.ts-y.c.ts).forEach(({c,i})=>fbArr[i]=fbQuip(c));
+      items.forEach(it=>{ if(it.goal) it.html=it.html.replace(/@@Q(\d+)@@/,(_,i)=>esc(fbArr[+i]||'')); });
       // 🟨🟥🔁 Karten & Wechsel vom Worker-Proxy (football-data.org) — nur wenn dort ein Token hinterlegt ist
       try{
         if(PUSH_URL&&window.__fdOn!==false){
@@ -1919,7 +1950,8 @@ function renderLiveMd(scope){
           const slotF=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'long',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
           const live2=items.filter(i2=>!i2.pre), pre2=items.filter(i2=>i2.pre);
           const slots=[...new Set(live2.map(i2=>i2.ko))].sort((p2,q2)=>q2-p2);
-          return slots.map(k=>`<div class="tk-slot">${k?esc(slotF.format(new Date(k)).replace(/,? (\d{1,2}:\d{2})/,' · $1'))+(LANG==='en'?'':' Uhr'):'–'}</div>`
+          const kick=`https://www.kicker.de/bundesliga/spieltag/${yr}-${String((yr+1)%100).padStart(2,'0')}/${lm.md}`;
+          return slots.map(k=>`<div class="tk-slot">${k?esc(slotF.format(new Date(k)).replace(/,? (\d{1,2}:\d{2})/,' · $1'))+(LANG==='en'?'':' Uhr'):'–'}<a class="tk-ext" href="${kick}" target="_blank" rel="noopener">📺 ${L('Ticker bei kicker','kicker ticker')} ›</a></div>`
             +live2.filter(i2=>i2.ko===k).map(i2=>`<div class="tk-row">${i2.html}</div>`).join('')).join('')
             +(pre2.length?`<div class="tk-slot">📣 ${L('Vorberichterstattung','Pre-match coverage')}</div>`+pre2.map(i2=>`<div class="tk-row tk-pre">${i2.html}</div>`).join(''):'');
         })()}</div></details>`;
