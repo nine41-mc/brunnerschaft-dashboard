@@ -568,13 +568,15 @@ footer{max-width:var(--maxw);margin:0 auto;padding:24px 18px 40px;color:var(--in
 @media(max-width:820px){.tiles,.stat-tiles{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.tabs-inner{padding:0 6px}.payout .amt{font-size:18px}
   header.top{position:static} /* mobil scrollt der Header mit */
-  /* Tabs rasten ganz oben ein. Erst im eingerasteten Zustand (.stuck, per Skript) reichen sie mit einem roten
-     Streifen unter die Statusleiste — dort scrollt dann kein Inhalt durch, den iOS 26 verwischt/abdunkelt.
-     Die negative Außenkante gleicht das zusätzliche Polster aus, damit der Inhalt darunter nicht springt. */
+  /* Tabs rasten bei top:0 ein und tragen einen Streifen in Statusleisten-Höhe immer mit: in Ruhe transparent
+     über dem unteren Header-Rand (Taps gehen durch), eingerastet rot unter Uhrzeit/Akku. So rastet die Leiste
+     exakt ein, wenn die Tabs die Statusleiste erreichen — ohne Lücke, ohne Sprung — und iOS 26 sieht ein
+     deckendes Element am oberen Rand statt durchscrollenden Inhalt (Scroll-Edge-Unschärfe). */
   :root{--hdrH:0px}
-  nav.tabs{top:0}
-  nav.tabs.stuck{padding-top:var(--sat);margin-bottom:calc(-1 * var(--sat));
-    background:linear-gradient(to bottom,var(--brand) 0,var(--brand) var(--sat),var(--surface) var(--sat))}}
+  nav.tabs{top:0;margin-top:calc(-1 * var(--sat));padding-top:var(--sat);pointer-events:none;
+    background:linear-gradient(to bottom,transparent 0,transparent var(--sat),var(--surface) var(--sat))}
+  nav.tabs .tabs-inner{pointer-events:auto}
+  nav.tabs.stuck{background:linear-gradient(to bottom,var(--brand) 0,var(--brand) var(--sat),var(--surface) var(--sat))}}
 @media(max-width:360px){ /* sehr schmale Handys: Header bleibt einzeilig */
   .brandemoji{display:none}
   .brandtext{font-size:17px}
@@ -2756,7 +2758,8 @@ document.querySelector('.logo-k').onclick=()=>location.reload(); // kicktipp-Log
   if(typeof ResizeObserver!=='undefined'){ const ro=new ResizeObserver(fixSoon); ro.observe(tabs); }
   // Mobil: „eingerastet", sobald der Header komplett weggescrollt ist
   const hdr=document.querySelector('header.top'); let raf=0;
-  const stuck=()=>{ raf=0; tabs.classList.toggle('stuck', innerWidth<=720 && hdr.getBoundingClientRect().bottom<=0); };
+  const stuck=()=>{ raf=0; const sat=parseFloat(getComputedStyle(tabs).paddingTop)||0;
+    tabs.classList.toggle('stuck', innerWidth<=720 && tabs.getBoundingClientRect().top<=0.5 && hdr.getBoundingClientRect().bottom<=sat+0.5); };
   addEventListener('scroll',()=>{ if(!raf) raf=requestAnimationFrame(stuck); },{passive:true});
   addEventListener('resize',stuck); stuck();
   addEventListener('resize', fixSoon);
@@ -3087,7 +3090,7 @@ function renderAll(){
       else { vart='ball'; anim.innerHTML='<span class="ptr-ball"><span>⚽</span><span>⚽</span><span>⚽</span></span>'; } };
     // Nach dem Neuladen: offen + animiert starten und erst zuklappen, wenn Spielfilm & Co. geladen sind
     let resumed=null; try{ resumed=sessionStorage.getItem('brun_ptr'); sessionStorage.removeItem('brun_ptr'); }catch(e){}
-    if(resumed){ busy=true; setAnim(resumed); bar.style.transition='none'; bar.style.height='50px'; bar.classList.add('loading'); txt(L('Aktualisiere …','Refreshing …'));
+    if(resumed){ busy=true; setAnim(resumed); bar.style.transition='none'; bar.style.height='50px'; bar.classList.add('loading'); txt(L('Wird aktualisiert …','Refreshing …'));
       const t0=Date.now(), sec=document.getElementById('liveMdSec');
       const waitTicker=(sec&&!sec.hidden&&!window.__tickerReady)?new Promise(r=>{ addEventListener('brun:ticker',r,{once:true}); setTimeout(r,4000); }):Promise.resolve();
       waitTicker.then(()=>new Promise(r=>setTimeout(r,Math.max(0,700-(Date.now()-t0))))).then(()=>{
@@ -3112,9 +3115,11 @@ function renderAll(){
     addEventListener('touchend',()=>{ if(!active) return; bar.style.transition='height .18s ease';
       const d=Math.min(pull*0.5,110);
       if(d>=TH){ busy=true; bar.classList.remove('ready'); bar.classList.add('loading');
-        txt(L('Aktualisiere …','Refreshing …')); bar.style.height='50px';
+        txt(L('Wird aktualisiert …','Refreshing …')); bar.style.height='50px';
         try{ sessionStorage.setItem('brun_ptr',vart); }catch(e){} // dieselbe Animation läuft nach dem Neuladen weiter
-        setTimeout(()=>location.reload(),250);
+        // Erst die frische Seite holen (Leiste bleibt sichtbar), dann neu laden — das geht dann sofort aus dem Cache
+        const t0=Date.now(), go=()=>setTimeout(()=>location.reload(),Math.max(0,600-(Date.now()-t0)));
+        Promise.race([fetch(location.href,{cache:'no-cache'}),new Promise(r=>setTimeout(r,6000))]).catch(()=>{}).then(go);
       } else { bar.style.height='0'; bar.classList.remove('ready'); }
       startY=null; active=false; pull=0;
     },{passive:true});
