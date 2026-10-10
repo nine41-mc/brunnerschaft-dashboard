@@ -1644,7 +1644,8 @@ function renderOracle(scope){
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.fest/maxF*100)}%"></div></td>
       <td class="r mono">${r.titel<0.5?'&lt;1':Math.round(r.titel)}&nbsp;%</td></tr>`).join('')}</tbody>`;
   // 🏠 Haushalts-Aggregation: wo steigt die Loser-Party?
-  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','BigBen':'7b','Billy':'11a','Matthew':'Vaterstetten','Maxjun.':'Oderstr.'};
+  const HSHORT={'Johann-Sebastian-Bach-Str. 20b':'J.-S.-Bach-Str. 20b'}; // mobile Kurzform langer Adressen
+  const HOME={'Marie':'13b','Manurinho':'13b','Maxsen':'10a','Tobias':'10a','LuLu':'10a','Messi':'10a','CH7':'7a','Lutz_Brunner7b':'7b','BigBen':'7b','Billy':'11a','Matthew':'Johann-Sebastian-Bach-Str. 20b','Maxjun.':'Oderstr.'};
   const homes={};
   rows.forEach(r=>{ const h=HOME[r.name]||('❓ '+dispName(r.name)); (homes[h]=homes[h]||{p:0,who:[]}).p+=r.fest; homes[h].who.push(r.name); });
   const hrows=Object.entries(homes).map(([h,x])=>({h,...x})).sort((a,b)=>b.p-a.p);
@@ -1652,7 +1653,7 @@ function renderOracle(scope){
   const hks=sharedRanks(hrows,r=>Math.round(r.p*10));
   document.getElementById('oracleHomes').innerHTML=`<thead><tr><th style="width:30px" data-nosort></th><th>${L('Haushalt','Household')}</th><th class="r">🎪 ${L('Fest-Risiko','Party risk')}</th><th class="bar-cell bar-only" data-nosort style="width:26%"></th></tr></thead><tbody>${
     hrows.map((r,i)=>`<tr class="${hks[i]===1?'p1':''}"><td><span class="rank-badge">${hks[i]}</span></td>
-      <td><div class="nm-cell oh-row"><span class="player-name"><b>${esc(r.h)}</b></span><span class="oh-avs">${r.who.map(n=>av(n,22)).join('')}</span></div>${hks[i]===1?'<div class="mini" style="margin-top:3px;white-space:nowrap">🎪 '+ms(L('Fest-Favorit','party favourite'),L('Favorit','favourite'))+'</div>':''}</td>
+      <td><div class="nm-cell oh-row"><span class="player-name"><b>${HSHORT[r.h]?ms(esc(r.h),esc(HSHORT[r.h])):esc(r.h)}</b></span><span class="oh-avs">${r.who.map(n=>av(n,22)).join('')}</span></div>${hks[i]===1?'<div class="mini" style="margin-top:3px;white-space:nowrap">🎪 '+ms(L('Fest-Favorit','party favourite'),L('Favorit','favourite'))+'</div>':''}</td>
       <td class="r mono"><b>${r.p<0.5?'&lt;1':Math.round(r.p)}&nbsp;%</b></td>
       <td class="bar-cell bar-only"><div class="bar" style="width:${Math.round(r.p/hmax*100)}%"></div></td></tr>`).join('')}</tbody>`;
   const pl=(window.__oracle&&window.__oracle.played)||2;
