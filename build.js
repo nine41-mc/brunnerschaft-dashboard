@@ -81,7 +81,10 @@ function replaceConst(html, name, valueLiteral){
       const season=data.DATA.seasons.find(x=>x.id===rid); const act=season.standings.filter(x=>x.active);
       const now=Date.now(); const anyLive=(md.ko||[]).some(k=>k&&now>=k&&now<k+125*60000);
       const p4={}; md.rows.forEach(r=>{p4[r.n]=r.tips.filter((t,i)=>t&&md.results[i]&&t[2]>=4).length;});
-      const mdDone=md.results.length>0&&md.results.every(Boolean);
+      // „Durch" erst, wenn jedes Spiel ein Ergebnis hat UND jeder Anpfiff ≥ 120 Min zurückliegt — Kicktipp zeigt
+      // für laufende Spiele schon den Zwischenstand in der Ergebnisspalte (sonst kommt der Abpfiff-Push zu früh)
+      const kos=(md.ko||[]).filter(Boolean);
+      const mdDone=md.results.length>0&&md.results.every(Boolean)&&kos.length===md.fixtures.length&&kos.every(k=>now>=k+120*60000);
       const win=[...md.rows].sort((a,b)=>b.t-a.t)[0];
       const tipped=md.rows.filter(r=>r.tips.some(t=>t));
       const last=tipped.length?[...tipped].sort((a,b)=>a.t-b.t)[0]:null;
