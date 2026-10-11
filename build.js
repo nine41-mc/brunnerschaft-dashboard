@@ -93,6 +93,7 @@ function replaceConst(html, name, valueLiteral){
       st={ id:rid, md:lm.cur, anyLive, p4, mdDone,
         winner:win?win.n:null, winnerPts:win?win.t:0,
         last:last?last.n:null, lastPts:last?last.t:0,
+        winners:win?humans.filter(r=>r.t===win.t).map(r=>r.n):[], lasts:last?tipped.filter(r=>r.t===last.t).map(r=>r.n):[], // Gleichstände
         leader:act[0].name, leaderPts:act[0].total, second:act[1]?act[1].name:null, secondPts:act[1]?act[1].total:0,
         top3:act.slice(0,3).map(x=>x.pos+'. '+x.name+' '+x.total).join(' · '), bonusSolved:solved };
     }

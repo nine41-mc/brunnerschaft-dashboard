@@ -35,8 +35,9 @@ if (oldSt.leader && neu.leader && oldSt.leader !== neu.leader && neu.leaderPts >
 if (oldSt.md === neu.md && !oldSt.mdDone && neu.mdDone) {
   const p4n = Object.values(neu.p4 || {}).reduce((a, b) => a + b, 0);
   const extra = (p4n ? ` · 🎯 ${p4n}× Volltreffer` : ' · 🎯 kein einziger Volltreffer')
-    + (neu.last && neu.last !== neu.winner ? `\n🎪 Schlusslicht: ${nm(neu.last)} (${neu.lastPts} P)` : '');
-  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `Sieger: ${nm(neu.winner)} (${neu.winnerPts} P) 🎉${extra}\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done', channel: 'done', link: '#go=live' });
+    + (neu.last && neu.last !== neu.winner ? `\n🎪 Schlusslicht: ${(neu.lasts && neu.lasts.length ? neu.lasts : [neu.last]).map(nm).join(' & ')} (${neu.lastPts} P)` : '');
+  const sieger = (neu.winners && neu.winners.length ? neu.winners : [neu.winner]).map(nm).join(' & ');
+  events.push({ title: `🏁 ${neu.md}. Spieltag ist durch!`, body: `${sieger.includes('&') ? 'Sieger (geteilt)' : 'Sieger'}: ${sieger} (${neu.winnerPts} P) 🎉${extra}\nZwischenstand: ${neu.top3.replace(/([A-Za-z_.7]+)/g, m => nm(m))}`, tag: 'brun-done', channel: 'done', link: '#go=live' });
 }
 
 // ⭐ Bonusfrage aufgelöst
