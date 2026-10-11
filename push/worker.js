@@ -203,7 +203,9 @@ async function quips(env, body) {
   for (const e of evs) {
     const gid = String(e && e.gid || ''); if (!/^\d{1,9}$/.test(gid)) continue;
     if (map[gid]) out[gid] = map[gid];
-    else want.push({ gid, exact: (e.exact || []).filter(n => TIPPER.has(n)).slice(0, 6), gegen: (e.gegen || []).filter(n => TIPPER.has(n)).slice(0, 4) });
+    else want.push({ gid, exact: (e.exact || []).filter(n => TIPPER.has(n)).slice(0, 6),
+      // Gegen-Tipper nur mit echtem Tipp (Name aus fester Liste, Tipp im Format 1:2) — nackte Namen ließen die KI Tipps erfinden
+      gegen: (e.gegen || []).filter(x => x && TIPPER.has(x.n) && /^\d{1,2}:\d{1,2}$/.test(x.t)).slice(0, 4) });
   }
   if (!want.length || !env.ANTHROPIC_API_KEY) return out;
   // Fakten nur aus OpenLigaDB — unbekannte Tor-IDs werden verworfen
@@ -220,10 +222,11 @@ async function quips(env, body) {
   await env.SUBS.put(capK, String(used + missing.length), { expirationTtl: 172800 });
   const ctx = w => { const g = goals[w.gid];
     return `${w.gid} | ${g.min || '?'}. Min, ${g.st} ${g.game}, Tor: ${g.who || '?'}${g.pen ? ' (Elfmeter)' : ''}${g.og ? ' (Eigentor)' : ''}.`
-      + (w.exact.length ? ` Tipp steht jetzt exakt bei: ${w.exact.join(', ')}.` : '') + (w.gegen.length ? ` Aufs Gegenteil getippt: ${w.gegen.join(', ')}.` : ''); };
+      + (w.exact.length ? ` Tipp steht jetzt exakt bei: ${w.exact.join(', ')} (Tipp ${g.st}).` : '')
+      + (w.gegen.length ? ` Tipps, die gerade danebenliegen: ${w.gegen.map(x => x.n + ' ' + x.t).join(', ')}.` : ''); };
   const profiles = await env.SUBS.get('profiles') || '';
   const prevQ = Object.values(map).slice(-15); // für Abwechslung: zuletzt verwendete Sprüche des Spieltags
-  const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis). WICHTIG: Elias, Luisa und Marie sind Kinder — über sie keine Getränke-, Alkohol- oder Kneipenwitze, der Spott bleibt lieb. Erwähne nie Modelle, Statistiken oder Berechnungen. Sei abwechslungsreich: jeder Satz mit eigenem Witz-Ansatz (Fußball-Bilder, Tipp-Schadenfreude, Stammtisch-Weisheiten, Übertreibung); Getränke höchstens ganz selten.${prevQ.length ? `\n\nDiese Sprüche gab es an diesem Spieltag schon — keine Motive, Formulierungen oder Pointen davon wiederholen:\n${prevQ.map(u => '- ' + u).join('\n')}` : ''}${profiles ? `\n\nHintergrundwissen über die Tipper (nur für Anspielungen, nie wörtlich zitieren oder auflisten):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"<Zahl vor dem |>","q":"..."}]`;
+  const prompt = `Du bist RoboSepp, der KI-Tipper und Live-Tickerer der bayerisch angehauchten Kicktipp-Männerrunde "Brunnerschaft". Zu jedem der folgenden Tor-Ereignisse schreibst du GENAU EINEN frechen Ticker-Satz auf Deutsch (max. 110 Zeichen, Augenzwinkern, gern kleine Spitzen gegen die genannten Tipper, nie beleidigend, keine Emojis). WICHTIG: Elias, Luisa und Marie sind Kinder — über sie keine Getränke-, Alkohol- oder Kneipenwitze, der Spott bleibt lieb. Erwähne nie Modelle, Statistiken oder Berechnungen. Über Tipps behauptest du NUR, was bei den Ereignissen steht (Name + getipptes Ergebnis) — nie raten, welches Ergebnis jemand getippt hat. Sei abwechslungsreich: jeder Satz mit eigenem Witz-Ansatz (Fußball-Bilder, Tipp-Schadenfreude, Stammtisch-Weisheiten, Übertreibung); Getränke höchstens ganz selten.${prevQ.length ? `\n\nDiese Sprüche gab es an diesem Spieltag schon — keine Motive, Formulierungen oder Pointen davon wiederholen:\n${prevQ.map(u => '- ' + u).join('\n')}` : ''}${profiles ? `\n\nHintergrundwissen über die Tipper (nur für Anspielungen, nie wörtlich zitieren oder auflisten):\n${profiles.slice(0, 1500)}` : ''}\n\nEreignisse:\n${missing.map(ctx).join('\n')}\n\nAntworte NUR mit einem JSON-Array: [{"id":"<Zahl vor dem |>","q":"..."}]`;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json',

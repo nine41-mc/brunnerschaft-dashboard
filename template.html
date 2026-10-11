@@ -1886,7 +1886,9 @@ function renderLiveMd(scope){
           // Kontext für RoboSepps Kommentar: Spielstand + wer profitiert/leidet
           const tend=sh>sa?1:sh<sa?-1:0;
           const gegen=tips.filter(v=>(v.t.h>v.t.a?1:v.t.h<v.t.a?-1:0)===-tend&&tend!==0).map(v=>dispFull(v.n));
-          if(g.goalID) qreq.push({gid:String(g.goalID), exact:exactH, gegen:gegen.filter(n=>n!=='RoboSepp').slice(0,4)}); // Fakten ergänzt der Worker selbst
+          // Für RoboSepp: Namen + ECHTE Tipps (sonst erfindet die KI, was jemand getippt hat); Spielfakten ergänzt der Worker selbst
+          const gegenT=tips.filter(v=>!TBOTS.has(v.n)&&(v.t.h>v.t.a?1:v.t.h<v.t.a?-1:0)===-tend&&tend!==0).slice(0,4).map(v=>({n:dispFull(v.n),t:v.t.h+':'+v.t.a}));
+          if(g.goalID) qreq.push({gid:String(g.goalID), exact:exactH, gegen:gegenT});
           const ts=(fi>-1&&(lm.ko||[])[fi]||0)+(g.matchMinute||0)*60000;
           const qi=goalCtx.length;
           goalCtx.push({id:qid, ts, min:g.matchMinute, st:sh+':'+sa, prev:ph+':'+pa, wer:g.goalGetterName||L('Unbekannt','Someone'),
