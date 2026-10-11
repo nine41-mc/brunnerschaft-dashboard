@@ -1807,7 +1807,8 @@ function renderLiveMd(scope){
   const NOW=Date.now();
   const koFmt=new Intl.DateTimeFormat(LANG==='en'?'en-GB':'de-DE',{timeZone:'Europe/Berlin',weekday:'short',hour:'2-digit',minute:'2-digit'});
   const res=i=>lm.results[i]?`${lm.results[i].rh}:${lm.results[i].ra}`:((lm.ko||[])[i]&&(lm.ko[i]>NOW)?koFmt.format(new Date(lm.ko[i])).replace(',',''):'–:–');
-  const st=i=>{ const k=(lm.ko||[])[i]; if(k){ if(NOW<k)return 'up'; if(NOW<k+125*60000)return 'live'; return 'fin'; } return lm.results[i]?'fin':'up'; };
+  const finKey=scope+'_'+lm.md, finMap=(window.__olFin=window.__olFin||{})[finKey]||{}; // vom Ticker: Spiel laut OpenLigaDB abgepfiffen
+  const st=i=>{ const k=(lm.ko||[])[i]; if(k){ if(NOW<k)return 'up'; if(finMap[i])return 'fin'; if(NOW<k+125*60000)return 'live'; return 'fin'; } return lm.results[i]?'fin':'up'; };
   const liveIdx=lm.fixtures.map((_,i)=>i).filter(i=>st(i)==='live');
   document.getElementById('liveNow').innerHTML=liveIdx.length
     ? `<div class="live-now"><span class="live-now-lbl">🔴 ${L('Jetzt live','Live now')}</span>${liveIdx.map(i=>`<span class="live-chip"><span class="live-dot"></span>${esc(code(lm.fixtures[i][0]))}&nbsp;<b>${res(i)==='–:–'?'0:0':res(i)}</b>&nbsp;${esc(code(lm.fixtures[i][1]))}</span>`).join('')}</div>` : '';
@@ -1818,6 +1819,9 @@ function renderLiveMd(scope){
   if(window.__tickerTimer){ clearInterval(window.__tickerTimer); window.__tickerTimer=null; }
   (async()=>{
     const el=document.getElementById('liveTicker'); if(!el)return;
+    const tkKey='brun_tk_'+scope+'_'+lm.md, QM=window.__qmemo=window.__qmemo||(()=>{ try{return JSON.parse(sessionStorage.getItem('brun_qmemo')||'{}');}catch(e){return {};} })();
+    const saveTk=()=>{ try{ sessionStorage.setItem(tkKey,el.innerHTML); sessionStorage.setItem('brun_qmemo',JSON.stringify(QM)); }catch(e){} };
+    if(el.dataset.k!==tkKey){ el.dataset.k=tkKey; try{ el.innerHTML=sessionStorage.getItem(tkKey)||''; }catch(e){ el.innerHTML=''; } } // anderer Spieltag: dessen letzten Stand zeigen
     try{
       const ym=((SMAP[scope]&&SMAP[scope].short)||'').match(/(\d{2})\s*\//);
       const anyStarted=(lm.ko||[]).some(k=>k&&NOW>=k)||lm.results.some(Boolean);
@@ -1837,6 +1841,9 @@ function renderLiveMd(scope){
       const toks=n=>String(n).toLowerCase().replace(/[^a-zäöüß ]/g,' ').split(/\s+/).filter(t=>t.length>=3&&!STOP.has(t));
       const sameTeam=(x,y)=>{const A=toks(x),B=toks(y); return A.some(t=>B.some(u=>t===u||(Math.min(t.length,u.length)>=5&&Math.abs(t.length-u.length)>=4&&(t.includes(u)||u.includes(t)))));};
       const fixIdx=(h,a)=>lm.fixtures.findIndex(f=>sameTeam(f[0],h)&&sameTeam(f[1],a));
+      { const fm={}; ol.forEach(m=>{ if(m.matchIsFinished&&m.team1&&m.team2){ const fi=fixIdx(m.team1.teamName,m.team2.teamName); if(fi>-1) fm[fi]=true; } });
+        const was=JSON.stringify(window.__olFin[finKey]||{}); window.__olFin[finKey]=fm;
+        if(was!==JSON.stringify(fm)&&Object.keys(fm).some(i=>NOW<((lm.ko||[])[i]||0)+125*60000)){ setTimeout(()=>renderLiveMd(scope),0); return; } }
       const items=[], qreq=[];
       // Fallback-Sprüche, falls RoboSepps Live-Kommentar (Worker/Haiku) nicht antwortet
       const KIDN=new Set([...KIDS].map(dispFull));
@@ -1902,7 +1909,7 @@ function renderLiveMd(scope){
       });
       // Ersatzsprüche chronologisch vergeben → keine Wiederholung innerhalb des Spieltags
       const fbArr=[]; [...goalCtx].map((c,i)=>({c,i})).sort((x,y)=>x.c.ts-y.c.ts).forEach(({c,i})=>fbArr[i]=fbQuip(c));
-      items.forEach(it=>{ if(it.goal) it.html=it.html.replace(/@@Q(\d+)@@/,(_,i)=>esc(fbArr[+i]||'')); });
+      items.forEach(it=>{ if(it.goal) it.html=it.html.replace(/@@Q(\d+)@@/,(_,i)=>esc(QM[goalCtx[+i].id]||fbArr[+i]||'')); });
       // 🟨🟥🔁 Karten & Wechsel vom Worker-Proxy (football-data.org) — nur wenn dort ein Token hinterlegt ist
       try{
         if(PUSH_URL&&window.__fdOn!==false){
@@ -1982,11 +1989,13 @@ function renderLiveMd(scope){
             +live2.filter(i2=>i2.ko===k).map(i2=>`<div class="tk-row">${i2.html}</div>`).join('')).join('')
             +(pre2.length?`<div class="tk-slot">📣 ${L('Vorberichterstattung','Pre-match coverage')}</div>`+pre2.map(i2=>`<div class="tk-row tk-pre">${i2.html}</div>`).join(''):'');
         })()}</div></details>`;
+      saveTk();
       // 🤖 RoboSepps Live-Kommentare nachladen (Worker cached je Tor; ohne Antwort bleibt der Fallback-Spruch)
       if(PUSH_URL&&qreq.length){
         try{
           const qs=await (await fetch(PUSH_URL+'/quips',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({yr,md:lm.md,events:qreq})})).json();
-          Object.entries(qs||{}).forEach(([id,q])=>{ const sp=el.querySelector(`.tk-quip[data-qid="${id}"]`); if(sp&&q) sp.innerHTML='🤖 „'+esc(q)+'“'; });
+          Object.entries(qs||{}).forEach(([id,q])=>{ if(q) QM[id]=q; const sp=el.querySelector(`.tk-quip[data-qid="${id}"]`); if(sp&&q) sp.innerHTML='🤖 „'+esc(q)+'“'; });
+          saveTk();
         }catch(e){}
       }
     }catch(e){ /* OpenLigaDB nicht erreichbar → Ticker einfach weglassen */ }
