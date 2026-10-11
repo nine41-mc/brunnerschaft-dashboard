@@ -80,13 +80,14 @@ function replaceConst(html, name, valueLiteral){
     if(rid){ const lm=live[rid]; const md=lm.mds.find(m=>m.md===lm.cur);
       const season=data.DATA.seasons.find(x=>x.id===rid); const act=season.standings.filter(x=>x.active);
       const now=Date.now(); const anyLive=(md.ko||[]).some(k=>k&&now>=k&&now<k+125*60000);
-      const p4={}; md.rows.forEach(r=>{p4[r.n]=r.tips.filter((t,i)=>t&&md.results[i]&&t[2]>=4).length;});
+      const p4={}; md.rows.filter(r=>r.n!=='RoboSepp').forEach(r=>{p4[r.n]=r.tips.filter((t,i)=>t&&md.results[i]&&t[2]>=4).length;});
       // „Durch" erst, wenn jedes Spiel ein Ergebnis hat UND jeder Anpfiff ≥ 120 Min zurückliegt — Kicktipp zeigt
       // für laufende Spiele schon den Zwischenstand in der Ergebnisspalte (sonst kommt der Abpfiff-Push zu früh)
       const kos=(md.ko||[]).filter(Boolean);
       const mdDone=md.results.length>0&&md.results.every(Boolean)&&kos.length===md.fixtures.length&&kos.every(k=>now>=k+120*60000);
-      const win=[...md.rows].sort((a,b)=>b.t-a.t)[0];
-      const tipped=md.rows.filter(r=>r.tips.some(t=>t));
+      const humans=md.rows.filter(r=>r.n!=='RoboSepp'); // Bot spielt außer Konkurrenz: nie Sieger/Schlusslicht im Push
+      const win=[...humans].sort((a,b)=>b.t-a.t)[0];
+      const tipped=humans.filter(r=>r.tips.some(t=>t));
       const last=tipped.length?[...tipped].sort((a,b)=>a.t-b.t)[0]:null;
       const solved=((data.ADV.bonusTips||{})[rid]||{cols:[]}).cols.filter(h=>!/-{3}$/.test(h)).length;
       st={ id:rid, md:lm.cur, anyLive, p4, mdDone,
