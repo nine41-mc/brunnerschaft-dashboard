@@ -56,6 +56,9 @@
 /* Feste Seitenbreite: kein horizontales Pannen/Rubber-Banding (iOS Safari braucht html UND body).
    WICHTIG: "clip" statt "hidden" — hidden macht body zum Scroll-Container und bricht position:sticky (Tabs/Filter). */
 html{overflow-x:hidden;overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
+/* Grundfläche rot: iOS 26 färbt Statusleiste + Übergang am oberen Rand nach der Seitenfarbe — so blendet Rot in den roten Header statt Dunkelgrau-Schleier. Der Inhalt (body) behält --bg. */
+html{background:var(--brand)}
+body{min-height:100vh;min-height:100dvh} /* kurze Seiten: Inhaltsfarbe bis unten, kein rotes html darunter */
 body{overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ff);
   line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
