@@ -289,8 +289,6 @@ tr.p3 .rank-badge{background:var(--bronze);color:#2c1600}
 #liveMdTable th.lmd-live .lmd-r{color:var(--brand);animation:liveBlink 1.6s ease-in-out infinite}
 #liveMdTable .lmd-livelbl{font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--brand)}
 @media(prefers-reduced-motion:reduce){.live-dot,.live-chip,#liveMdTable th.lmd-live .lmd-r{animation:none}}
-/* Eigenes Pull-to-Refresh: natives Nachfedern (iOS) bzw. Browser-PTR (Android-Chrome) abschalten, sonst ziehen zwei Gesten gegeneinander */
-@media(pointer:coarse){html,body{overscroll-behavior-y:none}}
 #ptr{height:0;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;gap:8px;
   color:var(--ink-2);font-size:13px;font-weight:700;box-sizing:border-box}
 #ptr>*{margin-bottom:6px} /* statt padding-bottom: das blieb bei height:0 als 6-px-Streifen mit Icon-Resten sichtbar */
