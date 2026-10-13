@@ -1156,6 +1156,7 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
         <p class="mini" id="pushSavedNote" style="margin:10px 0 0;min-height:16px"></p>
       </div>
       <p class="mini" data-en="iOS note: pushes only work in the home-screen app (Safari → Share → 'Add to Home Screen').">iOS-Hinweis: Pushes funktionieren nur in der Homescreen-App (Safari → Teilen → „Zum Home-Bildschirm").</p>
+      <p class="mini" id="sbOld" hidden style="color:var(--brand);font-weight:650" data-en="⚠️ This install still uses the old see-through status bar (that's what dims the sticky tab bar). Fix: delete the app from the home screen, add it again via Safari → Share → 'Add to Home Screen', then re-enable pushes here.">⚠️ Diese Installation nutzt noch die alte durchscheinende Statusleiste (daher die abgedunkelte Tab-Leiste beim Scrollen). Abhilfe: App vom Home-Bildschirm löschen, über Safari → Teilen → „Zum Home-Bildschirm" neu hinzufügen und hier die Pushes wieder einschalten.</p>
     </section>
 
     <section class="block">
@@ -2948,6 +2949,11 @@ function renderAll(){
   }catch(e){}
   // Service Worker: sofortiger Start aus dem Cache, netz-zuerst mit Fallback (Offline im Stadion!)
   try{ if('serviceWorker' in navigator && /github\.io$|^localhost$/.test(location.hostname)) navigator.serviceWorker.register('sw.js'); }catch(e){}
+  // Alte Homescreen-Installation erkennen: iOS übernimmt die Statusleisten-Einstellung nur beim Hinzufügen.
+  // Ist die Seite in der App noch unter die Statusleiste gezogen (safe-area oben > 0), stammt sie aus der Zeit von black-translucent.
+  try{ const sa=(matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+    const hd=document.querySelector('header.top'); const el=document.getElementById('sbOld');
+    if(sa&&hd&&el&&parseFloat(getComputedStyle(hd).paddingTop)>0) el.hidden=false; }catch(e){}
   // 📊 Mini-Analytics-Beacon: anonyme Zähler (zufällige Geräte-ID, kein Name, kein Inhalt)
   try{ if(PUSH_URL && /github\.io$/.test(location.hostname)){
     let vid=localStorage.getItem('brun_vid'); if(!vid){ vid=Math.random().toString(36).slice(2,14); localStorage.setItem('brun_vid',vid); }
