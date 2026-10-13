@@ -387,8 +387,12 @@ main{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} /* Home-Indica
 .pill:active{transform:scale(.97)}
 .theme-btn:active,.lang-switch button:active{opacity:.6}
 .push-bell{margin-left:6px}
-#pushOverlay{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px}
-#pushOverlay[hidden]{display:none}
+#pushOverlay,#sbOverlay{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px}
+#pushOverlay[hidden],#sbOverlay[hidden]{display:none}
+#sbOverlay .po-row b{display:inline}
+#sbOverlay .po-card{max-height:calc(100dvh - 40px);overflow-y:auto}
+#sbOverlay .sb-num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-weight:850;font-size:13.5px;display:flex;align-items:center;justify-content:center}
+#sbOverlay .sb-url{display:inline-block;margin-top:4px;font-family:var(--num);font-size:12px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:7px;padding:3px 7px;word-break:break-all}
 .po-card{background:var(--surface);border-radius:18px;max-width:420px;width:100%;padding:24px 22px;box-shadow:0 18px 60px -10px rgba(0,0,0,.4)}
 .po-head{font-size:22px;font-weight:850;letter-spacing:-.4px}
 .po-sub{color:var(--ink-2);font-size:14px;margin:4px 0 14px}
@@ -1178,6 +1182,21 @@ tr.p3 .rank-badge::after{animation-delay:.8s}
     <div class="po-btns">
       <button class="lb-btn lb-btn2" id="poSettings" data-en="⚙️ Customize">⚙️ Anpassen</button>
       <button class="lb-btn" id="poClose" data-en="Got it!">Alles klar! 🍺</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alte Homescreen-Installation (durchscheinende Statusleiste): einmal neu hinzufügen -->
+<div id="sbOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="sbHead">
+  <div class="po-card">
+    <div class="po-head" id="sbHead" data-en="🛠️ Quick reinstall, please">🛠️ Einmal kurz neu installieren</div>
+    <div class="po-sub" data-en="Your home-screen app is from an older version, so the tab bar at the top gets dimmed by iOS. Takes one minute:">Deine Homescreen-App stammt noch aus einer älteren Version — darum dunkelt iOS die Tab-Leiste oben ab. Dauert eine Minute:</div>
+    <div class="po-row"><span class="sb-num">1</span><div><b data-en="Delete the app">App löschen</b><br><span data-en="Long-press the Brunnerschaft icon on your home screen → “Remove App” / “Delete Bookmark”.">Brunnerschaft-Symbol auf dem Home-Bildschirm gedrückt halten → „App entfernen" bzw. „Lesezeichen löschen".</span></div></div>
+    <div class="po-row"><span class="sb-num">2</span><div><b data-en="Add it again">Neu hinzufügen</b><br><span data-en="Open this page in Safari → Share → “Add to Home Screen”:">Diese Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm":</span><br><span class="sb-url">nine41-mc.github.io/brunnerschaft-dashboard</span></div></div>
+    <div class="po-row"><span class="sb-num">3</span><div><b data-en="Turn pushes back on">Pushes wieder einschalten</b><br><span data-en="In the new app tap the 🔕 bell at the top — the old subscription goes away with the old app.">In der neuen App oben auf die 🔕-Glocke tippen — das alte Abo verschwindet mit der alten App.</span></div></div>
+    <div class="po-btns">
+      <button class="lb-btn lb-btn2" id="sbLater" data-en="Later">Später</button>
+      <button class="lb-btn" id="sbCopy" data-en="📋 Copy link">📋 Link kopieren</button>
     </div>
   </div>
 </div>
@@ -2953,7 +2972,22 @@ function renderAll(){
   // Ist die Seite in der App noch unter die Statusleiste gezogen (safe-area oben > 0), stammt sie aus der Zeit von black-translucent.
   try{ const sa=(matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
     const hd=document.querySelector('header.top'); const el=document.getElementById('sbOld');
-    if(sa&&hd&&el&&parseFloat(getComputedStyle(hd).paddingTop)>0) el.hidden=false; }catch(e){}
+    const old=sa&&hd&&parseFloat(getComputedStyle(hd).paddingTop)>0;
+    if(old&&el) el.hidden=false;
+    // Overlay beim Öffnen bzw. Zurückkehren in die App — „Später" pausiert 12 h, dann kommt es wieder, bis neu installiert ist
+    const ov=document.getElementById('sbOverlay'), KEY='brun_sb_later';
+    const due=()=>{ try{ return Date.now()-(+localStorage.getItem(KEY)||0)>12*3600e3; }catch(e){ return true; } };
+    window.__sbShow=()=>{ ov.hidden=false; };
+    const maybe=()=>{ if(old&&ov&&ov.hidden&&due()) ov.hidden=false; };
+    if(ov){
+      document.getElementById('sbLater').onclick=()=>{ try{ localStorage.setItem(KEY,Date.now()); }catch(e){} ov.hidden=true; };
+      const cp=document.getElementById('sbCopy');
+      cp.onclick=async()=>{ const u='https://nine41-mc.github.io/brunnerschaft-dashboard/';
+        try{ await navigator.clipboard.writeText(u); cp.textContent='✓ '+L('Kopiert — jetzt in Safari einfügen','Copied — paste it in Safari'); }
+        catch(e){ cp.textContent=u; } };
+      setTimeout(maybe,1200);
+      document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') setTimeout(maybe,600); });
+    } }catch(e){}
   // 📊 Mini-Analytics-Beacon: anonyme Zähler (zufällige Geräte-ID, kein Name, kein Inhalt)
   try{ if(PUSH_URL && /github\.io$/.test(location.hostname)){
     let vid=localStorage.getItem('brun_vid'); if(!vid){ vid=Math.random().toString(36).slice(2,14); localStorage.setItem('brun_vid',vid); }
