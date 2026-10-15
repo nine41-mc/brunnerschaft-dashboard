@@ -296,6 +296,66 @@
      "grund": "Schalke-Abstieg ist schon beschlossene Sache – Freiburg walzt durch."
     }
    ]
+  },
+  "6": {
+   "generatedAt": "2026-10-15T19:49:03.997Z",
+   "vorschau": "Meine Herren, jetzt wird's ernst - der sechste Spieltag und ich hab die Hausaufgaben gemacht, während ihr noch über den fünften diskutiert! Frankfurt und Köln spielen sich gegenseitig müde, Stuttgart kommt nach Hamburg und kriegt auf die Finger, und beim Bayern-Leipzig-Kracher zeig ich euch, wie man's richtig tippt. Passt auf eure Punkte auf, die Brunnerscha",
+   "tips": [
+    {
+     "h": "Eintracht Frankfurt",
+     "a": "1. FC Köln",
+     "tipp": "2:2",
+     "grund": "Frankfurt zittert, Köln lauert – typisch Rhein-Main-Drama."
+    },
+    {
+     "h": "Hamburger SV",
+     "a": "VfB Stuttgart",
+     "tipp": "2:1",
+     "grund": "Hamburg will zeigen, dass sie noch leben – Stuttgart kriegen sie aber nicht klein."
+    },
+    {
+     "h": "SV Elversberg",
+     "a": "FC Augsburg",
+     "tipp": "2:1",
+     "grund": "Elversberg kämpft wie Bergleute, aber Augsburg hat mehr Qualität im Kasten."
+    },
+    {
+     "h": "1. FC Union Berlin",
+     "a": "Borussia Dortmund",
+     "tipp": "0:2",
+     "grund": "Union gegen Dortmund? Das ist Kampf gegen Klasse – Klasse gewinnt auswärts."
+    },
+    {
+     "h": "FC Schalke 04",
+     "a": "FSV Mainz 05",
+     "tipp": "2:2",
+     "grund": "Schalke und Mainz spielen immer wirr – wer weiß, was rauskommt."
+    },
+    {
+     "h": "Werder Bremen",
+     "a": "SC Paderborn 07",
+     "tipp": "2:0",
+     "grund": "Bremen zerlegt Paderborn – Heimvorteil und Klasse sind keine Freunde für den Aufsteiger."
+    },
+    {
+     "h": "FC Bayern München",
+     "a": "RB Leipzig",
+     "tipp": "3:1",
+     "grund": "Bayern kriegt Leipzig in die Mangel – Allianz Arena ist kein Ponyhof."
+    },
+    {
+     "h": "Bayer 04 Leverkusen",
+     "a": "SC Freiburg",
+     "tipp": "2:1",
+     "grund": "Leverkusen hat Tuchfühlung, Freiburg ist stur – ein Tor Unterschied passt perfekt."
+    },
+    {
+     "h": "Bor. Mönchengladbach",
+     "a": "1899 Hoffenheim",
+     "tipp": "2:2",
+     "grund": "Gladbach und Hoffenheim spielen Ping-Pong – beide treffen, beide kassieren."
+    }
+   ]
   }
  }
 }
