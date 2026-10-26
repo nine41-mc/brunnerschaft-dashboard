@@ -1342,7 +1342,7 @@ function seasonTiles(scope){
   const run=!!s.running;
   // Kachel mit Gleichstand-Unterstützung: mehrere Führende → alle Namen + gestapelte Avatare
   const tt=(list,capSg,capPl,meta,cls)=>list.length>1
-    ? {cls,cap:capPl,big:list.map(p=>dispName(p.name)).join(' & '),avs:list.map(p=>p.name),meta}
+    ? {cls,cap:capPl,big:list.map(p=>dispFull(p.name)).join(' & '),bigHtml:list.map(p=>dispName(p.name)).join(' & '),avs:list.map(p=>p.name),meta}
     : {cls,cap:capSg,big:list[0].name,meta};
   const w0=winners[0],l0=lasts[0];
   const capWin=run?(LANG==='en'?'🥇 Currently 1st':gLbl(w0.name,'🥇 Aktuell Erster','🥇 Aktuell Erste')):gLbl(w0.name,L('🥇 Sieger','🥇 Winner'),'🥇 Siegerin');
@@ -1367,7 +1367,7 @@ function seasonTiles(scope){
 function tileHTML(t){return `<div class="card tile ${t.cls||''}"><span class="rail"></span>`
   +`${t.avs?`<span class="tile-avs">${t.avs.map(n=>MEMOJI[n]?`<img class="av" src="${MEMOJI[n]}" width="38" height="38" alt="${esc(dispFull(n))}">`:'').join('')}</span>`:(MEMOJI[t.big]?`<img class="av tile-av" src="${MEMOJI[t.big]}" width="46" height="46" alt="">`:'')}`
   +`<div class="cap">${t.cap}</div>`
-  +`<div class="big${dispText(String(t.big)).length>13?' sm':''}">${esc(dispText(String(t.big)))}</div>`
+  +`<div class="big${dispText(String(t.big)).length>13?' sm':''}">${t.bigHtml||esc(dispText(String(t.big)))}</div>` /* bigHtml: schon escapetes Markup (Gleichstand mit mobilen Kurznamen) */
   +`<div class="meta">${esc(t.meta)}</div></div>`;}
 function renderTiles(scope){
   const tiles=scope==='gesamt'?gesamtTiles():seasonTiles(scope);
@@ -2404,7 +2404,7 @@ function renderRecords(){
     {cls:'gold',cap:L('🏅 Rekord-Spieltag','🏅 Record matchday'),big:rec.n,meta:rec.pts+L(' Punkte · ',' points · ')+rec.season+', '+L(rec.md+'. Spieltag','MD '+rec.md)},
     {cls:'gold',cap:L('📈 Beste Einzelsaison','📈 Best single season'),big:best.name,meta:best.t+L(' Punkte · ',' points · ')+best.season},
     bKings.length>1
-      ? {cls:'gold',cap:L('⭐ Bonuspunkt-Sieger','⭐ Bonus-point kings'),big:bKings.map(dispName).join(' & '),avs:bKings,meta:nWord(bMax,L('Bonuspunkt','bonus point'),L('Bonuspunkte','bonus points'))}
+      ? {cls:'gold',cap:L('⭐ Bonuspunkt-Sieger','⭐ Bonus-point kings'),big:bKings.map(dispFull).join(' & '),bigHtml:bKings.map(dispName).join(' & '),avs:bKings,meta:nWord(bMax,L('Bonuspunkt','bonus point'),L('Bonuspunkte','bonus points'))}
       : {cls:'gold',cap:gLbl(bKings[0],L('⭐ Bonuspunkt-Sieger','⭐ Bonus-point king'),'⭐ Bonuspunkt-Siegerin'),big:bKings[0],meta:nWord(bMax,L('Bonuspunkt','bonus point'),L('Bonuspunkte','bonus points'))},
     {cls:'gold',cap:L('🚀 Größte Aufholjagd (BL)','🚀 Biggest comeback (BL)'),big:up.name,meta:L('Platz ','Place ')+up.a+' → '+up.b+'  ('+up.from+' → '+up.to+')'},
     {cls:'red',cap:L('🪂 Größter Absturz (BL)','🪂 Biggest drop (BL)'),big:down.name,meta:L('Platz ','Place ')+down.a+' → '+down.b+'  ('+down.from+' → '+down.to+')'},
