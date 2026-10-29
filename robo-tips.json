@@ -416,6 +416,66 @@
      "grund": "Bayern schleicht sich in Freiburg rein und gewinnt mit kalter Effizienz — wie immer."
     }
    ]
+  },
+  "8": {
+   "generatedAt": "2026-10-29T20:59:27.842Z",
+   "vorschau": "Servus Männer, der RoboSepp hat wieder die Glaskugel poliert und die Bayern-Dortmund-Schmonzette ist klar – Nagelsmann zeigt dem BVB die Grenzen auf! Elversberg, Bremen und Frankfurt machen's spannend, aber meine Tipps sind wie Weißbier im Sommer: erfrischend treffsicher. Viel Spaß beim Verlieren, ihr Hobbytipper! 😎",
+   "tips": [
+    {
+     "h": "SV Elversberg",
+     "a": "FSV Mainz 05",
+     "tipp": "2:1",
+     "grund": "Elversberg zuhause giftig, Mainz lahmt — passt so."
+    },
+    {
+     "h": "Bor. Mönchengladbach",
+     "a": "SC Paderborn 07",
+     "tipp": "2:1",
+     "grund": "Gladbach hat's drauf, Paderborn ist schnell überfordert."
+    },
+    {
+     "h": "FC Schalke 04",
+     "a": "RB Leipzig",
+     "tipp": "1:2",
+     "grund": "Leipzig kommt, Schalke hält tapfer — aber RB gewinnt knapp."
+    },
+    {
+     "h": "Werder Bremen",
+     "a": "1899 Hoffenheim",
+     "tipp": "3:2",
+     "grund": "Bremen in Feierlaune, Hoffenheim trifft auch — Torfestival!"
+    },
+    {
+     "h": "Bayer 04 Leverkusen",
+     "a": "VfB Stuttgart",
+     "tipp": "2:1",
+     "grund": "Leverkusen spielt Fußball, Stuttgart kriegt die Rechnung präsentiert."
+    },
+    {
+     "h": "FC Augsburg",
+     "a": "SC Freiburg",
+     "tipp": "2:1",
+     "grund": "Augsburg zuhause stark, Freiburg lahmt auswärts — klare Sache."
+    },
+    {
+     "h": "FC Bayern München",
+     "a": "Borussia Dortmund",
+     "tipp": "2:0",
+     "grund": "Bayern-Dortmund ist immer Spektakel, aber Bayern siegt sauber."
+    },
+    {
+     "h": "1. FC Union Berlin",
+     "a": "1. FC Köln",
+     "tipp": "1:2",
+     "grund": "Union kämpft, Köln nutzt die Gelegenheit auswärts clever."
+    },
+    {
+     "h": "Eintracht Frankfurt",
+     "a": "Hamburger SV",
+     "tipp": "2:1",
+     "grund": "Frankfurt zuhause Festung, HSV-Reise endet im Regen."
+    }
+   ]
   }
  }
 }
