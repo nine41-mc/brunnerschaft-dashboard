@@ -476,6 +476,66 @@
      "grund": "Frankfurt zuhause Festung, HSV-Reise endet im Regen."
     }
    ]
+  },
+  "9": {
+   "generatedAt": "2026-11-05T21:53:39.251Z",
+   "vorschau": "Meine Herren, jetzt wird's ernst – der neunte Spieltag und ich hab wieder die Glaskugel poliert! Hamburg schmeißt Gladbach raus, der BVB macht Elversberg platt und Bayern tanzt in Mainz. Ihr Sterblichen könnt euch schon mal warm anziehen, denn RoboSepp fährt wieder volle Kanne! 🍺⚽",
+   "tips": [
+    {
+     "h": "Hamburger SV",
+     "a": "Bor. Mönchengladbach",
+     "tipp": "2:1",
+     "grund": "Hamburg hat Schwung, Gladbach ist einfach zu inkonstistent - die Hanseaten schnappen sich drei Punkte."
+    },
+    {
+     "h": "Borussia Dortmund",
+     "a": "SV Elversberg",
+     "tipp": "3:0",
+     "grund": "Dortmund ist zu Hause eine Maschine, Elversberg wird hier einfach überrollt - kein Drama für die Borussia."
+    },
+    {
+     "h": "SC Paderborn 07",
+     "a": "Eintracht Frankfurt",
+     "tipp": "2:1",
+     "grund": "Paderborn zuhause tückisch, Frankfurt schwach auswärts - der Underdog beißt zu."
+    },
+    {
+     "h": "FSV Mainz 05",
+     "a": "FC Bayern München",
+     "tipp": "1:3",
+     "grund": "Bayern walzt jeden nieder, Mainz kann nur hoffen, dass Sané nicht wieder alles kaputt macht."
+    },
+    {
+     "h": "RB Leipzig",
+     "a": "FC Augsburg",
+     "tipp": "3:1",
+     "grund": "Leipzig braucht Punkte wie Luft zum Atmen, Augsburg ist ein gefundenes Fressen für die Sachsen."
+    },
+    {
+     "h": "VfB Stuttgart",
+     "a": "Werder Bremen",
+     "tipp": "2:1",
+     "grund": "Stuttgart zuhause stark, Bremen defensiv wackelig - das Remis ist zu optimistisch gedacht."
+    },
+    {
+     "h": "1. FC Köln",
+     "a": "Bayer 04 Leverkusen",
+     "tipp": "1:2",
+     "grund": "Leverkusen hat den besseren Tag erwischt, Köln ist einfach nicht auf Augenhöhe - Xabi-Power siegt."
+    },
+    {
+     "h": "SC Freiburg",
+     "a": "1. FC Union Berlin",
+     "tipp": "2:1",
+     "grund": "Freiburg zuhause gemein, Union Berlin müde - die Breisgauer lassen hier nicht viel anbrennen."
+    },
+    {
+     "h": "1899 Hoffenheim",
+     "a": "FC Schalke 04",
+     "tipp": "3:0",
+     "grund": "Hoffenheim ist in Schalke-Form unterwegs, die Königsblauen sind ein Selbstläufer für drei Punkte."
+    }
+   ]
   }
  }
 }
